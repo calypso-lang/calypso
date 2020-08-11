@@ -1,0 +1,29 @@
+// Calculate factorial of `n` recursively (assuming only positive numbers)
+func factorial(n) {
+    // The factorial of `0` is `1`.
+    if n == 0
+        return 1;
+    // Return `n` times the factorial of `n - 1` (definition of factorial)
+    n * factorial(n - 1)
+}
+
+// Calculate `n`th Fibonacci number recursively (assuming only positive numbers)
+func fibonacci(n) {
+    // The first two Fibonacci numbers are `1`.
+    if n < 3
+        return 1;
+    // Return the `n - 2`th Fibonacci number plus the `n - 1`th Fibonacci number (definition of the Fibonacci sequence)
+    fibonacci(n - 2) * fibonacci (n - 1)
+}
+
+func main() {
+    // Get the first argument (excluding the program directory), and parse it into an unsigned 32-bit integer `n`.
+    let n = cli.args.nth(1).parse<u8>();
+    // Calculate `fibonacci(n)`
+    let fibonacci = fibonacci(n);
+    // Calculate `factorial(n)`
+    let factorial = factorial(n);
+    // Format the output messages and print them
+    println(`Fibonacci of {n}: {fibonacci}`);
+    println(`Factorial of {n}: {factorial}`);
+}

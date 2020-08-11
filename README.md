@@ -1,6 +1,6 @@
 # Calypso
 
-A (very work-in-progress) general-purpose ahead-of-time (AOT) compiled language with built-in systems for cryptography, ciphers, and encodings, implemented with LLVM and Rust.
+A (very work-in-progress) general-purpose just-in-time (JIT) interpreted language with built-in systems for cryptography, ciphers, and encodings, implemented with Rust.
 
 ## License
 
