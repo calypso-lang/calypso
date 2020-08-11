@@ -1,0 +1,14 @@
+[package]
+name = "calypso"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "A (very work-in-progress) general-purpose ahead-of-time (AOT) compiled language with built-in systems for cryptography, ciphers, and encodings, implemented with LLVM and Rust."
+readme = "README.md"
+homepage = "https://github.com/ThePuzzlemaker/Calypso/"
+repository = "https://github.com/ThePuzzlemaker/Calypso/"
+license = "MIT"
+keywords = ["compilers"]
+categories = ["development-tools", "parser-implementations"]
+
+[dependencies]

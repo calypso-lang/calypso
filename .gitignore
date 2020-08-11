@@ -1,0 +1,15 @@
+# Common build, OS, SCM, and IDE artifacts
+.DS_Store
+.cproject
+.hg/
+.hgignore
+.idea
+*.iml
+.project
+.settings/
+.vscode
+.favorites.json
+Session.vim
+
+# Cargo output directory
+/target
