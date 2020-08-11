@@ -1,5 +1,7 @@
 # Calypso
 
+[![Run on Repl.it](https://repl.it/badge/github/ThePuzzlemaker/Calypso)](https://repl.it/github/ThePuzzlemaker/Calypso)
+
 A (very work-in-progress) general-purpose ahead-of-time (AOT) compiled language with built-in systems for cryptography, ciphers, and encodings, implemented with LLVM and Rust.
 
 ## License
