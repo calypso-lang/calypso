@@ -1,6 +1,6 @@
 # Calypso
 
-A (very work-in-progress) general-purpose interpreted language with built-in systems for cryptography, ciphers, and encodings, implemented with Rust.
+A (very work-in-progress) general-purpose interpreted language, implemented with Rust.
 
 ## License
 
