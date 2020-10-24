@@ -1,6 +1,6 @@
 # Calypso
 
-> # !WARNING!
+> # :warning: WARNING :warning:
 > This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THISE CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY!
 
 A (very work-in-progress) general-purpose interpreted language, implemented with Rust.
