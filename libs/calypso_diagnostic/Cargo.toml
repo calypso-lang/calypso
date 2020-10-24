@@ -1,0 +1,15 @@
+[package]
+name = "calypso_diagnostic"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "Diagnostics for Calypso"
+readme = "README.md"
+homepage = "https://github.com/ThePuzzlemaker/Calypso/tree/master/calypso_diagnostic"
+repository = "https://github.com/ThePuzzlemaker/Calypso/"
+license = "MIT"
+
+[dependencies]
+error-chain = "0.12.4"
+calypso_base = { path = "../calypso_base", version = "*" }
+lazy_static = "1.4.0"

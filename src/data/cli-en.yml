@@ -1,0 +1,28 @@
+name: calypso
+author: The Puzzlemaker <tpzker@thepuzzlemaker.info>
+about: A (very work-in-progress) general-purpose interpreted language with built-in systems for cryptography, ciphers, and encodings, implemented with Rust.
+settings:
+    - SubcommandRequired
+subcommands:
+    - debug:
+        about: Commands for debugging Calypso
+        visible_alias: dbg
+        settings:
+            - SubcommandRequired
+        subcommands:
+            - dump:
+                about: Dump the parsed (raw, i.e. right after parsing, or AST) representation of a file.
+                visible_alias: d
+                args:
+                    - raw:
+                        short: r
+                        long: raw
+                        help: Dump the raw parsed representation of a file instead of the AST representation.
+                    - pretty:
+                        short: p
+                        long: pretty
+                        help: Whether or not to pretty-print the output.
+                    - INPUT:
+                        help: Sets the input file to use
+                        required: true
+                        index: 1

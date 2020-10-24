@@ -13,3 +13,5 @@ Session.vim
 
 # Cargo output directory
 /target
+
+ignoreme

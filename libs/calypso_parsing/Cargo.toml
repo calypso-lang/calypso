@@ -1,0 +1,18 @@
+[package]
+name = "calypso_parsing"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "Parsing for Calypso"
+readme = "README.md"
+homepage = "https://github.com/ThePuzzlemaker/Calypso/tree/master/calypso_parsing"
+repository = "https://github.com/ThePuzzlemaker/Calypso/"
+license = "MIT"
+
+[dependencies]
+pratt = "0.3.0"
+radix_trie = "0.2.1"
+calypso_util = { path = "../calypso_util", version = "*" }
+calypso_diagnostic = { path = "../calypso_diagnostic", version = "*" }
+calypso_base = { path = "../calypso_base", version = "*" }
+lazy_static = "1.4.0"

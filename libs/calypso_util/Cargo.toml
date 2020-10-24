@@ -1,0 +1,14 @@
+[package]
+name = "calypso_util"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "Utilities for Calypso"
+readme = "README.md"
+homepage = "https://github.com/ThePuzzlemaker/Calypso/tree/master/calypso_util"
+repository = "https://github.com/ThePuzzlemaker/Calypso/"
+license = "MIT"
+
+[dependencies]
+calypso_diagnostic = { path = "../calypso_diagnostic", version = "*" }
+calypso_base = { path = "../calypso_base", version = "*" }

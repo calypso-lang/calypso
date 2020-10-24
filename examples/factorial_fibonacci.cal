@@ -17,8 +17,8 @@ func fibonacci(n) {
 }
 
 func main() {
-    // Get the first argument (excluding the program directory), and parse it into an unsigned 32-bit integer `n`.
-    let n = cli.args.nth(1).parse<u32>();
+    // Get the first argument (excluding the program location), and parse it into an unsigned 32-bit integer `n`.
+    let n = cli.args.nth(1).unwrap().parse<u32>();
     // Calculate `fibonacci(n)`
     let fibonacci = fibonacci(n);
     // Calculate `factorial(n)`
