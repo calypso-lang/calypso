@@ -1,7 +1,0 @@
-// The main function
-func main() {
-    // `println` is the same as explicitly using the whole path,
-    // `atlas.io.println` as it's `import`ed by the compiler automatically
-    // as part of the prelude.
-    println("Hello, world!");
-}

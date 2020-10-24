@@ -88,10 +88,14 @@
 /// - `Semi`: `;`: Semicolon
 /// - `Dot`: `.`: Methods, imports, etc...
 /// - `Under`: `_`: Nothing at the moment, but it's not an identifier on its own.
-/// - `Ident`: `([A-Za-z_])([A-Za-z0-9_]*)`: Identifier
+///
+/// ## Attributes
+/// - `Hash`: `#`: Attributes
+/// - `HashBang`: `#!`: Global attributes
 ///
 /// # Literals
 ///
+/// - `Ident`: `([A-Za-z_])([A-Za-z0-9_]*)`: Identifier
 /// - `IntLiteral`: `<DIGIT(s)>`: integer literal
 /// - `FloatLiteral`: `<DIGIT(s)>.<DIGIT(s)>`: float literal
 /// - `StringLiteral`: `"[STRING]"`: string literal
@@ -165,6 +169,9 @@ pub enum TokenType {
     Semi,
     Dot,
     Under,
+
+    Hash,
+    HashBang,
 
     Ident,
 

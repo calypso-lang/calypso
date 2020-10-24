@@ -1,0 +1,6 @@
+// Don't use a main function, just execute all the statements in this file
+// in a row.
+#![nomain]
+
+// Print "Hello, world!" then a newline
+println("Hello, world!");

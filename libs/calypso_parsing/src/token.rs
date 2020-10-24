@@ -102,12 +102,15 @@ init_trie!(TOKENS_TRIE: TokenType => {
 
     // Other Characters
 
-    // Grouping and Parentheses
+    // Grouping and Punctuation
     "(" => LeftParen, ")" => RightParen,
     "{" => LeftBrace, "}" => RightBrace,
     "[" => LeftBracket, "]" => RightBracket,
     "," => Comma, ";" => Semi,
-    "." => Dot, "_" => Under
+    "." => Dot, "_" => Under,
+
+    // Attributes
+    "#" => Hash, "#!" => HashBang
 });
 
 impl<'lex> Lexer<'lex> {
