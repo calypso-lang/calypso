@@ -8,12 +8,24 @@ pub struct Buffer<'buf> {
 }
 
 impl<'buf> Buffer<'buf> {
+    pub fn new(buffer: &'buf [char]) -> Self {
+        Self {
+            buffer,
+            start: 0,
+            current: 0,
+        }
+    }
+
     pub fn start(&self) -> usize {
         self.start
     }
 
     pub fn current(&self) -> usize {
         self.current
+    }
+
+    pub fn buffer(&self) -> &'buf [char] {
+        self.buffer
     }
 
     pub fn is_at_end(&self) -> bool {
@@ -51,10 +63,30 @@ impl<'buf> Buffer<'buf> {
     }
 
     pub fn match_next(&mut self, expected: char) -> bool {
-        if self.is_at_end() || self.buffer[self.current] != expected {
+        let ch = self.peek();
+        if ch.is_none() {
+            return false;
+        }
+        if self.is_at_end() || ch.unwrap() != expected {
             false
         } else {
-            self.current += 1;
+            self.advance();
+            true
+        }
+    }
+
+    pub fn match_next_if<P>(&mut self, predicate: P) -> bool
+    where
+        P: Fn(char) -> bool,
+    {
+        let ch = self.peek();
+        if ch.is_none() {
+            return false;
+        }
+        if self.is_at_end() || !predicate(ch.unwrap()) {
+            false
+        } else {
+            self.advance();
             true
         }
     }
@@ -63,19 +95,73 @@ impl<'buf> Buffer<'buf> {
         self.start = new_start;
     }
 
-    pub fn consume(&mut self, expected: char, message: String, eid: u16) -> error::Result<()> {
+    pub fn current_to_start(&mut self) {
+        self.start = self.current;
+    }
+
+    pub fn consume(
+        &mut self,
+        expected: char,
+        message: String,
+        eid: u16,
+        source_name: String,
+    ) -> error::Result<()> {
         if self.match_next(expected) {
+            self.advance();
             Ok(())
         } else {
-            // TODO: source name
             let diagnostic = diagnostic::Diagnostic::new(
                 Span::new(self.start, self.current - self.start),
                 self.buffer,
-                "<anon>".to_string(),
+                source_name,
                 message,
                 eid,
             );
             Err(error::ErrorKind::Diagnostic(diagnostic).into())
+        }
+    }
+
+    pub fn consume_if<P>(
+        &mut self,
+        predicate: P,
+        message: String,
+        eid: u16,
+        source_name: String,
+    ) -> error::Result<()>
+    where
+        P: Fn(char) -> bool,
+    {
+        if self.match_next_if(predicate) {
+            self.advance();
+            Ok(())
+        } else {
+            let diagnostic = diagnostic::Diagnostic::new(
+                Span::new(self.start, self.current - self.start),
+                self.buffer,
+                source_name,
+                message,
+                eid,
+            );
+            Err(error::ErrorKind::Diagnostic(diagnostic).into())
+        }
+    }
+
+    pub fn gorge(&mut self, expected: char) {
+        loop {
+            if !self.match_next(expected) {
+                break;
+            }
+        }
+    }
+
+    pub fn gorge_while<P>(&mut self, predicate: P)
+    where
+        P: Fn(char) -> bool,
+    {
+        loop {
+            if !self.match_next_if(&predicate) {
+                break;
+            }
         }
     }
 

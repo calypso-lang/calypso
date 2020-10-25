@@ -1,26 +1,19 @@
 use calypso_base::init_trie;
 use calypso_base::span::{Span, Spanned};
-use calypso_base::static_list as sl;
+use calypso_diagnostic::{
+    diagnostic::Diagnostic,
+    error::{ErrorKind, Result as CalResult, ResultExt},
+};
 use calypso_util::buffer::Buffer;
 use radix_trie::Trie;
 
-sl!(WHITESPACE: char = [
-    '\t',       // Horizontal tab
-    '\n',       // Line feed
-    '\u{000B}', // Vertical tab
-    '\u{000C}', // Form feed
-    '\r',       // Carriage return
-    ' ',        // Space
-    '\u{0085}', // Next line
-    '\u{200E}', // Left-to-right mark
-    '\u{200F}', // Right-to-left mark
-    '\u{2028}', // Line separator
-    '\u{2029}', // Paragraph separator
-]);
+pub mod types;
+pub use types::*;
 
-fn is_whitespace(ch: char) -> bool {
-    WHITESPACE.contains(&ch)
-}
+pub mod helpers;
+use helpers::*;
+
+pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
 
 /*fn is_ident_start(ch: char) -> bool {
     ch.is_ascii_alphabetic() || ch == '_'
@@ -48,6 +41,7 @@ type Lexeme<'lex> = &'lex [char];
 #[derive(Debug, Clone, PartialEq)]
 pub struct Lexer<'lex> {
     buf: Buffer<'lex>,
+    source_name: String,
 }
 
 init_trie!(KEYWORD_TRIE: Keyword => {
@@ -114,14 +108,14 @@ init_trie!(TOKENS_TRIE: TokenType => {
 });
 
 impl<'lex> Lexer<'lex> {
-    pub fn new(buf: Buffer<'lex>) -> Self {
-        Self { buf }
+    pub fn new(source_name: String, source: &'lex [char]) -> Self {
+        let buf = Buffer::new(source);
+        Self { buf, source_name }
     }
 
-    pub fn scan(&mut self) -> Result<Token<'lex>, ()> {
-        self.skip_whitespace();
-
-        self.buf.set_start(self.buf.current());
+    pub fn scan(&mut self) -> CalResult<Token<'lex>> {
+        self.skip_whitespace()?;
+        self.buf.current_to_start();
 
         if self.buf.is_at_end() {
             return Ok(self.new_token(TokenType::Eof));
@@ -129,22 +123,133 @@ impl<'lex> Lexer<'lex> {
 
         // let ch = self.buf.advance();
 
-        Err(())
+        let diagnostic = Diagnostic::new(
+            Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
+            self.buf.buffer(),
+            self.source_name.clone(),
+            "does not currently support any non-whitespace/non-comment tokens, please ignore for now, it's wip and just be patient :)".to_string(),
+            0, // Temporary error
+        );
+        Err(ErrorKind::Diagnostic(diagnostic).into())
     }
 }
 
 impl<'lex> Lexer<'lex> {
-    fn skip_whitespace(&mut self) {
+    fn skip_whitespace(&mut self) -> CalResult<()> {
         loop {
-            let ch = self.buf.peek();
-            match ch {
-                // Comments not currently implemented
-                Some(ch) if is_whitespace(ch) => {
-                    self.buf.advance();
-                }
-                _ => break,
+            self.handle_dangling_comment_ends()?;
+            if (!self.handle_comment()
+                && !self.handle_multiline_comment()?
+                && !self.buf.match_next_if(is_whitespace))
+                || self.buf.is_at_end()
+            {
+                break;
             }
         }
+        Ok(())
+    }
+
+    fn handle_comment(&mut self) -> bool {
+        // xx -> true true -> true
+        // x/ -> false true -> true
+        // /x -> true false -> true
+        // // -> false false -> false
+        if self.buf.peek() != Some('/') || self.buf.peek_next() != Some('/') {
+            return false;
+        }
+        // A comment goes until the end of the line,
+        // so gorge all the characters until we get to the newline
+        // (or the end, when it automatically stops gorging).
+        self.buf.gorge_while(|c| c != '\n');
+        true
+    }
+
+    fn handle_multiline_comment(&mut self) -> CalResult<bool> {
+        // xx -> true true -> true
+        // x* -> true false -> true
+        // /x -> false true -> true
+        // /* -> false false -> false
+        if self.buf.peek() != Some('/') || self.buf.peek_next() != Some('*') {
+            return Ok(false);
+        }
+        self.buf.current_to_start();
+        self.buf.advance();
+        self.buf.advance();
+        let mut nest = vec![Span::new(
+            self.buf.start(),
+            self.buf.current() - self.buf.start(),
+        )];
+
+        loop {
+            let ch = self.buf.peek();
+            if ch.is_none() {
+                return Ok(false);
+            }
+
+            if ch == Some('/') && self.buf.peek_next() == Some('*') {
+                // For error handling
+                self.buf.current_to_start();
+                self.buf.advance();
+                self.buf.advance();
+                nest.push(Span::new(
+                    self.buf.start(),
+                    self.buf.current() - self.buf.start(),
+                ));
+            } else if ch == Some('*') && self.buf.peek_next() == Some('/') {
+                // For error handling
+                self.buf.current_to_start();
+                self.buf.advance();
+                self.buf.advance();
+                if nest.is_empty() {
+                    let diagnostic = Diagnostic::new(
+                        Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
+                        self.buf.buffer(),
+                        self.source_name.clone(),
+                        "this multi-line comment's end has no corresponding beginning".to_string(),
+                        1, // No corresponding /* for */
+                    );
+                    return Err(ErrorKind::Diagnostic(diagnostic).into());
+                }
+                nest.pop();
+            } else {
+                self.buf.advance();
+            }
+
+            if nest.is_empty() && !self.buf.is_at_end() {
+                break;
+            }
+
+            if self.buf.is_at_end() && !nest.is_empty() {
+                let diagnostic = Diagnostic::new(
+                    nest.pop().unwrap(),
+                    self.buf.buffer(),
+                    self.source_name.clone(),
+                    "this multi-line comment's beginning has no corresponding end".to_string(),
+                    2, // No corresponding */ for /*
+                );
+                return Err(ErrorKind::Diagnostic(diagnostic).into());
+            }
+        }
+
+        Ok(true)
+    }
+
+    fn handle_dangling_comment_ends(&mut self) -> CalResult<()> {
+        if self.buf.peek() == Some('*') && self.buf.peek_next() == Some('/') {
+            // For error handling
+            self.buf.current_to_start();
+            self.buf.advance();
+            self.buf.advance();
+            let diagnostic = Diagnostic::new(
+                Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
+                self.buf.buffer(),
+                self.source_name.clone(),
+                "this multi-line comment's end has no corresponding beginning".to_string(),
+                1, // No corresponding /* for */
+            );
+            return Err(ErrorKind::Diagnostic(diagnostic).into());
+        }
+        Ok(())
     }
 
     fn new_token(&self, token_type: TokenType) -> Token<'lex> {
@@ -421,8 +526,3 @@ impl<'lex> Lexer<'lex> {
     }
 }
 */
-
-pub mod types;
-pub use types::*;
-
-pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;

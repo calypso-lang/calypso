@@ -2,31 +2,36 @@ use std::io::{self, BufRead, Read, Write};
 
 use calypso_parsing::token::{Lexer, TokenType};
 
-fn main() -> io::Result<()> {
+use calypso_diagnostic::error::Result as CalResult;
+
+fn main() -> CalResult<()> {
     let mut buffer = String::new();
     let stdin = io::stdin();
     let mut stdout = io::stdout();
     loop {
         let mut n = 0;
-        let mut stdin_lock = stdin.lock();
+        let mut stdin = stdin.lock();
         print!(">>> ");
-        stdout.flush();
+        stdout.flush()?;
         buffer.clear();
-        let n_read = stdin_lock.read_line(&mut buffer)?;
+        let n_read = stdin.read_line(&mut buffer)?;
         if n_read == 0 {
             break;
         }
-        drop(stdin_lock);
-        println!("input: `{}`", &buffer.trim_end());
         let chars = buffer.chars().collect::<Vec<char>>();
-        let mut lexer = Lexer::new(&chars);
+        let mut lexer = Lexer::new("<anon>".to_string(), &chars);
         'inner: loop {
-            let lexed = lexer.scan().unwrap();
-            if lexed.value().0 == TokenType::Eof {
-                break 'inner;
+            let lexed = lexer.scan();
+            if let Err(err) = lexed {
+                println!("Error occured: {}", err);
+                break;
+            } else if let Ok(lexed) = lexed {
+                if lexed.value().0 == TokenType::Eof {
+                    break 'inner;
+                }
+                println!("token {}: {:#?}", n, lexed);
+                n += 1;
             }
-            println!("token {}: {:#?}", n, lexed);
-            n += 1;
         }
     }
     Ok(())

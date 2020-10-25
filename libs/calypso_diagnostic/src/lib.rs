@@ -1,3 +1,4 @@
+#![allow(clippy::zero_prefixed_literal)]
 #[macro_use]
 extern crate error_chain;
 
