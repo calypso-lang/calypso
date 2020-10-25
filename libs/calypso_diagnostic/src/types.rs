@@ -1,3 +1,4 @@
+/*
 use std::collections::HashMap;
 
 #[derive(Copy, Clone, Debug, Default, Ord, PartialOrd, Eq, PartialEq, Hash)]
@@ -32,6 +33,8 @@ macro_rules! define_diagnostics {
 define_diagnostics!(DIAGNOSTIC_IDS: {DiagnosticId, &'static str} => {
     0000 => "Diagnostic is not yet implemented. Please file an issue if you experience this in regular usage.",
     0001 => "No corresponding `/*` for `*/`.",
-    0002 => "No corresponding `*/` for `/*`.",
-    0003 => "Unexpected character."
+    0002 => "No corresponding `<END COMMENT>` for `<BEGIN COMMENT>`.", // replace <END COMMENT> and <BEGIN COMMENT> with other things, just adding this here since it's in a multi-line comment
+    0003 => "Unexpected character.",
+    0004 => "Invalid string base."
 });
+*/

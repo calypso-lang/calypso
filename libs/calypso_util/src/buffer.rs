@@ -1,6 +1,6 @@
 use calypso_base::span::Span;
-use calypso_diagnostic::{diagnostic, error};
-#[derive(Debug, Clone, Eq, PartialEq)]
+use calypso_diagnostic::{diagnostic::Diagnostic, error};
+#[derive(Debug, Clone)]
 pub struct Buffer<'buf> {
     buffer: &'buf [char],
     start: usize,
@@ -79,10 +79,7 @@ impl<'buf> Buffer<'buf> {
         }
     }
 
-    pub fn match_next_if<P>(&mut self, predicate: P) -> bool
-    where
-        P: Fn(char) -> bool,
-    {
+    pub fn match_next_if(&mut self, predicate: impl Fn(char) -> bool) -> bool {
         let ch = self.peek();
         if ch.is_none() {
             return false;
@@ -106,47 +103,34 @@ impl<'buf> Buffer<'buf> {
     pub fn consume(
         &mut self,
         expected: char,
-        message: String,
-        eid: u16,
-        source_name: String,
+        diagnostic_gen: impl Fn(Span) -> Diagnostic,
     ) -> error::Result<()> {
         if self.match_next(expected) {
             self.advance();
             Ok(())
         } else {
-            let diagnostic = diagnostic::Diagnostic::new(
-                Span::new(self.start, self.current - self.start),
-                self.buffer,
-                source_name,
-                message,
-                eid,
-            );
-            Err(error::ErrorKind::Diagnostic(diagnostic).into())
+            Err(error::ErrorKind::Diagnostic(diagnostic_gen(Span::new(
+                self.start,
+                self.current - self.start,
+            )))
+            .into())
         }
     }
 
-    pub fn consume_if<P>(
+    pub fn consume_if(
         &mut self,
-        predicate: P,
-        message: String,
-        eid: u16,
-        source_name: String,
-    ) -> error::Result<()>
-    where
-        P: Fn(char) -> bool,
-    {
+        predicate: impl Fn(char) -> bool,
+        diagnostic_gen: impl Fn(Span) -> Diagnostic,
+    ) -> error::Result<()> {
         if self.match_next_if(predicate) {
             self.advance();
             Ok(())
         } else {
-            let diagnostic = diagnostic::Diagnostic::new(
-                Span::new(self.start, self.current - self.start),
-                self.buffer,
-                source_name,
-                message,
-                eid,
-            );
-            Err(error::ErrorKind::Diagnostic(diagnostic).into())
+            Err(error::ErrorKind::Diagnostic(diagnostic_gen(Span::new(
+                self.start,
+                self.current - self.start,
+            )))
+            .into())
         }
     }
 
@@ -158,10 +142,7 @@ impl<'buf> Buffer<'buf> {
         }
     }
 
-    pub fn gorge_while<P>(&mut self, predicate: P)
-    where
-        P: Fn(char) -> bool,
-    {
+    pub fn gorge_while(&mut self, predicate: impl Fn(char) -> bool) {
         loop {
             if !self.match_next_if(&predicate) {
                 break;

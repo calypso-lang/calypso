@@ -1,8 +1,11 @@
 use calypso_base::init_trie;
 use calypso_base::span::{Span, Spanned};
 use calypso_diagnostic::{
-    diagnostic::Diagnostic,
-    error::{ErrorKind, Result as CalResult, ResultExt},
+    diagnostic::{
+        csr::diagnostic::{Diagnostic as CSRDiagnostic, Label},
+        Diagnostic, SimpleFiles,
+    },
+    error::{ErrorKind, Result as CalResult},
 };
 use calypso_util::buffer::Buffer;
 use radix_trie::Trie;
@@ -34,10 +37,11 @@ fn is_valid_for_any_radix(ch: char) -> bool {
 
 type Lexeme<'lex> = &'lex [char];
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Lexer<'lex> {
     buf: Buffer<'lex>,
-    source_name: String,
+    source_id: usize,
+    files: &'lex SimpleFiles,
 }
 
 init_trie!(KEYWORD_TRIE: Keyword => {
@@ -64,9 +68,13 @@ init_trie!(KEYWORD_TRIE: Keyword => {
 });
 
 impl<'lex> Lexer<'lex> {
-    pub fn new(source_name: String, source: &'lex [char]) -> Self {
+    pub fn new(source_id: usize, source: &'lex [char], files: &'lex SimpleFiles) -> Self {
         let buf = Buffer::new(source);
-        Self { buf, source_name }
+        Self {
+            buf,
+            source_id,
+            files,
+        }
     }
 
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
@@ -87,6 +95,30 @@ impl<'lex> Lexer<'lex> {
         }
 
         // TODO: literals
+        /*if ch == '0' {
+            let peek = self.buf.peek();
+            if peek.is_some() {
+                self.buf.advance();
+            }
+            let radix = match peek {
+                Some('x') => Radix::Hexadecimal,
+                Some('o') => Radix::Octal,
+                Some('b') => Radix::Binary,
+                Some('E') | Some('e') => Radix::Decimal,
+                None => Radix::Decimal,
+                _ => {
+                    let diagnostic = Diagnostic::new(
+                        Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
+                        self.buf.buffer(),
+                        self.source_name.clone(),
+                        format!("invalid string base `{}`", peek.unwrap()),
+                        4, // Invalid string base.
+                    );
+                    return Err(ErrorKind::Diagnostic(diagnostic).into());
+                }
+            };
+            ch = self.buf.advance();
+        }*/
 
         use TokenType::*;
 
@@ -171,11 +203,12 @@ impl<'lex> Lexer<'lex> {
             // Unexpected character
             ch => {
                 let diagnostic = Diagnostic::new(
-                    Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
-                    self.buf.buffer(),
-                    self.source_name.clone(),
-                    format!("did not expect `{}` here.", ch),
-                    3, // Unexpected character.
+                    CSRDiagnostic::error()
+                        .with_message("Encountered an unexpected character.")
+                        .with_code("E0003")
+                        .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                            .with_message(format!("did not expect `{}` here", ch))]),
+                    self.files.clone(),
                 );
                 return Err(ErrorKind::Diagnostic(diagnostic).into());
             }
@@ -253,11 +286,14 @@ impl<'lex> Lexer<'lex> {
                 self.buf.advance();
                 if nest.is_empty() {
                     let diagnostic = Diagnostic::new(
-                        Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
-                        self.buf.buffer(),
-                        self.source_name.clone(),
-                        "this multi-line comment's end has no corresponding beginning".to_string(),
-                        1, // No corresponding /* for */
+                        CSRDiagnostic::error()
+                            .with_message("No corresponding `/*` for `*/`.")
+                            .with_code("E0001")
+                            .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                                .with_message(
+                                    "this multi-line comment's end has no corresponding beginning",
+                                )]),
+                        self.files.clone(),
                     );
                     return Err(ErrorKind::Diagnostic(diagnostic).into());
                 }
@@ -272,11 +308,14 @@ impl<'lex> Lexer<'lex> {
 
             if self.buf.is_at_end() && !nest.is_empty() {
                 let diagnostic = Diagnostic::new(
-                    nest.pop().unwrap(),
-                    self.buf.buffer(),
-                    self.source_name.clone(),
-                    "this multi-line comment's beginning has no corresponding end".to_string(),
-                    2, // No corresponding */ for /*
+                    CSRDiagnostic::error()
+                        .with_message("No corresponding `*/` for `/*`.")
+                        .with_code("E0002")
+                        .with_labels(vec![Label::primary(self.source_id, nest.pop().unwrap())
+                            .with_message(
+                                "this multi-line comment's beginning has no corresponding end",
+                            )]),
+                    self.files.clone(),
                 );
                 return Err(ErrorKind::Diagnostic(diagnostic).into());
             }
@@ -292,11 +331,14 @@ impl<'lex> Lexer<'lex> {
             self.buf.advance();
             self.buf.advance();
             let diagnostic = Diagnostic::new(
-                Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
-                self.buf.buffer(),
-                self.source_name.clone(),
-                "this multi-line comment's end has no corresponding beginning".to_string(),
-                1, // No corresponding /* for */
+                CSRDiagnostic::error()
+                    .with_message("No corresponding `/*` for `*/`.")
+                    .with_code("E0001")
+                    .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                        .with_message(
+                            "this multi-line comment's end has no corresponding beginning",
+                        )]),
+                self.files.clone(),
             );
             return Err(ErrorKind::Diagnostic(diagnostic).into());
         }
@@ -307,9 +349,15 @@ impl<'lex> Lexer<'lex> {
         let start = self.buf.start();
         let current = self.buf.current();
         Token::new(
-            Span::new(start, current - start),
+            self.new_span(),
             (token_type, &self.buf.slice(start, current)),
         )
+    }
+
+    fn new_span(&self) -> Span {
+        let start = self.buf.start();
+        let current = self.buf.current();
+        Span::new(start, current - start)
     }
 }
 

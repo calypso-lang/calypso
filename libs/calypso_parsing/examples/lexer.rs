@@ -2,6 +2,7 @@ use std::io::{self, BufRead, Read, Write};
 
 use calypso_parsing::token::{Lexer, TokenType};
 
+use calypso_diagnostic::diagnostic::{csr, SimpleFiles};
 use calypso_diagnostic::error::Result as CalResult;
 
 fn main() -> CalResult<()> {
@@ -19,7 +20,9 @@ fn main() -> CalResult<()> {
             break;
         }
         let chars = buffer.chars().collect::<Vec<char>>();
-        let mut lexer = Lexer::new("<anon>".to_string(), &chars);
+        let mut files = SimpleFiles::new();
+        let source_id = files.add("<anon>".to_string(), buffer.clone());
+        let mut lexer = Lexer::new(source_id, &chars, &files);
         'inner: loop {
             let lexed = lexer.scan();
             if let Err(err) = lexed {

@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use std::ops::Range;
+
 /// The location in a string in which some object spans.
 ///
 /// # Example
@@ -58,6 +60,15 @@ impl Span {
     pub fn is_valid_for<T>(&self, buffer: &[T]) -> bool {
         self.start <= buffer.len() && self.end() <= buffer.len()
     }
+}
+
+
+impl From<Span> for Range<usize> {
+
+    fn from(span: Span) -> Self {
+        (span.start())..(span.end())
+    }
+
 }
 
 /// An object that's associated with a [`Span`](Span)

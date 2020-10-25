@@ -13,7 +13,7 @@ error_chain! {
 
     errors {
         Diagnostic(diagnostic: Diagnostic) {
-            description(diagnostic.eid().get_reason().unwrap()),
+            description(diagnostic.reason()),
             display("{}", diagnostic),
         }
     }
