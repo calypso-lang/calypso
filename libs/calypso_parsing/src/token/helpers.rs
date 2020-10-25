@@ -17,3 +17,11 @@ sl!(WHITESPACE: char = [
 pub(super) fn is_whitespace(ch: char) -> bool {
     WHITESPACE.contains(&ch)
 }
+
+pub(super) fn is_ident_start(ch: char) -> bool {
+    ch.is_ascii_alphabetic() || ch == '_'
+}
+
+pub(super) fn is_ident_continue(ch: char) -> bool {
+    is_ident_start(ch) || ch.is_ascii_digit()
+}

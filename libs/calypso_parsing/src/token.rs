@@ -15,13 +15,9 @@ use helpers::*;
 
 pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
 
-/*fn is_ident_start(ch: char) -> bool {
-    ch.is_ascii_alphabetic() || ch == '_'
-}
+/*
 
-fn is_ident_continue(ch: char) -> bool {
-    is_ident_start(ch) || ch.is_ascii_digit()
-}
+
 
 fn is_valid_digit_for_radix(ch: char, radix: Radix) -> bool {
     match radix {
@@ -67,46 +63,6 @@ init_trie!(KEYWORD_TRIE: Keyword => {
     "as"     => KwAs
 });
 
-init_trie!(TOKENS_TRIE: TokenType => {
-
-    // Operators
-
-    // Booleans
-    "<" => Less, "<=" => LessEqual,
-    "==" => BoolEqual, "!=" => NotEqual,
-    ">" => Greater, ">=" => GreaterEqual,
-    "||" => BoolOr, "&&" => BoolAnd,
-    "!" => Bang,
-    // Numbers
-    "+" => Plus, "+=" => PlusAssign,
-    "-" => Minus, "-=" => MinusAssign,
-    "*" => Star, "*=" => StarAssign,
-    "/" => Slash, "/=" => SlashAssign,
-    "**" => Exp, "**=" => ExpAssign,
-    "%" => Rem, "%=" => RemAssign,
-    // Bitwise
-    ">>" => Shr, ">>=" => ShrAssign,
-    "<<" => Shl, "<<=" => ShlAssign,
-    "|" => Pipe, "|=" => PipeAssign,
-    "&" => And, "&=" => AndAssign,
-    "^" => Caret, "^=" => CaretAssign,
-    "~" => Tilde,
-    // Variables
-    "=" => Equal,
-
-    // Other Characters
-
-    // Grouping and Punctuation
-    "(" => LeftParen, ")" => RightParen,
-    "{" => LeftBrace, "}" => RightBrace,
-    "[" => LeftBracket, "]" => RightBracket,
-    "," => Comma, ";" => Semi,
-    "." => Dot, "_" => Under,
-
-    // Attributes
-    "#" => Hash, "#!" => HashBang
-});
-
 impl<'lex> Lexer<'lex> {
     pub fn new(source_name: String, source: &'lex [char]) -> Self {
         let buf = Buffer::new(source);
@@ -121,16 +77,111 @@ impl<'lex> Lexer<'lex> {
             return Ok(self.new_token(TokenType::Eof));
         }
 
-        // let ch = self.buf.advance();
+        // We've already checked if we're at the end (which is when it gives None), so
+        // unwrapping should be safe here.
+        let ch = self.buf.advance().unwrap();
 
-        let diagnostic = Diagnostic::new(
-            Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
-            self.buf.buffer(),
-            self.source_name.clone(),
-            "does not currently support any non-whitespace/non-comment tokens, please ignore for now, it's wip and just be patient :)".to_string(),
-            0, // Temporary error
-        );
-        Err(ErrorKind::Diagnostic(diagnostic).into())
+        // Is valid character for identifier's first character
+        if is_ident_start(ch) {
+            return self.handle_identifier();
+        }
+
+        // TODO: literals
+
+        use TokenType::*;
+
+        let token_type = match ch {
+            '<' if self.buf.match_next('<') => {
+                if self.buf.match_next('=') {
+                    ShlAssign
+                } else {
+                    Shl
+                }
+            }
+            '<' if self.buf.match_next('=') => LessEqual,
+            '<' => Less,
+
+            '>' if self.buf.match_next('>') => {
+                if self.buf.match_next('=') {
+                    ShrAssign
+                } else {
+                    Shr
+                }
+            }
+            '>' if self.buf.match_next('=') => GreaterEqual,
+            '>' => Greater,
+
+            '=' if self.buf.match_next('=') => BoolEqual,
+            '=' => Equal,
+
+            '!' if self.buf.match_next('=') => NotEqual,
+            '!' => Bang,
+
+            '|' if self.buf.match_next('|') => BoolOr,
+            '|' if self.buf.match_next('=') => PipeAssign,
+            '|' => Pipe,
+
+            '&' if self.buf.match_next('&') => BoolAnd,
+            '&' if self.buf.match_next('=') => AndAssign,
+            '&' => And,
+
+            '+' if self.buf.match_next('=') => PlusAssign,
+            '+' => Plus,
+
+            '-' if self.buf.match_next('=') => MinusAssign,
+            '-' => Minus,
+
+            '*' if self.buf.match_next('*') => {
+                if self.buf.match_next('=') {
+                    ExpAssign
+                } else {
+                    Exp
+                }
+            }
+            '*' if self.buf.match_next('=') => StarAssign,
+            '*' => Star,
+
+            '/' if self.buf.match_next('=') => SlashAssign,
+            '/' => Slash,
+
+            '%' if self.buf.match_next('=') => RemAssign,
+            '%' => Rem,
+
+            '^' if self.buf.match_next('=') => CaretAssign,
+            '^' => Caret,
+
+            '~' => Tilde,
+
+            '(' => LeftParen,
+            ')' => RightParen,
+
+            '{' => LeftBrace,
+            '}' => RightBrace,
+
+            '[' => LeftBracket,
+            ']' => RightBracket,
+
+            ',' => Comma,
+            ';' => Semi,
+            '.' => Dot,
+            // `'_' => Under` is already taken care of by idents
+            '#' if self.buf.match_next('!') => HashBang,
+            '#' => Hash,
+
+            // Unexpected character
+            ch => {
+                let diagnostic = Diagnostic::new(
+                    Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
+                    self.buf.buffer(),
+                    self.source_name.clone(),
+                    format!("did not expect `{}` here.", ch),
+                    3, // Unexpected character.
+                );
+                return Err(ErrorKind::Diagnostic(diagnostic).into());
+            }
+        };
+
+        Ok(self.new_token(token_type))
     }
 }
 
@@ -262,6 +313,37 @@ impl<'lex> Lexer<'lex> {
     }
 }
 
+impl<'lex> Lexer<'lex> {
+    pub fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
+        let mut token_type = TokenType::Ident;
+
+        let ch = self.buf.peek();
+        // `_` is not an ident on its own, but all other [A-Za-z]{1} idents are.
+        if self.buf.last().unwrap() == '_'
+            && (ch.is_none() || !is_ident_continue(ch.unwrap_or('\0')))
+        {
+            return Ok(self.new_token(TokenType::Under));
+        }
+
+        // Gorge while the character is a valid identifier character.
+        self.buf.gorge_while(is_ident_continue);
+
+        let keyword = KEYWORD_TRIE.get(
+            &self
+                .buf
+                .slice(self.buf.start(), self.buf.current())
+                .iter()
+                .collect::<String>(),
+        );
+
+        if let Some(&keyword) = keyword {
+            token_type = TokenType::Keyword(keyword);
+        }
+
+        Ok(self.new_token(token_type))
+    }
+}
+
 /*
 impl<'lex> Lexer<'lex> {
     fn number(&mut self) -> Result<Token<'lex>, ()> {
@@ -390,34 +472,7 @@ impl<'lex> Lexer<'lex> {
         )
     }
 
-    fn identifier(&mut self) -> Result<Token<'lex>, ()> {
-        let ch = self.peek();
-        if is_ident_start(ch) {
-            self.advance();
-            if ch == '_' && !is_ident_continue(self.peek()) {
-                return Ok(self.new_token(TokenType::Under));
-            }
-        }
 
-        while is_ident_continue(self.peek()) {
-            self.advance();
-        }
-
-        let mut token_type = TokenType::Ident;
-
-        let token_type_trie = KEYWORD_TRIE.get(
-            &self.buffer[self.start..self.current]
-                .to_vec()
-                .iter()
-                .collect::<String>(),
-        );
-
-        if let Some(token_type_trie) = token_type_trie {
-            token_type = TokenType::Keyword(*token_type_trie);
-        }
-
-        Ok(self.new_token(token_type))
-    }
 
     fn escape_character(&mut self) -> Result<bool, ()> {
         if self.peek() == '\\' {

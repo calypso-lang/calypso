@@ -40,6 +40,10 @@ impl<'buf> Buffer<'buf> {
         self.buffer.get(self.current + 1).copied()
     }
 
+    pub fn peek_2(&self) -> Option<char> {
+        self.buffer.get(self.current + 2).copied()
+    }
+
     pub fn last(&self) -> Option<char> {
         if self.current == 0 {
             None
