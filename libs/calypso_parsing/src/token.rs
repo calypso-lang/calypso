@@ -200,6 +200,12 @@ impl<'lex> Lexer<'lex> {
             '#' if self.buf.match_next('!') => HashBang,
             '#' => Hash,
 
+            // temporary tester for escape sequences until I get str/ch literals working.
+            '$' => {
+                self.handle_escape_character()?;
+                Eof
+            }
+
             // Unexpected character
             ch => {
                 let diagnostic = Diagnostic::new(
@@ -244,7 +250,7 @@ impl<'lex> Lexer<'lex> {
         // A comment goes until the end of the line,
         // so gorge all the characters until we get to the newline
         // (or the end, when it automatically stops gorging).
-        self.buf.gorge_while(|c| c != '\n');
+        self.buf.gorge_while(|c, _| c != '\n');
         true
     }
 
@@ -374,7 +380,7 @@ impl<'lex> Lexer<'lex> {
         }
 
         // Gorge while the character is a valid identifier character.
-        self.buf.gorge_while(is_ident_continue);
+        self.buf.gorge_while(|ch, _| is_ident_continue(ch));
 
         let keyword = KEYWORD_TRIE.get(
             &self
@@ -389,6 +395,154 @@ impl<'lex> Lexer<'lex> {
         }
 
         Ok(self.new_token(token_type))
+    }
+
+    fn handle_escape_character(&mut self) -> CalResult<bool> {
+        let start = self.buf.current();
+        if self.buf.peek() == Some('\\') {
+            self.buf.current_to_start();
+            self.buf.advance();
+            match self.buf.peek() {
+                Some('x') => {
+                    self.buf.advance();
+                    self.buf.current_to_start();
+                    for i in 1..=2 {
+                        let mut ch = self.buf.peek();
+                        if is_whitespace(ch.unwrap_or('\0')) {
+                            ch = None;
+                        }
+                        if ch.is_none() {
+                            let diagnostic = if i == 1 {
+                                Diagnostic::new(
+                                    CSRDiagnostic::error()
+                                        .with_message("Expected two hexadecimal digits in escape sequence, found none.")
+                                        .with_code("E0004")
+                                        .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                                            .with_message(
+                                                "expected two hexadecimal digits here",
+                                            )]),
+                                    self.files.clone(),
+                                )
+                            } else if i == 2 {
+                                Diagnostic::new(
+                                    CSRDiagnostic::error()
+                                        .with_message("Expected two hexadecimal digits in escape sequence, found only one.")
+                                        .with_code("E0004")
+                                        .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                                            .with_message(
+                                                "found only one digit here.",
+                                            )]).with_notes(vec![format!("perhaps you meant to use `\\x0{}`?", self.buf.last().unwrap())]),
+                                            
+                                    self.files.clone(),
+                                )
+                            } else {
+                                return Ok(true);
+                            };
+                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        }
+                        let ch = ch.unwrap();
+
+                        if ch.is_ascii_hexdigit() {
+                            self.buf.advance();
+                        } else {
+                            self.buf.set_start(start + 1 + i);
+                            let diagnostic = Diagnostic::new(
+                                CSRDiagnostic::error()
+                                    .with_message(format!("Expected two hexadecimal digits in escape sequence, found an invalid digit `{}`.", ch))
+                                    .with_code("E0005")
+                                    .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                                        .with_message(
+                                            "found an invalid digit here.",
+                                        )]),
+                                self.files.clone(),
+                            );
+                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        }
+                    }
+                }
+                Some('n') | Some('r') | Some('t') | Some('\\') | Some('0') | Some('\'')
+                | Some('"') => {
+                    self.buf.advance();
+                }
+                Some('u') => {
+                    // self.buf.advance();
+                    // self.buf.consume('{', |_| {
+
+                    // });
+                    // TODO
+                    unimplemented!();
+                }
+                /*Some('u') => {
+                    let mut digit_count = 0;
+                    if !self.buf.match_next('{') {
+                        println!("Expected an open brace, followed by a Unicode code point.");
+                        return Err(());
+                    }
+                    while self.buf.peek() != Some('}') && !self.buf.is_at_end() {
+                        if digit_count > 6
+                            || !is_valid_digit_for_radix(self.peek(), Radix::Hexadecimal)
+                        {
+                            println!(
+                                "Expected up to 6 hexadecimal digits for a Unicode code point."
+                            );
+                            return Err(());
+                        }
+                        self.advance();
+                        digit_count += 1;
+                    }
+
+                    if self.is_at_end() {
+                        println!("Unterminated Unicode escape sequence.");
+                        return Err(());
+                    }
+
+                    // Closing bracket
+                    self.advance();
+                }*/
+                Some(ch) => {
+                    if is_whitespace(ch) {
+                        let diagnostic = Diagnostic::new(
+                            CSRDiagnostic::error()
+                                .with_message("Expected a valid escape sequence, found whitespace.")
+                                .with_code("E0008")
+                                .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                                    .with_message("expected an escape sequence here")]),
+                            self.files.clone(),
+                        );
+                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    }
+                    self.buf.advance();
+                    let diagnostic = Diagnostic::new(
+                        CSRDiagnostic::error()
+                            .with_message(format!(
+                                "Expected a valid escape sequence, found `\\{}`.",
+                                ch
+                            ))
+                            .with_code("E0006")
+                            .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                                .with_message("this escape sequence is unknown")]),
+                        self.files.clone(),
+                    );
+                    return Err(ErrorKind::Diagnostic(diagnostic).into());
+                }
+                None => {
+                    let diagnostic = Diagnostic::new(
+                        CSRDiagnostic::error()
+                            .with_message("Expected a valid escape sequence, found EOF.")
+                            .with_code("E0007")
+                            .with_labels(vec![Label::primary(self.source_id, self.new_span())
+                                .with_message("expected an escape sequence here")]),
+                        self.files.clone(),
+                    );
+                    return Err(ErrorKind::Diagnostic(diagnostic).into());
+                }
+            }
+            self.buf.set_start(start);
+            return Ok(true);
+        }
+
+        // We don't care *what* sequence was found, just if there was one.
+        Ok(false)
     }
 }
 

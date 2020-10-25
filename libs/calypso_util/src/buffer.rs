@@ -142,10 +142,18 @@ impl<'buf> Buffer<'buf> {
         }
     }
 
-    pub fn gorge_while(&mut self, predicate: impl Fn(char) -> bool) {
+    pub fn gorge_while(&mut self, predicate: impl Fn(char, usize) -> bool) {
+        let mut count = 0;
         loop {
-            if !self.match_next_if(&predicate) {
+            let ch = self.peek();
+            if ch.is_none() {
                 break;
+            }
+            if self.is_at_end() || !predicate(ch.unwrap(), count) {
+                break;
+            } else {
+                self.advance();
+                count += 1;
             }
         }
     }

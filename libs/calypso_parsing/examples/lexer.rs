@@ -32,7 +32,7 @@ fn main() -> CalResult<()> {
                 if lexed.value().0 == TokenType::Eof {
                     break 'inner;
                 }
-                println!("token {}: {:#?}", n, lexed);
+                println!("token {}: {:?}", n, lexed);
                 n += 1;
             }
         }
