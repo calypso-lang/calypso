@@ -15,4 +15,4 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## To-Dos (not really generalized in code as they're kind of project-wide)
 
-- [ ] Rig up (codespan)[https://github.com/brendanzab/codespan] to work with the current diagnostic system (or replace it with codespan)
+- [x] Rig up (codespan)[https://github.com/brendanzab/codespan] to work with the current diagnostic system (or replace it with codespan)
