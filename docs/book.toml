@@ -1,0 +1,34 @@
+[book]
+authors = ["ThePuzzlemaker", "Calypso Contributors"]
+language = "en"
+# Perhaps eventually...
+multilingual = false
+src = "src"
+title = "The Calypso Book"
+description = "This book is a definitive reference to Calypso. It covers syntax, then eventually, the basics of the standard library, and even more complex features."
+
+[rust]
+edition = "2018"
+
+[build]
+create-missing = true
+
+[output.html]
+mathjax-support = true
+curly-quotes = true
+git-repository-url = "https://github.com/ThePuzzlemaker/Calypso/tree/master/book"
+additional-css = ["src/styles.css"]
+
+[output.html.fold]
+enable = true
+level = 2
+
+[options.html.playground]
+editable = true
+line-numbers = true
+
+[output.html.search]
+use-boolean-and = true
+boost-hierarchy = 2
+expand = true
+heading-split-level = 2
