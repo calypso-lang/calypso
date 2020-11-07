@@ -50,12 +50,15 @@ init_trie!(KEYWORD_TRIE: Keyword => {
     "true"   => KwTrue,
     "if"     => KwIf,
     "else"   => KwElse,
+    "for"    => KwFor,
+    "in"     => KwIn,
     "loop"   => KwLoop,
     "while"  => KwWhile,
     "match"  => KwMatch,
     "ret"    => KwRet,
     "break"  => KwBreak,
     "fn"     => KwFn,
+    "native" => KwNative,
     "mod"    => KwMod,
     "use"    => KwUse,
     "import" => KwImport,
@@ -195,7 +198,16 @@ impl<'lex> Lexer<'lex> {
 
             ',' => Comma,
             ';' => Semi,
+
+            '.' if self.buf.match_next('.') => {
+                if self.buf.match_next('=') {
+                    RangeClosed
+                } else {
+                    Range
+                }
+            },
             '.' => Dot,
+
             // `'_' => Under` is already taken care of by idents
             '#' if self.buf.match_next('!') => HashBang,
             '#' => Hash,

@@ -27,6 +27,8 @@
 /// - `ExpAssign`: `**=`: Exponentiation assignment
 /// - `Rem`: `%`: Remainder
 /// - `RemAssign`: `%=`: Remainder assignment
+/// - `Range`: `..`: Integer ranges
+/// - `RangeClosed`: `..=`: Open integer range
 ///
 /// ## Bitwise
 /// - `Shr`: `>>`: Shift right
@@ -63,6 +65,7 @@
 ///
 /// ## Functions and Modularity
 /// - `KwFn`: `fn`: function definition
+/// - `KwNative`: `native: native function (i.e. Rust/C ABI)
 /// - `KwMod`: `mod`: module declaration
 /// - `KwUse`: `use`: use an external package
 /// - `KwImport`: `import`: import a path
@@ -133,6 +136,9 @@ pub enum TokenType {
     Rem,
     RemAssign,
 
+    Range,
+    RangeClosed,
+
     Shr,
     ShrAssign,
 
@@ -191,6 +197,8 @@ pub enum Keyword {
     KwIf,
     KwElse,
 
+    KwFor,
+    KwIn,
     KwLoop,
     KwWhile,
     KwMatch,
@@ -198,6 +206,7 @@ pub enum Keyword {
     KwBreak,
 
     KwFn,
+    KwNative,
     KwMod,
     KwUse,
     KwImport,
