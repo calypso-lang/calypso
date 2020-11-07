@@ -5,7 +5,7 @@ language = "en"
 multilingual = false
 src = "src"
 title = "The Calypso Book"
-description = "This book is a definitive reference to Calypso. It covers syntax, then eventually, the basics of the standard library, and even more complex features."
+description = "This book is a definitive reference to Calypso. It covers syntax, and eventually, the basics of the standard library, and even more complex features."
 
 [rust]
 edition = "2018"
