@@ -1,14 +1,14 @@
 use calypso_base::init_trie;
 use calypso_base::span::{Span, Spanned};
 use calypso_diagnostic::{
-    diagnostic::{
-        csr::diagnostic::{Diagnostic as CSRDiagnostic, Label},
-        Diagnostic, SimpleFiles,
-    },
+    diagnostic::{DiagnosticBuilder, LabelStyle, Severity},
     error::{ErrorKind, Result as CalResult},
+    FileMgr,
 };
 use calypso_util::buffer::Buffer;
 use radix_trie::Trie;
+
+use std::sync::Arc;
 
 pub mod types;
 pub use types::*;
@@ -41,7 +41,7 @@ type Lexeme<'lex> = &'lex [char];
 pub struct Lexer<'lex> {
     buf: Buffer<'lex>,
     source_id: usize,
-    files: &'lex SimpleFiles,
+    files: Arc<FileMgr>,
 }
 
 init_trie!(KEYWORD_TRIE: Keyword => {
@@ -64,6 +64,7 @@ init_trie!(KEYWORD_TRIE: Keyword => {
     "import" => KwImport,
     "pub"    => KwPub,
     "let"    => KwLet,
+    "mut"    => KwMut,
     "undef"  => KwUndef,
     "null"   => KwNull,
     "del"    => KwDel,
@@ -71,7 +72,7 @@ init_trie!(KEYWORD_TRIE: Keyword => {
 });
 
 impl<'lex> Lexer<'lex> {
-    pub fn new(source_id: usize, source: &'lex [char], files: &'lex SimpleFiles) -> Self {
+    pub fn new(source_id: usize, source: &'lex [char], files: Arc<FileMgr>) -> Self {
         let buf = Buffer::new(source);
         Self {
             buf,
@@ -205,7 +206,7 @@ impl<'lex> Lexer<'lex> {
                 } else {
                     Range
                 }
-            },
+            }
             '.' => Dot,
 
             // `'_' => Under` is already taken care of by idents
@@ -220,14 +221,16 @@ impl<'lex> Lexer<'lex> {
 
             // Unexpected character
             ch => {
-                let diagnostic = Diagnostic::new(
-                    CSRDiagnostic::error()
-                        .with_message("Encountered an unexpected character.")
-                        .with_code("E0003")
-                        .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                            .with_message(format!("did not expect `{}` here", ch))]),
-                    self.files.clone(),
-                );
+                let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                    .code("E0003")
+                    .message("Encountered an unexpected character.")
+                    .label(
+                        LabelStyle::Primary,
+                        format!("did not expect `{}` here", ch),
+                        self.new_span(),
+                        self.source_id,
+                    )
+                    .build();
                 return Err(ErrorKind::Diagnostic(diagnostic).into());
             }
         };
@@ -303,16 +306,17 @@ impl<'lex> Lexer<'lex> {
                 self.buf.advance();
                 self.buf.advance();
                 if nest.is_empty() {
-                    let diagnostic = Diagnostic::new(
-                        CSRDiagnostic::error()
-                            .with_message("No corresponding `/*` for `*/`.")
-                            .with_code("E0001")
-                            .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                                .with_message(
-                                    "this multi-line comment's end has no corresponding beginning",
-                                )]),
-                        self.files.clone(),
-                    );
+                    let diagnostic =
+                        DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                            .code("E0001")
+                            .message("No corresponding `/*` for `*/`.")
+                            .label(
+                                LabelStyle::Primary,
+                                "this multi-line comment's end has no corresponding beginning",
+                                self.new_span(),
+                                self.source_id,
+                            )
+                            .build();
                     return Err(ErrorKind::Diagnostic(diagnostic).into());
                 }
                 nest.pop();
@@ -325,16 +329,16 @@ impl<'lex> Lexer<'lex> {
             }
 
             if self.buf.is_at_end() && !nest.is_empty() {
-                let diagnostic = Diagnostic::new(
-                    CSRDiagnostic::error()
-                        .with_message("No corresponding `*/` for `/*`.")
-                        .with_code("E0002")
-                        .with_labels(vec![Label::primary(self.source_id, nest.pop().unwrap())
-                            .with_message(
-                                "this multi-line comment's beginning has no corresponding end",
-                            )]),
-                    self.files.clone(),
-                );
+                let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                    .code("E0002")
+                    .message("No corresponding `*/` for `/*`.")
+                    .label(
+                        LabelStyle::Primary,
+                        "this multi-line comment's beginning has no corresponding end",
+                        nest.pop().unwrap(),
+                        self.source_id,
+                    )
+                    .build();
                 return Err(ErrorKind::Diagnostic(diagnostic).into());
             }
         }
@@ -348,16 +352,16 @@ impl<'lex> Lexer<'lex> {
             self.buf.current_to_start();
             self.buf.advance();
             self.buf.advance();
-            let diagnostic = Diagnostic::new(
-                CSRDiagnostic::error()
-                    .with_message("No corresponding `/*` for `*/`.")
-                    .with_code("E0001")
-                    .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                        .with_message(
-                            "this multi-line comment's end has no corresponding beginning",
-                        )]),
-                self.files.clone(),
-            );
+            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                .code("E0001")
+                .message("No corresponding `/*` for `*/`.")
+                .label(
+                    LabelStyle::Primary,
+                    "this multi-line comment's end has no corresponding beginning",
+                    self.new_span(),
+                    self.source_id,
+                )
+                .build();
             return Err(ErrorKind::Diagnostic(diagnostic).into());
         }
         Ok(())
@@ -425,28 +429,32 @@ impl<'lex> Lexer<'lex> {
                         }
                         if ch.is_none() {
                             let diagnostic = if i == 1 {
-                                Diagnostic::new(
-                                    CSRDiagnostic::error()
-                                        .with_message("Expected two hexadecimal digits in escape sequence, found none.")
-                                        .with_code("E0004")
-                                        .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                                            .with_message(
-                                                "expected two hexadecimal digits here",
-                                            )]),
-                                    self.files.clone(),
-                                )
+                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                    .code("E0004")
+                                    .message("Expected two hexadecimal digits in escape sequence, found none.")
+                                    .label(
+                                        LabelStyle::Primary,
+                                        "expected two hexadecimal digits here",
+                                        self.new_span(),
+                                        self.source_id
+                                    )
+                                    .build()
                             } else if i == 2 {
-                                Diagnostic::new(
-                                    CSRDiagnostic::error()
-                                        .with_message("Expected two hexadecimal digits in escape sequence, found only one.")
-                                        .with_code("E0004")
-                                        .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                                            .with_message(
-                                                "found only one digit here.",
-                                            )]).with_notes(vec![format!("perhaps you meant to use `\\x0{}`?", self.buf.last().unwrap())]),
-                                            
-                                    self.files.clone(),
-                                )
+                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                    .code("E0004")
+                                    .message("Expected two hexadecimal digits in escape sequence, found none.")
+                                    .label(
+                                        LabelStyle::Primary,
+                                        "found only one digit here",
+                                        self.new_span(),
+                                        self.source_id
+                                    )
+                                    .note(
+                                        format!(
+                                            "perhaps you meant to use `\\x0{}`?",
+                                            self.buf.last().unwrap()
+                                        )
+                                    ).build()
                             } else {
                                 return Ok(true);
                             };
@@ -458,16 +466,20 @@ impl<'lex> Lexer<'lex> {
                             self.buf.advance();
                         } else {
                             self.buf.set_start(start + 1 + i);
-                            let diagnostic = Diagnostic::new(
-                                CSRDiagnostic::error()
-                                    .with_message(format!("Expected two hexadecimal digits in escape sequence, found an invalid digit `{}`.", ch))
-                                    .with_code("E0005")
-                                    .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                                        .with_message(
-                                            "found an invalid digit here.",
-                                        )]),
-                                self.files.clone(),
-                            );
+                            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                .code("E0005")
+                                .message(
+                                    format!(
+                                        "Expected two hexadecimal digits in escape sequence, found an invalid digit `{}`.",
+                                        ch
+                                    )
+                                )
+                                .label(
+                                    LabelStyle::Primary,
+                                    "found an invalid digit here",
+                                    self.new_span(),
+                                    self.source_id
+                                ).build();
                             return Err(ErrorKind::Diagnostic(diagnostic).into());
                         }
                     }
@@ -513,39 +525,48 @@ impl<'lex> Lexer<'lex> {
                 }*/
                 Some(ch) => {
                     if is_whitespace(ch) {
-                        let diagnostic = Diagnostic::new(
-                            CSRDiagnostic::error()
-                                .with_message("Expected a valid escape sequence, found whitespace.")
-                                .with_code("E0008")
-                                .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                                    .with_message("expected an escape sequence here")]),
-                            self.files.clone(),
-                        );
+                        let diagnostic =
+                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                .code("E0008")
+                                .message("Expected a valid escape sequence, found whitespace.")
+                                .label(
+                                    LabelStyle::Primary,
+                                    "expected an escape sequence here",
+                                    self.new_span(),
+                                    self.source_id,
+                                )
+                                .build();
                         return Err(ErrorKind::Diagnostic(diagnostic).into());
                     }
                     self.buf.advance();
-                    let diagnostic = Diagnostic::new(
-                        CSRDiagnostic::error()
-                            .with_message(format!(
+                    let diagnostic =
+                        DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                            .code("E0006")
+                            .message(format!(
                                 "Expected a valid escape sequence, found `\\{}`.",
                                 ch
                             ))
-                            .with_code("E0006")
-                            .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                                .with_message("this escape sequence is unknown")]),
-                        self.files.clone(),
-                    );
+                            .label(
+                                LabelStyle::Primary,
+                                "this escape sequence is unknown",
+                                self.new_span(),
+                                self.source_id,
+                            )
+                            .build();
                     return Err(ErrorKind::Diagnostic(diagnostic).into());
                 }
                 None => {
-                    let diagnostic = Diagnostic::new(
-                        CSRDiagnostic::error()
-                            .with_message("Expected a valid escape sequence, found EOF.")
-                            .with_code("E0007")
-                            .with_labels(vec![Label::primary(self.source_id, self.new_span())
-                                .with_message("expected an escape sequence here")]),
-                        self.files.clone(),
-                    );
+                    let diagnostic =
+                        DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                            .code("E0007")
+                            .message("Expected a valid escape sequence, found EOF.")
+                            .label(
+                                LabelStyle::Primary,
+                                "expected an escape sequence here",
+                                self.new_span(),
+                                self.source_id,
+                            )
+                            .build();
                     return Err(ErrorKind::Diagnostic(diagnostic).into());
                 }
             }

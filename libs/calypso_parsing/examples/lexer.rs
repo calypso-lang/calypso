@@ -1,9 +1,11 @@
-use std::io::{self, BufRead, Read, Write};
+use std::io::{self, BufRead, Write};
 
 use calypso_parsing::token::{Lexer, TokenType};
 
-use calypso_diagnostic::diagnostic::{csr, SimpleFiles};
 use calypso_diagnostic::error::Result as CalResult;
+
+use calypso_diagnostic::FileMgr;
+use std::sync::Arc;
 
 fn main() -> CalResult<()> {
     let mut buffer = String::new();
@@ -20,17 +22,17 @@ fn main() -> CalResult<()> {
             break;
         }
         let chars = buffer.chars().collect::<Vec<char>>();
-        let mut files = SimpleFiles::new();
+        let mut files = FileMgr::new();
         let source_id = files.add("<anon>".to_string(), buffer.clone());
-        let mut lexer = Lexer::new(source_id, &chars, &files);
-        'inner: loop {
+        let mut lexer = Lexer::new(source_id, &chars, Arc::new(files));
+        loop {
             let lexed = lexer.scan();
             if let Err(err) = lexed {
                 println!("Error occured: {}", err);
                 break;
             } else if let Ok(lexed) = lexed {
                 if lexed.value().0 == TokenType::Eof {
-                    break 'inner;
+                    break;
                 }
                 println!("token {}: {:?}", n, lexed);
                 n += 1;

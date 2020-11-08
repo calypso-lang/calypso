@@ -62,13 +62,10 @@ impl Span {
     }
 }
 
-
 impl From<Span> for Range<usize> {
-
     fn from(span: Span) -> Self {
         (span.start())..(span.end())
     }
-
 }
 
 /// An object that's associated with a [`Span`](Span)

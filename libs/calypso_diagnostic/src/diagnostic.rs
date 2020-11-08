@@ -1,40 +1,83 @@
+use super::{reporting, FileMgr};
+use calypso_base::span::Span;
+use reporting::diagnostic::{Diagnostic as CodespanDiag, Label};
+pub use reporting::diagnostic::{LabelStyle, Severity};
+use reporting::term::{self, termcolor::Ansi};
+
 use std::fmt;
-
-use csr::diagnostic::{Diagnostic as CSDiagnostic, Severity};
-use csr::files::SimpleFiles as CSRSimpleFiles;
-use csr::term::{self, termcolor::Ansi};
-
-pub extern crate codespan_reporting as csr;
-
-pub type SimpleFiles = CSRSimpleFiles<String, String>;
-
 use std::io::Cursor;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
-pub struct Diagnostic {
-    diagnostic: CSDiagnostic<usize>,
-    files: SimpleFiles,
+pub struct Diagnostic(CodespanDiag<usize>, Arc<FileMgr>);
+
+#[derive(Clone, Debug)]
+pub struct DiagnosticBuilder {
+    level: Severity,
+    code: Option<String>,
+    message: String,
+    labels: Vec<Label<usize>>,
+    notes: Vec<String>,
+    files: Arc<FileMgr>,
+}
+
+impl DiagnosticBuilder {
+    pub fn new(level: Severity, files: Arc<FileMgr>) -> Self {
+        Self {
+            level,
+            code: None,
+            message: String::new(),
+            labels: Vec::new(),
+            notes: Vec::new(),
+            files,
+        }
+    }
+
+    pub fn code(mut self, code: impl Into<String>) -> Self {
+        self.code = Some(code.into());
+        self
+    }
+
+    pub fn message(mut self, message: impl Into<String>) -> Self {
+        self.message = message.into();
+        self
+    }
+
+    pub fn label(
+        mut self,
+        style: LabelStyle,
+        message: impl Into<String>,
+        span: Span,
+        file_id: usize,
+    ) -> Self {
+        self.labels
+            .push(Label::new(style, file_id, span).with_message(message));
+        self
+    }
+
+    pub fn note(mut self, message: impl Into<String>) -> Self {
+        self.notes.push(message.into());
+        self
+    }
+
+    pub fn build(self) -> Diagnostic {
+        let mut diagnostic = CodespanDiag::new(self.level);
+        if let Some(code) = self.code {
+            diagnostic = diagnostic.with_code(code)
+        }
+        if !self.message.is_empty() {
+            diagnostic = diagnostic.with_message(self.message)
+        }
+        Diagnostic(
+            diagnostic.with_labels(self.labels).with_notes(self.notes),
+            self.files,
+        )
+    }
 }
 
 impl Diagnostic {
-    pub fn new(diagnostic: CSDiagnostic<usize>, files: SimpleFiles) -> Self {
-        Self { diagnostic, files }
-    }
-
     pub fn reason(&self) -> &str {
-        &self.diagnostic.message
-    }
-
-    pub fn severity(&self) -> Severity {
-        self.diagnostic.severity
-    }
-
-    pub fn diagnostic(&self) -> &CSDiagnostic<usize> {
-        &self.diagnostic
-    }
-
-    pub fn files(&self) -> &SimpleFiles {
-        &self.files
+        &self.0.message
     }
 }
 
@@ -45,7 +88,7 @@ impl fmt::Display for Diagnostic {
         let mut stream = Ansi::new(cursor);
         let config = term::Config::default();
 
-        term::emit(&mut stream, &config, &self.files, &self.diagnostic).map_err(|_| fmt::Error)?;
+        term::emit(&mut stream, &config, &*self.1, &self.0).map_err(|_| fmt::Error)?;
         let cursor = stream.into_inner();
         let buffer = cursor.into_inner();
         let data = std::str::from_utf8(&buffer).map_err(|_| fmt::Error)?;

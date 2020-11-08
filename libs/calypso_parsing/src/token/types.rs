@@ -73,9 +73,10 @@
 ///
 /// ## Variables
 /// - `KwLet`: `let`: define a variable
+/// - `KwMut`: `mut`: mutable variable
 /// - `KwUndef`: `undef`: variable is not defined, but is not `null` as that is explicitly set
 /// - `KwNull`: `null`: explicit none-type
-/// - `KwDel`: `del`: delete a value (set it back to `undef` or, in strict mode, mark it as undefined, and garbage-collect its value)
+/// - `KwDel`: `del`: delete a value (garbage-collect its value, then set it back to `undef` or, in strict mode, make the variable totally undefined)
 ///
 /// ## Conversions
 /// - `KwAs`: `as`: convert to type, rename import
@@ -213,6 +214,7 @@ pub enum Keyword {
     KwPub,
 
     KwLet,
+    KwMut,
     KwUndef,
     KwNull,
     KwDel,
