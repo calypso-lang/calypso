@@ -1,6 +1,6 @@
 use std::io::{self, BufRead, Write};
 
-use calypso_parsing::token::{Lexer, TokenType};
+use calypso_parsing::lexer::{Lexer, TokenType};
 
 use calypso_diagnostic::error::Result as CalResult;
 
