@@ -372,7 +372,7 @@ impl<'lex> Lexer<'lex> {
         let current = self.buf.current();
         Token::new(
             self.new_span(),
-            (token_type, &self.buf.slice(start, current)),
+            (token_type, self.buf.slice(start, current)),
         )
     }
 

@@ -1,40 +1,20 @@
-/*
-use std::collections::HashMap;
+// # Note to Contributors
+// Please follow Rust's RFC 1567 (https://github.com/rust-lang/rfcs/blob/master/text/1567-long-error-codes-explanation-normalization.md).
+// It's generally a good style for diagnostic information.
 
-#[derive(Copy, Clone, Debug, Default, Ord, PartialOrd, Eq, PartialEq, Hash)]
-pub struct DiagnosticId(pub u16);
-
-impl From<u16> for DiagnosticId {
-    fn from(id: u16) -> Self {
-        Self(id)
-    }
+/// A helper macro to generate a list of diagnostics.
+/// (Shamelessly stolen from rustc_error_codes)
+macro_rules! register_diagnostics {
+    ($($ecode:ident),* ; $($ecode_no_msg:ident),* $(,)?) => (
+        pub static DIAGNOSTICS: &[(&str, Option<&str>)] = &[
+            $( (stringify!($ecode), Some(include_str!(concat!("./messages/", stringify!($ecode), ".md"))), ))*
+            $( (stringify!($ecode_no_msg), None), )*
+        ];
+    )
 }
 
-impl DiagnosticId {
-    pub fn get_reason(&self) -> Option<&'static str> {
-        DIAGNOSTIC_IDS.get(&self).copied()
-    }
+register_diagnostics! {
+    // These diagnostics have detailed information in messages/<ERROR CODE>.md
+    ;
+    // These diagnostics do not have detailed information.
 }
-
-impl DiagnosticId {}
-
-macro_rules! define_diagnostics {
-    ($name:ident: {$keyty:ty, $valuety:ty} => { $($id:expr => $value:expr),* }) => {
-        lazy_static! {
-            static ref $name: HashMap<$keyty, $valuety> = {
-              let mut m = HashMap::new();
-              $(m.insert(DiagnosticId::from($id), $value));*;
-              m
-            };
-        }
-    };
-}
-
-define_diagnostics!(DIAGNOSTIC_IDS: {DiagnosticId, &'static str} => {
-    0000 => "Diagnostic is not yet implemented. Please file an issue if you experience this in regular usage.",
-    0001 => "No corresponding `/*` for `*/`.",
-    0002 => "No corresponding `<END COMMENT>` for `<BEGIN COMMENT>`.", // replace <END COMMENT> and <BEGIN COMMENT> with other things, just adding this here since it's in a multi-line comment
-    0003 => "Unexpected character.",
-    0004 => "Invalid string base."
-});
-*/
