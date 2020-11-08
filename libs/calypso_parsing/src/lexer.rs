@@ -1,6 +1,7 @@
 use calypso_base::init_trie;
 use calypso_base::span::{Span, Spanned};
 use calypso_diagnostic::{
+    code,
     diagnostic::{DiagnosticBuilder, LabelStyle, Severity},
     error::{ErrorKind, Result as CalResult},
     FileMgr,
@@ -222,8 +223,7 @@ impl<'lex> Lexer<'lex> {
             // Unexpected character
             ch => {
                 let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                    .code("E0003")
-                    .message("Encountered an unexpected character.")
+                    .diag(code!(E0003))
                     .label(
                         LabelStyle::Primary,
                         format!("did not expect `{}` here", ch),
@@ -308,8 +308,7 @@ impl<'lex> Lexer<'lex> {
                 if nest.is_empty() {
                     let diagnostic =
                         DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                            .code("E0001")
-                            .message("No corresponding `/*` for `*/`.")
+                            .diag(code!(E0001))
                             .label(
                                 LabelStyle::Primary,
                                 "this multi-line comment's end has no corresponding beginning",
@@ -330,8 +329,7 @@ impl<'lex> Lexer<'lex> {
 
             if self.buf.is_at_end() && !nest.is_empty() {
                 let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                    .code("E0002")
-                    .message("No corresponding `*/` for `/*`.")
+                    .diag(code!(E0002))
                     .label(
                         LabelStyle::Primary,
                         "this multi-line comment's beginning has no corresponding end",
@@ -353,8 +351,7 @@ impl<'lex> Lexer<'lex> {
             self.buf.advance();
             self.buf.advance();
             let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                .code("E0001")
-                .message("No corresponding `/*` for `*/`.")
+                .diag(code!(E0001))
                 .label(
                     LabelStyle::Primary,
                     "this multi-line comment's end has no corresponding beginning",

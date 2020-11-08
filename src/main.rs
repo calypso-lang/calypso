@@ -1,11 +1,13 @@
 #![warn(clippy::pedantic)]
 
-use clap::{load_yaml, App};
+use clap::{load_yaml, App, ArgMatches};
 
 mod commands;
 mod messages;
 
 use messages::{error, info, warn};
+
+use std::collections::HashMap;
 
 fn main() {
     let yaml = load_yaml!("data/cli-en.yml");
@@ -13,7 +15,9 @@ fn main() {
         .version(env!("CARGO_PKG_VERSION"))
         .get_matches();
 
-    if let Some(matches) = matches.subcommand_matches("debug") {
-        commands::debug(matches);
+    match matches.subcommand() {
+        ("internal", Some(matches)) => commands::internal(matches),
+        ("explain", Some(matches)) => commands::explain(matches),
+        _ => unreachable!(),
     }
 }

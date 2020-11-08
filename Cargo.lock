@@ -75,6 +75,7 @@ name = "calypso"
 version = "0.1.0"
 dependencies = [
  "ansi_term 0.12.1",
+ "calypso_diagnostic",
  "calypso_parsing",
  "clap",
 ]
@@ -91,6 +92,7 @@ dependencies = [
  "codespan-reporting",
  "error-chain",
  "lazy_static",
+ "strfmt",
 ]
 
 [[package]]
@@ -240,6 +242,12 @@ name = "smallvec"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fbee7696b84bbf3d89a1c2eccff0850e3047ed46bfcd2e92c29a2d074d57e252"
+
+[[package]]
+name = "strfmt"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b278b244ef7aa5852b277f52dd0c6cac3a109919e1f6d699adde63251227a30f"
 
 [[package]]
 name = "strsim"

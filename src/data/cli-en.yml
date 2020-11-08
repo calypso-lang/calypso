@@ -4,25 +4,48 @@ about: A (very work-in-progress) general-purpose interpreted language with built
 settings:
     - SubcommandRequired
 subcommands:
-    - debug:
-        about: Commands for debugging Calypso
-        visible_alias: dbg
+    - explain:
+        about: Explain an error that has detailed information on troubleshooting.
+        visible_aliases:
+            - expl
+            - exp
+            - ex
+        args:
+            - EXXXX:
+                help: The error to get information for. Must be in the format EXXXX (e.g. E0591).
+                required: true
+                index: 1
+    - internal:
+        about: Commands for debugging Calypso's internals. It's recommended not to mess around with this if you don't know what you're doing.
+        visible_alias: int
         settings:
             - SubcommandRequired
         subcommands:
-            - dump:
-                about: Dump the parsed (raw, i.e. right after parsing, or AST) representation of a file.
-                visible_alias: d
+            - lexer:
+                about: Run the lexer on a file or standard input.
+                visible_alias: lex
                 args:
-                    - raw:
+                    - repl:
                         short: r
-                        long: raw
-                        help: Dump the raw parsed representation of a file instead of the AST representation.
-                    - pretty:
-                        short: p
-                        long: pretty
-                        help: Whether or not to pretty-print the output.
+                        long: repl
+                        help: Use a REPL-like interface when using standard input. Does not affect behaviour when using file input.
                     - INPUT:
-                        help: Sets the input file to use
+                        help: The input file to lex. Use `-` to lex from standard input.
                         required: true
                         index: 1
+            # - dump:
+            #     about: Dump the parsed (raw, i.e. right after parsing, or AST) representation of a file.
+            #     visible_alias: d
+            #     args:
+            #         - raw:
+            #             short: r
+            #             long: raw
+            #             help: Dump the raw parsed representation of a file instead of the AST representation.
+            #         - pretty:
+            #             short: p
+            #             long: pretty
+            #             help: Whether or not to pretty-print the output.
+            #         - INPUT:
+            #             help: Sets the input file to use
+            #             required: true
+            #             index: 1
