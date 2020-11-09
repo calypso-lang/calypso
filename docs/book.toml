@@ -18,6 +18,7 @@ mathjax-support = true
 curly-quotes = true
 git-repository-url = "https://github.com/ThePuzzlemaker/Calypso/tree/master/docs"
 additional-css = ["src/styles.css"]
+theme = "src/theme"
 
 [output.html.fold]
 enable = true
