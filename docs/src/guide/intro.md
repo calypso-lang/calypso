@@ -7,7 +7,7 @@ Currently this guide will not describe the Calypso build system and command-line
 ## Notation
 
 Calypso code will be written in code blocks like this:
-```calypso
+```plaintext
 Hello! This is a code block!
 ```
 
