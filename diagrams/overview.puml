@@ -1,0 +1,25 @@
+@startdot Overview
+digraph overview {
+  input    [label="Input"];
+  lexer    [label="Lexer"];
+  parser   [label="Parser"];
+
+  subgraph optimization_passes {
+    label="Optimization Passes";
+    opt_pass1 [label="Constant Evaluation"];
+    color=black
+  };
+
+  compiler [label="Bytecode Compiler"];
+  vm       [label="Bytecode VM"];
+  output   [label="Program Actions"];
+
+  input     -> lexer     [label="Source Code"];
+  lexer     -> parser    [label="Tokens"];
+  parser    -> opt_pass1 [label="AST"];
+  opt_pass1 -> compiler  [label="AST"];
+  compiler  -> vm        [label="Bytecode"];
+  vm        -> output    [label="Action"];
+
+}
+@enddot

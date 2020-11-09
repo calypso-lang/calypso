@@ -48,5 +48,11 @@ register_diagnostics! {
     E0002: "No corresponding `*/` for `/*`.",
     ;
     // These diagnostics do not have detailed information.
-    E0003: "Encountered an unexpected character."
+    E0003: "Encountered an unexpected character.",
+    E0004: "Expected two hexadecimal digits in escape sequence, found none.",
+    E0005: "Expected two hexadecimal digits in escape sequence, found an invalid digit `{ch}`.",
+    E0006: "Expected a valid escape sequence, found `\\{ch}`.",
+    E0007: "Expected a valid escape sequence, found EOF.",
+    E0008: "Expected a valid escape sequence, found whitespace.",
+    E0009: "Expected two hexadecimal digits in escape sequence."
 }

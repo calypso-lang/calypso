@@ -427,31 +427,28 @@ impl<'lex> Lexer<'lex> {
                         if ch.is_none() {
                             let diagnostic = if i == 1 {
                                 DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .code("E0004")
-                                    .message("Expected two hexadecimal digits in escape sequence, found none.")
+                                    .diag(code!(E0004))
                                     .label(
                                         LabelStyle::Primary,
                                         "expected two hexadecimal digits here",
                                         self.new_span(),
-                                        self.source_id
+                                        self.source_id,
                                     )
                                     .build()
                             } else if i == 2 {
                                 DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .code("E0004")
-                                    .message("Expected two hexadecimal digits in escape sequence, found none.")
+                                    .diag(code!(E0009))
                                     .label(
                                         LabelStyle::Primary,
                                         "found only one digit here",
                                         self.new_span(),
-                                        self.source_id
+                                        self.source_id,
                                     )
-                                    .note(
-                                        format!(
-                                            "perhaps you meant to use `\\x0{}`?",
-                                            self.buf.last().unwrap()
-                                        )
-                                    ).build()
+                                    .note(format!(
+                                        "perhaps you meant to use `\\x0{}`?",
+                                        self.buf.last().unwrap()
+                                    ))
+                                    .build()
                             } else {
                                 return Ok(true);
                             };
@@ -463,20 +460,16 @@ impl<'lex> Lexer<'lex> {
                             self.buf.advance();
                         } else {
                             self.buf.set_start(start + 1 + i);
-                            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                .code("E0005")
-                                .message(
-                                    format!(
-                                        "Expected two hexadecimal digits in escape sequence, found an invalid digit `{}`.",
-                                        ch
+                            let diagnostic =
+                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                    .diag(code!(E0005, ch = ch))
+                                    .label(
+                                        LabelStyle::Primary,
+                                        "found an invalid digit here",
+                                        self.new_span(),
+                                        self.source_id,
                                     )
-                                )
-                                .label(
-                                    LabelStyle::Primary,
-                                    "found an invalid digit here",
-                                    self.new_span(),
-                                    self.source_id
-                                ).build();
+                                    .build();
                             return Err(ErrorKind::Diagnostic(diagnostic).into());
                         }
                     }
@@ -524,8 +517,7 @@ impl<'lex> Lexer<'lex> {
                     if is_whitespace(ch) {
                         let diagnostic =
                             DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                .code("E0008")
-                                .message("Expected a valid escape sequence, found whitespace.")
+                                .diag(code!(E0008))
                                 .label(
                                     LabelStyle::Primary,
                                     "expected an escape sequence here",
@@ -538,11 +530,7 @@ impl<'lex> Lexer<'lex> {
                     self.buf.advance();
                     let diagnostic =
                         DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                            .code("E0006")
-                            .message(format!(
-                                "Expected a valid escape sequence, found `\\{}`.",
-                                ch
-                            ))
+                            .diag(code!(E0006, ch = ch))
                             .label(
                                 LabelStyle::Primary,
                                 "this escape sequence is unknown",
@@ -555,8 +543,7 @@ impl<'lex> Lexer<'lex> {
                 None => {
                     let diagnostic =
                         DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                            .code("E0007")
-                            .message("Expected a valid escape sequence, found EOF.")
+                            .diag(code!(E0007))
                             .label(
                                 LabelStyle::Primary,
                                 "expected an escape sequence here",
