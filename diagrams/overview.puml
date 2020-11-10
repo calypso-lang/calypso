@@ -4,22 +4,26 @@ digraph overview {
   lexer    [label="Lexer"];
   parser   [label="Parser"];
 
-  subgraph optimization_passes {
+  subgraph cluster_optpasses {
     label="Optimization Passes";
     opt_pass1 [label="Constant Evaluation"];
-    color=black
-  };
+    opt_passn [label="Future Passes (e.g. DCA/SSA/...)"]
+  
+    opt_pass1 -> opt_passn [label="AST"];
+    color=black;
+    style=dashed;
+  }
 
   compiler [label="Bytecode Compiler"];
   vm       [label="Bytecode VM"];
   output   [label="Program Actions"];
 
-  input     -> lexer     [label="Source Code"];
-  lexer     -> parser    [label="Tokens"];
-  parser    -> opt_pass1 [label="AST"];
-  opt_pass1 -> compiler  [label="AST"];
-  compiler  -> vm        [label="Bytecode"];
-  vm        -> output    [label="Action"];
+  input      -> lexer      [label="Source Code"];
+  lexer      -> parser     [label="Tokens"];
+  parser     -> opt_pass1  [label="AST"];
+  opt_passn  -> compiler   [label="AST"];
+  compiler   -> vm         [label="Bytecode"];
+  vm         -> output     [label="Action"];
 
 }
 @enddot
