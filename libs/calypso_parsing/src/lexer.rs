@@ -45,7 +45,7 @@ pub struct Lexer<'lex> {
     files: Arc<FileMgr>,
 }
 
-init_trie!(KEYWORD_TRIE: Keyword => {
+init_trie!(pub KEYWORD_TRIE: Keyword => {
     "is"     => KwIs,
     "false"  => KwFalse,
     "true"   => KwTrue,

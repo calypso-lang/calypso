@@ -17,6 +17,10 @@
 /// in the list or crazy reference things as that's taken care of
 /// for you.
 macro_rules! static_list {
+    (pub $name:ident: $ty:ty = [$($e:expr),+$(,)?]) => {
+        pub static $name: &[$ty] = &[$($e),+];
+    };
+
     ($name:ident: $ty:ty = [$($e:expr),+$(,)?]) => {
         static $name: &[$ty] = &[$($e),+];
     };
@@ -43,6 +47,17 @@ macro_rules! static_list {
 /// This is currently only used in lexing and may be moved to that crate eventually.
 #[macro_export]
 macro_rules! init_trie {
+    (pub $name:ident: $triety:ident => { $($key:expr => $value:expr),+ }) => {
+        lazy_static! {
+            pub static ref $name: Trie<String, $triety> = {
+                use $triety::*;
+                let mut t = Trie::new();
+                $(t.insert($key.into(), $value));*;
+                t
+            };
+        }
+    };
+
     ($name:ident: $triety:ident => { $($key:expr => $value:expr),+ }) => {
         lazy_static! {
             static ref $name: Trie<String, $triety> = {
@@ -52,5 +67,5 @@ macro_rules! init_trie {
                 t
             };
         }
-    }
+    };
 }
