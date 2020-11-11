@@ -65,10 +65,25 @@ pub fn lexer(matches: &ArgMatches) {
                 break;
             }
             let value = *token.value();
-            tokens.push((value.0, value.1.iter().collect::<String>()));
+            tokens.push((value.0, value.1.iter().collect::<String>(), token.span()));
         }
     }
-    println!("{:#?}", tokens);
+    println!(
+        "{}",
+        tokens
+            .iter()
+            .map(|tok| {
+                format!(
+                    "{:?} @ {}..{}: `{}`",
+                    tok.0,
+                    tok.2.start(),
+                    tok.2.end(),
+                    tok.1,
+                )
+            })
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
 }
 
 pub fn lexer_stdin(matches: &ArgMatches) {
@@ -99,10 +114,25 @@ pub fn lexer_stdin(matches: &ArgMatches) {
                 break;
             }
             let value = *token.value();
-            tokens.push((value.0, value.1.iter().collect::<String>()));
+            tokens.push((value.0, value.1.iter().collect::<String>(), token.span()));
         }
     }
-    println!("{:#?}", tokens);
+    println!(
+        "{}",
+        tokens
+            .iter()
+            .map(|tok| {
+                format!(
+                    "{:?} @ {}..{}: `{}`",
+                    tok.0,
+                    tok.2.start(),
+                    tok.2.end(),
+                    tok.1,
+                )
+            })
+            .collect::<Vec<String>>()
+            .join("\n")
+    );
 }
 
 pub fn lexer_stdin_repl() {
@@ -125,10 +155,24 @@ pub fn lexer_stdin_repl() {
                         break;
                     }
                     let value = *token.value();
-                    tokens.push((value.0, value.1.iter().collect::<String>()));
+                    tokens.push((value.0, value.1.iter().collect::<String>(), token.span()));
                 }
             }
-            Some(format!("{:#?}", tokens))
+            Some(
+                tokens
+                    .iter()
+                    .map(|tok| {
+                        format!(
+                            "{:?} @ {}..{}: `{}`",
+                            tok.0,
+                            tok.2.start(),
+                            tok.2.end(),
+                            tok.1,
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n"),
+            )
         }),
         ReplCtx {},
     );

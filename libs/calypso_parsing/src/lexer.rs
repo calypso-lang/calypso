@@ -3,7 +3,7 @@ use calypso_base::span::{Span, Spanned};
 use calypso_diagnostic::{
     code,
     diagnostic::{DiagnosticBuilder, LabelStyle, Severity},
-    error::{ErrorKind, Result as CalResult},
+    error::Result as CalResult,
     FileMgr,
 };
 use calypso_util::buffer::Buffer;
@@ -21,23 +21,6 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 
 pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
-
-/*
-
-
-
-fn is_valid_digit_for_radix(ch: char, radix: Radix) -> bool {
-    match radix {
-        Radix::Decimal => ch.is_ascii_digit(),
-        Radix::Hexadecimal => ch.is_ascii_hexdigit(),
-        Radix::Octal => ch >= '0' && ch <= '7',
-        Radix::Binary => ch == '0' || ch == '1',
-    }
-}
-
-fn is_valid_for_any_radix(ch: char) -> bool {
-    ch.is_ascii_hexdigit()
-}*/
 
 type Lexeme<'lex> = &'lex [char];
 
