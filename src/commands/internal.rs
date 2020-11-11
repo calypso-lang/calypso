@@ -14,6 +14,7 @@ use crate::messages::error;
 
 use calypso_diagnostic::FileMgr;
 use calypso_parsing::lexer::{Lexer, TokenType};
+use calypso_repl::Repl;
 
 #[allow(clippy::single_match)]
 pub fn internal(matches: &ArgMatches) {
@@ -105,51 +106,40 @@ pub fn lexer_stdin(matches: &ArgMatches) {
 }
 
 pub fn lexer_stdin_repl() {
-    let mut contents = String::new();
-    let stdin = io::stdin();
-    let mut stdout = io::stdout();
+    struct ReplCtx {};
 
-    loop {
-        let mut stdin = stdin.lock();
-        print!(">>> ");
-        if let Err(err) = stdout.flush() {
-            error(format!("when flushing stdout: `{}`", err));
-            return;
-        }
-        contents.clear();
-
-        let n_read = match stdin.read_line(&mut contents) {
-            Ok(v) => v,
-            Err(err) => {
-                error(format!("when reading from stdin: `{}`", err));
-                return;
-            }
-        };
-
-        if n_read == 0 {
-            return;
-        }
-
-        let chars = contents.chars().collect::<Vec<char>>();
-        let mut files = FileMgr::new();
-        let source_id = files.add("<anon>".to_string(), contents.clone());
-        let mut lexer = Lexer::new(source_id, &chars, Arc::new(files));
-        let mut tokens = Vec::new();
-        loop {
-            let token = lexer.scan();
-            if let Err(err) = token {
-                error(format!("while lexing input: \n{}", err));
-                break;
-            } else if let Ok(token) = token {
-                if token.value().0 == TokenType::Eof {
+    let mut repl = Repl::new(
+        Box::new(|_ctx, contents| {
+            let chars = contents.chars().collect::<Vec<char>>();
+            let mut files = FileMgr::new();
+            let source_id = files.add("<anon>".to_string(), contents);
+            let mut lexer = Lexer::new(source_id, &chars, Arc::new(files));
+            let mut tokens = Vec::new();
+            loop {
+                let token = lexer.scan();
+                if let Err(err) = token {
+                    error(format!("while lexing input: \n{}", err));
                     break;
+                } else if let Ok(token) = token {
+                    if token.value().0 == TokenType::Eof {
+                        break;
+                    }
+                    let value = *token.value();
+                    tokens.push((value.0, value.1.iter().collect::<String>()));
                 }
-                let value = *token.value();
-                tokens.push((value.0, value.1.iter().collect::<String>()));
             }
-        }
-        println!("{:#?}", tokens);
-    }
+            Some(Box::new(format!("{:#?}", tokens)))
+        }),
+        ReplCtx {},
+    );
+    repl.run(
+        format!(
+            "Calypso CLI v{} - internal debugging command: lexer",
+            env!("CARGO_PKG_VERSION")
+        ),
+        |_| String::from(">>> "),
+    )
+    .expect("REPL failure");
 }
 
 // pub fn dump(matches: &ArgMatches) {

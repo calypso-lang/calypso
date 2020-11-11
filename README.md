@@ -1,5 +1,7 @@
 # Calypso
 
+[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord][b1]][l1] ![Lines of Code][b2]
+
 > # :warning: WARNING :warning:
 > This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THISE CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY!
 
@@ -16,3 +18,14 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 ## To-Dos (not really generalized in code as they're kind of project-wide)
 
 - [ ] Look into [logos](https://github.com/maciejhirsz/logos) for the lexer as it'd probably be more efficient and/or clean than the current lexer setup.
+
+[l1]: https://discord.gg/jRaYGgeeJF
+[b1]: https://img.shields.io/badge/discord-%23calypso-informational
+
+[b2]: https://tokei.rs/b1/github/ThePuzzlemaker/Calypso?category=lines
+
+[b3]: https://img.shields.io/travis/com/ThePuzzlemaker/Calypso?label=docs
+[l3]: https://travis-ci.com/github/ThePuzzlemaker/Calypso
+
+[b4]: https://img.shields.io/badge/license-MIT-blue.svg
+[l4]: ./LICENSE

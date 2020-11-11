@@ -1,0 +1,14 @@
+[package]
+name = "calypso_repl"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "REPL utilities for Calypso"
+readme = "README.md"
+homepage = "https://github.com/ThePuzzlemaker/Calypso/tree/master/calypso_repl"
+repository = "https://github.com/ThePuzzlemaker/Calypso/"
+license = "MIT"
+
+[dependencies]
+rustyline = "6.3.0"
+regex = "1.4.2"

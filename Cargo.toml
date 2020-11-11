@@ -16,6 +16,7 @@ clap = { version = "2.33.3", features = ["yaml"] }
 ansi_term = "0.12.1"
 calypso_parsing = { path = "libs/calypso_parsing", version = "*" }
 calypso_diagnostic = { path = "libs/calypso_diagnostic", version = "*" }
+calypso_repl = { path = "libs/calypso_repl", version = "*" }
 
 [workspace]
 exclude = ["libs/sublib_skeleton"]
