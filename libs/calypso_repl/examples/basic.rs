@@ -8,7 +8,7 @@ pub fn main() {
     let mut repl = Repl::<Ctx>::new(
         Box::new(|ctx, input| {
             ctx.line_no += 1;
-            Some(Box::new(input))
+            Some(input)
         }),
         Ctx { line_no: 0 },
     );

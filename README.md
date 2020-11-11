@@ -15,10 +15,6 @@ This project is licensed under the MIT license ([LICENSE](LICENSE) or http://ope
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you (i.e. submitted as a patch or pull request), shall be licensed as above, without any additional terms or conditions.
 
-## To-Dos (not really generalized in code as they're kind of project-wide)
-
-- [ ] Look into [logos](https://github.com/maciejhirsz/logos) for the lexer as it'd probably be more efficient and/or clean than the current lexer setup.
-
 [l1]: https://discord.gg/jRaYGgeeJF
 [b1]: https://img.shields.io/badge/discord-%23calypso-informational
 

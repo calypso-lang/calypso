@@ -14,25 +14,33 @@ pub type FileMgr = reporting::files::SimpleFiles<String, String>;
 pub extern crate strfmt;
 
 #[macro_export]
-macro_rules! strfmt {
-    ($fmt:expr, $($name:ident = $value:expr),*) => {{
-        let mut map = ::std::collections::HashMap::<::std::string::String, ::std::string::String>::new();
-        $(map.insert(stringify!($name).to_string(), $value.to_string());)*
-        $crate::strfmt::strfmt($fmt, &map)
-    }}
-}
-
-#[macro_export]
 macro_rules! code {
-    ($code:ident$(,)? $($name:ident = $value:expr),*) => {
+    ($code:ident) => {
+        |d| {
+            let code = stringify!($code);
+            let diagnostic = $crate::types::DIAGNOSTICS.get(code).unwrap();
+            let mut d = d.code(code)
+                .message(diagnostic.0);
+            if diagnostic.1.is_some() {
+                d = d.note(format!("note: this error has more details for troubleshooting, run `calypso explain {}`", code))
+            }
+            d
+        }
+    };
+
+    ($code:ident, $($name:ident = $value:expr),*$(,)?) => {
         |d| {
             let code = stringify!($code);
             let diagnostic = $crate::types::DIAGNOSTICS.get(code).unwrap();
             let diagnostic_fmt = diagnostic.0;
             let diagnostic_ext = diagnostic.1;
             let mut d = d.code(code)
-                  .message($crate::strfmt!(diagnostic_fmt, $($name = $value)*).unwrap());
-            if let Some(ext) = diagnostic_ext {
+                  .message({
+                    let mut map = ::std::collections::HashMap::<::std::string::String, ::std::string::String>::new();
+                    $(map.insert(stringify!($name).to_string(), $value.to_string());)*
+                    $crate::strfmt::strfmt(diagnostic_fmt, &map)
+                  }.unwrap());
+            if diagnostic_ext.is_some() {
                 d = d.note(format!("note: this error has more details for troubleshooting, run `calypso explain {}`", code))
             }
             d

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::sync::Arc;
 
 use rustyline::{config::Configurer, error::ReadlineError, Cmd, Editor, KeyPress, Movement};
@@ -42,7 +41,6 @@ impl<Ctx> Repl<Ctx> {
         editor.set_auto_add_history(true);
         editor.set_tab_stop(4);
         editor.set_history_ignore_space(false);
-        editor.unbind_sequence(KeyPress::Ctrl('C'));
         editor.bind_sequence(KeyPress::Ctrl('C'), Cmd::Kill(Movement::WholeLine));
         Self {
             eval,
@@ -206,9 +204,9 @@ impl<Ctx> Repl<Ctx> {
 }
 
 /// A closure that evaluates some input with some context type,
-// and returns either `Some(impl Display)` or `None`. `None` indicates to the
+// and returns either `Some(String)` or `None`. `None` indicates to the
 // REPL handler that it should break the loop.
-pub type Eval<Ctx> = Box<dyn Fn(&mut Ctx, String) -> Option<Box<dyn Display>>>;
+pub type Eval<Ctx> = Box<dyn Fn(&mut Ctx, String) -> Option<String>>;
 
 pub struct Command<Ctx> {
     /// The command's name

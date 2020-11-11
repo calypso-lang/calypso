@@ -1,13 +1,11 @@
 #![warn(clippy::pedantic)]
 
-use clap::{load_yaml, App, ArgMatches};
+use clap::{load_yaml, App};
 
 mod commands;
 mod messages;
 
-use messages::{error, info, warn};
-
-use std::collections::HashMap;
+// use messages::{error, info, warn};
 
 fn main() {
     let yaml = load_yaml!("data/cli-en.yml");

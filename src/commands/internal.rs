@@ -128,7 +128,7 @@ pub fn lexer_stdin_repl() {
                     tokens.push((value.0, value.1.iter().collect::<String>()));
                 }
             }
-            Some(Box::new(format!("{:#?}", tokens)))
+            Some(format!("{:#?}", tokens))
         }),
         ReplCtx {},
     );
