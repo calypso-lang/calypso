@@ -141,7 +141,7 @@ impl<'buf> Buffer<'buf> {
     }
 
     /// Check if `predicate` returns a true value when given the character under the cursor.
-    /// If not, `diagnositc_gen` is run, taking in the current [`Span`](calypso_base::span::Span)
+    /// If not, `diagnostic_gen` is run, taking in the current [`Span`](calypso_base::span::Span)
     /// of the buffer, returning a [`Diagnostic`](calypso_diagnostic::diagnostic::Diagnostic) that
     /// is returned as a [`Result`](calypso_diagnostic::error::Result).
     pub fn consume_if(
