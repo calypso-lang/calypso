@@ -20,7 +20,7 @@ pub fn main() {
         "hello".to_string(),
         "shows a hello message to the user".to_string(),
         "usage: hello".to_string(),
-        Box::new(|_ctx, _input| Some(Box::new("hi there user"))),
+        Box::new(|_ctx, _input| Some("hi there user".to_string())),
     );
     let exit_cmd = Command::new(
         "exit".to_string(),
