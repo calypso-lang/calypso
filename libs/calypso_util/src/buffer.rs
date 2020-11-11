@@ -79,7 +79,7 @@ impl<'buf> Buffer<'buf> {
         }
     }
 
-    pub fn match_next_if(&mut self, predicate: impl Fn(char) -> bool) -> bool {
+    pub fn match_next_if(&mut self, mut predicate: impl FnMut(char) -> bool) -> bool {
         let ch = self.peek();
         if ch.is_none() {
             return false;
@@ -103,7 +103,7 @@ impl<'buf> Buffer<'buf> {
     pub fn consume(
         &mut self,
         expected: char,
-        diagnostic_gen: impl Fn(Span) -> Diagnostic,
+        mut diagnostic_gen: impl FnMut(Span) -> Diagnostic,
     ) -> error::Result<()> {
         if self.match_next(expected) {
             self.advance();
@@ -119,8 +119,8 @@ impl<'buf> Buffer<'buf> {
 
     pub fn consume_if(
         &mut self,
-        predicate: impl Fn(char) -> bool,
-        diagnostic_gen: impl Fn(Span) -> Diagnostic,
+        predicate: impl FnMut(char) -> bool,
+        mut diagnostic_gen: impl FnMut(Span) -> Diagnostic,
     ) -> error::Result<()> {
         if self.match_next_if(predicate) {
             self.advance();
@@ -142,7 +142,7 @@ impl<'buf> Buffer<'buf> {
         }
     }
 
-    pub fn gorge_while(&mut self, predicate: impl Fn(char, usize) -> bool) {
+    pub fn gorge_while(&mut self, mut predicate: impl FnMut(char, usize) -> bool) {
         let mut count = 0;
         loop {
             let ch = self.peek();

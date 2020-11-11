@@ -17,6 +17,9 @@ pub use types::*;
 pub mod helpers;
 use helpers::*;
 
+use std::ops::Deref;
+use std::ops::DerefMut;
+
 pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
 
 /*
@@ -43,6 +46,20 @@ pub struct Lexer<'lex> {
     buf: Buffer<'lex>,
     source_id: usize,
     files: Arc<FileMgr>,
+}
+
+impl<'lex> Deref for Lexer<'lex> {
+    type Target = Buffer<'lex>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.buf
+    }
+}
+
+impl<'lex> DerefMut for Lexer<'lex> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.buf
+    }
 }
 
 init_trie!(pub KEYWORD_TRIE: Keyword => {
@@ -84,15 +101,15 @@ impl<'lex> Lexer<'lex> {
 
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
         self.skip_whitespace()?;
-        self.buf.current_to_start();
+        self.current_to_start();
 
-        if self.buf.is_at_end() {
+        if self.is_at_end() {
             return Ok(self.new_token(TokenType::Eof));
         }
 
         // We've already checked if we're at the end (which is when it gives None), so
         // unwrapping should be safe here.
-        let ch = self.buf.advance().unwrap();
+        let ch = self.advance().unwrap();
 
         // Is valid character for identifier's first character
         if is_ident_start(ch) {
@@ -101,9 +118,9 @@ impl<'lex> Lexer<'lex> {
 
         // TODO: literals
         /*if ch == '0' {
-            let peek = self.buf.peek();
+            let peek = self.peek();
             if peek.is_some() {
-                self.buf.advance();
+                self.advance();
             }
             let radix = match peek {
                 Some('x') => Radix::Hexadecimal,
@@ -113,8 +130,8 @@ impl<'lex> Lexer<'lex> {
                 None => Radix::Decimal,
                 _ => {
                     let diagnostic = Diagnostic::new(
-                        Span::new(self.buf.start(), self.buf.current() - self.buf.start()),
-                        self.buf.buffer(),
+                        Span::new(self.start(), self.current() - self.start()),
+                        self.buffer(),
                         self.source_name.clone(),
                         format!("invalid string base `{}`", peek.unwrap()),
                         4, // Invalid string base.
@@ -122,69 +139,69 @@ impl<'lex> Lexer<'lex> {
                     return Err(ErrorKind::Diagnostic(diagnostic).into());
                 }
             };
-            ch = self.buf.advance();
+            ch = self.advance();
         }*/
 
         use TokenType::*;
 
         let token_type = match ch {
-            '<' if self.buf.match_next('<') => {
-                if self.buf.match_next('=') {
+            '<' if self.match_next('<') => {
+                if self.match_next('=') {
                     ShlAssign
                 } else {
                     Shl
                 }
             }
-            '<' if self.buf.match_next('=') => LessEqual,
+            '<' if self.match_next('=') => LessEqual,
             '<' => Less,
 
-            '>' if self.buf.match_next('>') => {
-                if self.buf.match_next('=') {
+            '>' if self.match_next('>') => {
+                if self.match_next('=') {
                     ShrAssign
                 } else {
                     Shr
                 }
             }
-            '>' if self.buf.match_next('=') => GreaterEqual,
+            '>' if self.match_next('=') => GreaterEqual,
             '>' => Greater,
 
-            '=' if self.buf.match_next('=') => BoolEqual,
+            '=' if self.match_next('=') => BoolEqual,
             '=' => Equal,
 
-            '!' if self.buf.match_next('=') => NotEqual,
+            '!' if self.match_next('=') => NotEqual,
             '!' => Bang,
 
-            '|' if self.buf.match_next('|') => BoolOr,
-            '|' if self.buf.match_next('=') => PipeAssign,
+            '|' if self.match_next('|') => BoolOr,
+            '|' if self.match_next('=') => PipeAssign,
             '|' => Pipe,
 
-            '&' if self.buf.match_next('&') => BoolAnd,
-            '&' if self.buf.match_next('=') => AndAssign,
+            '&' if self.match_next('&') => BoolAnd,
+            '&' if self.match_next('=') => AndAssign,
             '&' => And,
 
-            '+' if self.buf.match_next('=') => PlusAssign,
+            '+' if self.match_next('=') => PlusAssign,
             '+' => Plus,
 
-            '-' if self.buf.match_next('=') => MinusAssign,
+            '-' if self.match_next('=') => MinusAssign,
             '-' => Minus,
 
-            '*' if self.buf.match_next('*') => {
-                if self.buf.match_next('=') {
+            '*' if self.match_next('*') => {
+                if self.match_next('=') {
                     ExpAssign
                 } else {
                     Exp
                 }
             }
-            '*' if self.buf.match_next('=') => StarAssign,
+            '*' if self.match_next('=') => StarAssign,
             '*' => Star,
 
-            '/' if self.buf.match_next('=') => SlashAssign,
+            '/' if self.match_next('=') => SlashAssign,
             '/' => Slash,
 
-            '%' if self.buf.match_next('=') => RemAssign,
+            '%' if self.match_next('=') => RemAssign,
             '%' => Rem,
 
-            '^' if self.buf.match_next('=') => CaretAssign,
+            '^' if self.match_next('=') => CaretAssign,
             '^' => Caret,
 
             '~' => Tilde,
@@ -201,8 +218,8 @@ impl<'lex> Lexer<'lex> {
             ',' => Comma,
             ';' => Semi,
 
-            '.' if self.buf.match_next('.') => {
-                if self.buf.match_next('=') {
+            '.' if self.match_next('.') => {
+                if self.match_next('=') {
                     RangeClosed
                 } else {
                     Range
@@ -211,13 +228,13 @@ impl<'lex> Lexer<'lex> {
             '.' => Dot,
 
             // `'_' => Under` is already taken care of by idents
-            '#' if self.buf.match_next('!') => HashBang,
+            '#' if self.match_next('!') => HashBang,
             '#' => Hash,
 
             // temporary tester for escape sequences until I get str/ch literals working.
             '$' => {
                 self.handle_escape_character()?;
-                Eof
+                Hash
             }
 
             // Unexpected character
@@ -245,8 +262,8 @@ impl<'lex> Lexer<'lex> {
             self.handle_dangling_comment_ends()?;
             if (!self.handle_comment()
                 && !self.handle_multiline_comment()?
-                && !self.buf.match_next_if(is_whitespace))
-                || self.buf.is_at_end()
+                && !self.match_next_if(is_whitespace))
+                || self.is_at_end()
             {
                 break;
             }
@@ -259,13 +276,13 @@ impl<'lex> Lexer<'lex> {
         // x/ -> false true -> true
         // /x -> true false -> true
         // // -> false false -> false
-        if self.buf.peek() != Some('/') || self.buf.peek_next() != Some('/') {
+        if self.peek() != Some('/') || self.peek_next() != Some('/') {
             return false;
         }
         // A comment goes until the end of the line,
         // so gorge all the characters until we get to the newline
         // (or the end, when it automatically stops gorging).
-        self.buf.gorge_while(|c, _| c != '\n');
+        self.gorge_while(|c, _| c != '\n');
         true
     }
 
@@ -274,37 +291,31 @@ impl<'lex> Lexer<'lex> {
         // x* -> true false -> true
         // /x -> false true -> true
         // /* -> false false -> false
-        if self.buf.peek() != Some('/') || self.buf.peek_next() != Some('*') {
+        if self.peek() != Some('/') || self.peek_next() != Some('*') {
             return Ok(false);
         }
-        self.buf.current_to_start();
-        self.buf.advance();
-        self.buf.advance();
-        let mut nest = vec![Span::new(
-            self.buf.start(),
-            self.buf.current() - self.buf.start(),
-        )];
+        self.current_to_start();
+        self.advance();
+        self.advance();
+        let mut nest = vec![Span::new(self.start(), self.current() - self.start())];
 
         loop {
-            let ch = self.buf.peek();
+            let ch = self.peek();
             if ch.is_none() {
                 return Ok(false);
             }
 
-            if ch == Some('/') && self.buf.peek_next() == Some('*') {
+            if ch == Some('/') && self.peek_next() == Some('*') {
                 // For error handling
-                self.buf.current_to_start();
-                self.buf.advance();
-                self.buf.advance();
-                nest.push(Span::new(
-                    self.buf.start(),
-                    self.buf.current() - self.buf.start(),
-                ));
-            } else if ch == Some('*') && self.buf.peek_next() == Some('/') {
+                self.current_to_start();
+                self.advance();
+                self.advance();
+                nest.push(Span::new(self.start(), self.current() - self.start()));
+            } else if ch == Some('*') && self.peek_next() == Some('/') {
                 // For error handling
-                self.buf.current_to_start();
-                self.buf.advance();
-                self.buf.advance();
+                self.current_to_start();
+                self.advance();
+                self.advance();
                 if nest.is_empty() {
                     let diagnostic =
                         DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
@@ -320,14 +331,14 @@ impl<'lex> Lexer<'lex> {
                 }
                 nest.pop();
             } else {
-                self.buf.advance();
+                self.advance();
             }
 
-            if nest.is_empty() && !self.buf.is_at_end() {
+            if nest.is_empty() && !self.is_at_end() {
                 break;
             }
 
-            if self.buf.is_at_end() && !nest.is_empty() {
+            if self.is_at_end() && !nest.is_empty() {
                 let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
                     .diag(code!(E0002))
                     .label(
@@ -345,11 +356,11 @@ impl<'lex> Lexer<'lex> {
     }
 
     fn handle_dangling_comment_ends(&mut self) -> CalResult<()> {
-        if self.buf.peek() == Some('*') && self.buf.peek_next() == Some('/') {
+        if self.peek() == Some('*') && self.peek_next() == Some('/') {
             // For error handling
-            self.buf.current_to_start();
-            self.buf.advance();
-            self.buf.advance();
+            self.current_to_start();
+            self.advance();
+            self.advance();
             let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
                 .diag(code!(E0001))
                 .label(
@@ -365,17 +376,14 @@ impl<'lex> Lexer<'lex> {
     }
 
     fn new_token(&self, token_type: TokenType) -> Token<'lex> {
-        let start = self.buf.start();
-        let current = self.buf.current();
-        Token::new(
-            self.new_span(),
-            (token_type, self.buf.slice(start, current)),
-        )
+        let start = self.start();
+        let current = self.current();
+        Token::new(self.new_span(), (token_type, self.slice(start, current)))
     }
 
     fn new_span(&self) -> Span {
-        let start = self.buf.start();
-        let current = self.buf.current();
+        let start = self.start();
+        let current = self.current();
         Span::new(start, current - start)
     }
 }
@@ -384,21 +392,19 @@ impl<'lex> Lexer<'lex> {
     pub fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
         let mut token_type = TokenType::Ident;
 
-        let ch = self.buf.peek();
+        let ch = self.peek();
         // `_` is not an ident on its own, but all other [A-Za-z]{1} idents are.
-        if self.buf.last().unwrap() == '_'
-            && (ch.is_none() || !is_ident_continue(ch.unwrap_or('\0')))
-        {
+        if self.last().unwrap() == '_' && (ch.is_none() || !is_ident_continue(ch.unwrap_or('\0'))) {
             return Ok(self.new_token(TokenType::Under));
         }
 
         // Gorge while the character is a valid identifier character.
-        self.buf.gorge_while(|ch, _| is_ident_continue(ch));
+        self.gorge_while(|ch, _| is_ident_continue(ch));
 
         let keyword = KEYWORD_TRIE.get(
             &self
                 .buf
-                .slice(self.buf.start(), self.buf.current())
+                .slice(self.start(), self.current())
                 .iter()
                 .collect::<String>(),
         );
@@ -411,16 +417,16 @@ impl<'lex> Lexer<'lex> {
     }
 
     fn handle_escape_character(&mut self) -> CalResult<bool> {
-        let start = self.buf.current();
-        if self.buf.peek() == Some('\\') {
-            self.buf.current_to_start();
-            self.buf.advance();
-            match self.buf.peek() {
+        let start = self.current();
+        if self.peek() == Some('\\') {
+            self.current_to_start();
+            self.advance();
+            match self.peek() {
                 Some('x') => {
-                    self.buf.advance();
-                    self.buf.current_to_start();
+                    self.advance();
+                    self.current_to_start();
                     for i in 1..=2 {
-                        let mut ch = self.buf.peek();
+                        let mut ch = self.peek();
                         if is_whitespace(ch.unwrap_or('\0')) {
                             ch = None;
                         }
@@ -446,7 +452,7 @@ impl<'lex> Lexer<'lex> {
                                     )
                                     .note(format!(
                                         "perhaps you meant to use `\\x0{}`?",
-                                        self.buf.last().unwrap()
+                                        self.last().unwrap()
                                     ))
                                     .build()
                             } else {
@@ -457,9 +463,9 @@ impl<'lex> Lexer<'lex> {
                         let ch = ch.unwrap();
 
                         if ch.is_ascii_hexdigit() {
-                            self.buf.advance();
+                            self.advance();
                         } else {
-                            self.buf.set_start(start + 1 + i);
+                            self.set_start(start + 1 + i);
                             let diagnostic =
                                 DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
                                     .diag(code!(E0005, ch = ch))
@@ -476,43 +482,148 @@ impl<'lex> Lexer<'lex> {
                 }
                 Some('n') | Some('r') | Some('t') | Some('\\') | Some('0') | Some('\'')
                 | Some('"') => {
-                    self.buf.advance();
+                    self.advance();
                 }
                 Some('u') => {
-                    // self.buf.advance();
-                    // self.buf.consume('{', |_| {
-
-                    // });
-                    // TODO
-                    unimplemented!();
-                }
-                /*Some('u') => {
-                    let mut digit_count = 0;
-                    if !self.buf.match_next('{') {
-                        println!("Expected an open brace, followed by a Unicode code point.");
-                        return Err(());
+                    self.advance();
+                    self.current_to_start();
+                    match self.peek() {
+                        Some(ch) if is_whitespace(ch) => {
+                            let diagnostic =
+                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                    .diag(code!(E0012))
+                                    .label(
+                                        LabelStyle::Primary,
+                                        "this should be an opening curly bracket",
+                                        self.new_span(),
+                                        self.source_id,
+                                    )
+                                    .build();
+                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        }
+                        None => {
+                            let diagnostic =
+                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                    .diag(code!(E0011))
+                                    .label(
+                                        LabelStyle::Primary,
+                                        "this should be an opening curly bracket",
+                                        self.new_span(),
+                                        self.source_id,
+                                    )
+                                    .build();
+                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        }
+                        _ => (),
                     }
-                    while self.buf.peek() != Some('}') && !self.buf.is_at_end() {
-                        if digit_count > 6
-                            || !is_valid_digit_for_radix(self.peek(), Radix::Hexadecimal)
-                        {
-                            println!(
-                                "Expected up to 6 hexadecimal digits for a Unicode code point."
-                            );
-                            return Err(());
+                    if !self.match_next('{') {
+                        self.advance();
+                        let diagnostic =
+                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                .diag(code!(E0010, ch = self.last().unwrap()))
+                                .label(
+                                    LabelStyle::Primary,
+                                    "this should be an opening curly bracket",
+                                    self.new_span(),
+                                    self.source_id,
+                                )
+                                .build();
+                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    }
+
+                    let mut count = 0;
+                    while self.peek() != Some('}') && !self.is_at_end() {
+                        self.current_to_start();
+                        let ch = self.peek().unwrap();
+                        if count == 6 {
+                            break;
+                        } else if ch.is_whitespace() {
+                            let diagnostic =
+                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                    .diag(code!(E0018))
+                                    .label(
+                                        LabelStyle::Primary,
+                                        "expected a hexadecimal digit here",
+                                        self.new_span(),
+                                        self.source_id,
+                                    )
+                                    .build();
+                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        } else if !ch.is_ascii_hexdigit() {
+                            let diagnostic =
+                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                    .diag(code!(E0014, ch = ch))
+                                    .label(
+                                        LabelStyle::Primary,
+                                        "found an invalid digit here, perhaps you meant to have a `}` here?",
+                                        self.new_span(),
+                                        self.source_id,
+                                    )
+                                    .build();
+                            return Err(ErrorKind::Diagnostic(diagnostic).into());
                         }
                         self.advance();
-                        digit_count += 1;
+                        count += 1;
                     }
+
+                    if count == 0 {
+                        let diagnostic =
+                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                .diag(code!(E0019))
+                                .label(
+                                    LabelStyle::Primary,
+                                    "expected at least one hex digit here",
+                                    self.new_span(),
+                                    self.source_id,
+                                )
+                                .note("if you wanted a null byte, you can use `\\u{0}` or `\\0`")
+                                .build();
+                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    }
+                    self.current_to_start();
 
                     if self.is_at_end() {
-                        println!("Unterminated Unicode escape sequence.");
-                        return Err(());
+                        let diagnostic =
+                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                .diag(code!(E0015))
+                                .label(
+                                    LabelStyle::Primary,
+                                    "expected a closing curly bracket here",
+                                    self.new_span(),
+                                    self.source_id,
+                                )
+                                .build();
+                        return Err(ErrorKind::Diagnostic(diagnostic).into());
                     }
 
-                    // Closing bracket
-                    self.advance();
-                }*/
+                    let ch = self.peek().unwrap();
+                    if is_whitespace(ch) {
+                        self.current_to_start();
+                        let diagnostic =
+                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                .diag(code!(E0017))
+                                .label(
+                                    LabelStyle::Primary,
+                                    "expected a closing curly bracket here",
+                                    self.new_span(),
+                                    self.source_id,
+                                )
+                                .build();
+                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    } else if !self.match_next('}') {
+                        let diagnostic =
+                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                                .diag(code!(E0016, ch = ch))
+                                .label(
+                                    LabelStyle::Primary,
+                                    "expected a closing curly bracket here",
+                                    self.new_span(),
+                                    self.source_id,
+                                )
+                                .build();
+                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    }
+                }
                 Some(ch) => {
                     if is_whitespace(ch) {
                         let diagnostic =
@@ -527,7 +638,7 @@ impl<'lex> Lexer<'lex> {
                                 .build();
                         return Err(ErrorKind::Diagnostic(diagnostic).into());
                     }
-                    self.buf.advance();
+                    self.advance();
                     let diagnostic =
                         DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
                             .diag(code!(E0006, ch = ch))
@@ -553,8 +664,8 @@ impl<'lex> Lexer<'lex> {
                             .build();
                     return Err(ErrorKind::Diagnostic(diagnostic).into());
                 }
-            }
-            self.buf.set_start(start);
+            };
+            self.set_start(start);
             return Ok(true);
         }
 
