@@ -28,6 +28,8 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 | `calypso_repl`         | [![calypso_repl][bcio5]][lcio5]        | [![calypso_repl][bdrs5]][ldrs5]            |
 | `calypso_util`         | [![calypso_util][bcio6]][lcio6]        | [![calypso_util][bdrs6]][ldrs6]            |
 
+Docs for the master branch can be found [here](https://thepuzzlemaker.github.io/Calypso/rustdoc/calypso/index.html).
+
 [bcio1]: https://img.shields.io/crates/v/calypso
 [lcio1]: https://crates.io/crates/calypso
 [bdrs1]: https://docs.rs/calypso/badge.svg
