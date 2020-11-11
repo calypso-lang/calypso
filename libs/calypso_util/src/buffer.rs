@@ -96,11 +96,10 @@ impl<'buf> Buffer<'buf> {
         }
     }
 
-    /// Returns `true` and move the cursor forward if the character under the
-    /// cursor causes a `true` value to be returned by the closure `predicate`,
-    /// otherwise return `false` without moving the cursor. If the cursor is at
-    /// or after the end of the input, `false` is returned and the cursor is not
-    /// moved.
+    /// Returns `true` and move the cursor forward if `predicate` returns true when
+    /// given the character under the cursor, otherwise return `false` without moving
+    /// the cursor. If the cursor is at or after the end of the input, `false` is
+    /// returned and the cursor is not moved.
     pub fn match_next_if(&mut self, mut predicate: impl FnMut(char) -> bool) -> bool {
         let ch = self.peek();
         if ch.is_none() {
@@ -124,7 +123,7 @@ impl<'buf> Buffer<'buf> {
         self.start = self.current;
     }
 
-    /// Check if the next character is `expected`. If not, `diagnositc_gen` is run, taking
+    /// Check if the next character is `expected`. If not, `diagnostic_gen` is run, taking
     /// in the current [`Span`](calypso_base::span::Span) of the buffer, returning a
     /// [`Diagnostic`](calypso_diagnostic::diagnostic::Diagnostic) that is returned as a
     /// [`Result`](calypso_diagnostic::error::Result).
@@ -141,8 +140,8 @@ impl<'buf> Buffer<'buf> {
         }
     }
 
-    /// Check if the next character causes `predicate` to return a true value.
-    // If not, `diagnositc_gen` is run, taking in the current [`Span`](calypso_base::span::Span)
+    /// Check if `predicate` returns a true value when given the character under the cursor.
+    /// If not, `diagnositc_gen` is run, taking in the current [`Span`](calypso_base::span::Span)
     /// of the buffer, returning a [`Diagnostic`](calypso_diagnostic::diagnostic::Diagnostic) that
     /// is returned as a [`Result`](calypso_diagnostic::error::Result).
     pub fn consume_if(
