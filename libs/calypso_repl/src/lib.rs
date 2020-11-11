@@ -206,8 +206,8 @@ impl<Ctx> Repl<Ctx> {
 }
 
 /// A closure that evaluates some input with some context type,
-// and returns either `Some(String)` or `None`. `None` indicates to the
-// REPL handler that it should break the loop.
+/// and returns either `Some(String)` or `None`. `None` indicates to the
+/// REPL handler that it should break the loop.
 pub type Eval<Ctx> = Box<dyn Fn(&mut Ctx, String) -> Option<String>>;
 
 pub struct Command<Ctx> {
