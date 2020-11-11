@@ -63,7 +63,7 @@ impl<'buf> Buffer<'buf> {
         }
     }
 
-    /// Look at the value at the cursor, then move it forward.
+    /// Look at the value under the cursor, then move it forward.
     pub fn advance(&mut self) -> Option<char> {
         self.current += 1;
         self.buffer.get(self.current - 1).copied()
