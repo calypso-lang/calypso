@@ -1,4 +1,6 @@
-#![doc(html_root_url = "https://thepuzzlemaker.github.io/Calypso/rustdoc/")]
+#![doc(
+    html_root_url = "https://thepuzzlemaker.github.io/Calypso/rustdoc/calypso_diagnostic/index.html"
+)]
 
 #[macro_use]
 extern crate error_chain;
