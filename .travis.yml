@@ -2,14 +2,15 @@ language: rust
 dist: xenial
 os: linux
 
+cache:
+  - cargo
+
 rust:
   - stable
 
 jobs:
   include:
     - name: The Calypso Book
-      cache:
-        - cargo
       before_script:
         - (test -x $HOME/.cargo/bin/cargo-install-update || cargo install cargo-update)
         - (test -x $HOME/.cargo/bin/mdbook || cargo install --vers "^0.4" mdbook)
@@ -18,7 +19,7 @@ jobs:
         - cd docs && rm -rf book
         - export MDBOOK_OUTPUT__HTML__site_url="/Calypso" && mdbook build . && mdbook test .
         - cargo doc --workspace --no-deps
-        - mv -rf target/doc book/rustdoc
+        - mv -f target/doc book/rustdoc
       deploy:
         provider: pages
         cleanup: false
