@@ -101,3 +101,9 @@ impl fmt::Display for Diagnostic {
         f.write_str(data)
     }
 }
+
+impl From<Diagnostic> for super::error::Error {
+    fn from(diagnostic: Diagnostic) -> Self {
+        super::error::ErrorKind::Diagnostic(diagnostic).into()
+    }
+}

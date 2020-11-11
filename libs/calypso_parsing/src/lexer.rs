@@ -136,7 +136,7 @@ impl<'lex> Lexer<'lex> {
                         format!("invalid string base `{}`", peek.unwrap()),
                         4, // Invalid string base.
                     );
-                    return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    return Err(diagnostic.into());
                 }
             };
             ch = self.advance();
@@ -231,11 +231,7 @@ impl<'lex> Lexer<'lex> {
             '#' if self.match_next('!') => HashBang,
             '#' => Hash,
 
-            // temporary tester for escape sequences until I get str/ch literals working.
-            '$' => {
-                self.handle_escape_character()?;
-                Hash
-            }
+            '\'' => self.handle_char_literal()?,
 
             // Unexpected character
             ch => {
@@ -248,7 +244,7 @@ impl<'lex> Lexer<'lex> {
                         self.source_id,
                     )
                     .build();
-                return Err(ErrorKind::Diagnostic(diagnostic).into());
+                return Err(diagnostic.into());
             }
         };
 
@@ -327,7 +323,7 @@ impl<'lex> Lexer<'lex> {
                                 self.source_id,
                             )
                             .build();
-                    return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    return Err(diagnostic.into());
                 }
                 nest.pop();
             } else {
@@ -348,7 +344,7 @@ impl<'lex> Lexer<'lex> {
                         self.source_id,
                     )
                     .build();
-                return Err(ErrorKind::Diagnostic(diagnostic).into());
+                return Err(diagnostic.into());
             }
         }
 
@@ -370,7 +366,7 @@ impl<'lex> Lexer<'lex> {
                     self.source_id,
                 )
                 .build();
-            return Err(ErrorKind::Diagnostic(diagnostic).into());
+            return Err(diagnostic.into());
         }
         Ok(())
     }
@@ -458,7 +454,7 @@ impl<'lex> Lexer<'lex> {
                             } else {
                                 return Ok(true);
                             };
-                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                            return Err(diagnostic.into());
                         }
                         let ch = ch.unwrap();
 
@@ -476,7 +472,7 @@ impl<'lex> Lexer<'lex> {
                                         self.source_id,
                                     )
                                     .build();
-                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                            return Err(diagnostic.into());
                         }
                     }
                 }
@@ -499,7 +495,7 @@ impl<'lex> Lexer<'lex> {
                                         self.source_id,
                                     )
                                     .build();
-                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                            return Err(diagnostic.into());
                         }
                         None => {
                             let diagnostic =
@@ -512,7 +508,7 @@ impl<'lex> Lexer<'lex> {
                                         self.source_id,
                                     )
                                     .build();
-                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                            return Err(diagnostic.into());
                         }
                         _ => (),
                     }
@@ -528,7 +524,7 @@ impl<'lex> Lexer<'lex> {
                                     self.source_id,
                                 )
                                 .build();
-                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        return Err(diagnostic.into());
                     }
 
                     let mut count = 0;
@@ -548,7 +544,7 @@ impl<'lex> Lexer<'lex> {
                                         self.source_id,
                                     )
                                     .build();
-                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                            return Err(diagnostic.into());
                         } else if !ch.is_ascii_hexdigit() {
                             let diagnostic =
                                 DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
@@ -560,7 +556,7 @@ impl<'lex> Lexer<'lex> {
                                         self.source_id,
                                     )
                                     .build();
-                            return Err(ErrorKind::Diagnostic(diagnostic).into());
+                            return Err(diagnostic.into());
                         }
                         self.advance();
                         count += 1;
@@ -578,7 +574,7 @@ impl<'lex> Lexer<'lex> {
                                 )
                                 .note("if you wanted a null byte, you can use `\\u{0}` or `\\0`")
                                 .build();
-                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        return Err(diagnostic.into());
                     }
                     self.current_to_start();
 
@@ -593,7 +589,7 @@ impl<'lex> Lexer<'lex> {
                                     self.source_id,
                                 )
                                 .build();
-                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        return Err(diagnostic.into());
                     }
 
                     let ch = self.peek().unwrap();
@@ -609,7 +605,7 @@ impl<'lex> Lexer<'lex> {
                                     self.source_id,
                                 )
                                 .build();
-                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        return Err(diagnostic.into());
                     } else if !self.match_next('}') {
                         let diagnostic =
                             DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
@@ -621,7 +617,7 @@ impl<'lex> Lexer<'lex> {
                                     self.source_id,
                                 )
                                 .build();
-                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        return Err(diagnostic.into());
                     }
                 }
                 Some(ch) => {
@@ -636,7 +632,7 @@ impl<'lex> Lexer<'lex> {
                                     self.source_id,
                                 )
                                 .build();
-                        return Err(ErrorKind::Diagnostic(diagnostic).into());
+                        return Err(diagnostic.into());
                     }
                     self.advance();
                     let diagnostic =
@@ -649,7 +645,7 @@ impl<'lex> Lexer<'lex> {
                                 self.source_id,
                             )
                             .build();
-                    return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    return Err(diagnostic.into());
                 }
                 None => {
                     let diagnostic =
@@ -662,7 +658,7 @@ impl<'lex> Lexer<'lex> {
                                 self.source_id,
                             )
                             .build();
-                    return Err(ErrorKind::Diagnostic(diagnostic).into());
+                    return Err(diagnostic.into());
                 }
             };
             self.set_start(start);
@@ -672,10 +668,104 @@ impl<'lex> Lexer<'lex> {
         // We don't care *what* sequence was found, just if there was one.
         Ok(false)
     }
+
+    /*
+    fn char_literal(&mut self) -> Result<Token<'lex>, ()> {
+        let mut chs_found = 0;
+        while self.peek() != '\'' && !self.is_at_end() {
+            if self.escape_character()? {
+                chs_found += 1;
+            } else {
+                self.advance();
+                chs_found += 1;
+            }
+        }
+
+        if chs_found > 1 {
+            println!("Expected a single character, found more.");
+            return Err(());
+        } else if chs_found == 0 {
+            // Make this branch different as it has a different error
+            let _ = 0;
+            println!("Expected a single character, found none.");
+            return Err(());
+        }
+
+        // Closing `'`
+        self.advance();
+        Ok(self.new_token(TokenType::CharLiteral))
+    }
+    */
+
+    fn handle_char_literal(&mut self) -> CalResult<TokenType> {
+        let mut chs_found = 0;
+        while self.peek() != Some('\'') && !self.is_at_end() {
+            if self.handle_escape_character()? {
+                chs_found += 1;
+            } else if is_valid_for_char_literal(self.peek().unwrap()) {
+                self.advance();
+                chs_found += 1;
+            } else {
+                let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                    .diag(code!(E0020))
+                    .label(
+                        LabelStyle::Primary,
+                        "the character after this one is invalid here; it must be escaped",
+                        self.new_span(),
+                        self.source_id,
+                    )
+                    .build();
+                return Err(diagnostic.into());
+            }
+        }
+
+        if chs_found > 1 {
+            let start = self.start();
+            self.set_start(start + 2);
+            self.advance();
+            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                .diag(code!(E0021))
+                .label(
+                    LabelStyle::Primary,
+                    "expected just a `'` here",
+                    self.new_span(),
+                    self.source_id,
+                )
+                .build();
+            return Err(diagnostic.into());
+        } else if chs_found == 0 {
+            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                .diag(code!(E0022))
+                .label(
+                    LabelStyle::Primary,
+                    "expected at least one character here",
+                    self.new_span(),
+                    self.source_id,
+                )
+                .build();
+            return Err(diagnostic.into());
+        }
+
+        if !self.match_next('\'') {
+            self.current_to_start();
+            self.advance();
+            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
+                .diag(code!(E0023))
+                .label(
+                    LabelStyle::Primary,
+                    "expected a single quote here",
+                    self.new_span(),
+                    self.source_id,
+                )
+                .build();
+            return Err(diagnostic.into());
+        }
+
+        Ok(TokenType::CharLiteral)
+    }
 }
 
 /*
-impl<'lex> Lexer<'lex> {
     fn number(&mut self) -> Result<Token<'lex>, ()> {
         let radix = if self.last() == '0' {
             if self.peek().is_ascii_digit() {
@@ -802,67 +892,6 @@ impl<'lex> Lexer<'lex> {
         )
     }
 
-
-
-    fn escape_character(&mut self) -> Result<bool, ()> {
-        if self.peek() == '\\' {
-            self.advance();
-            match self.peek() {
-                'x' => {
-                    for _ in 0..2 {
-                        if is_valid_digit_for_radix(self.peek(), Radix::Hexadecimal)
-                            && !self.is_at_end()
-                        {
-                            self.advance();
-                        } else {
-                            println!("Expected valid digit for hex escape sequence.");
-                            return Err(());
-                        }
-                    }
-                }
-                'n' | 'r' | 't' | '\\' | '0' | '\'' | '"' => {
-                    self.advance();
-                }
-                'u' => {
-                    let mut digit_count = 0;
-                    if !self.match_ch('{') {
-                        println!("Expected an open brace, followed by a Unicode code point.");
-                        return Err(());
-                    }
-                    while self.peek() != '}' && !self.is_at_end() {
-                        if digit_count > 6
-                            || !is_valid_digit_for_radix(self.peek(), Radix::Hexadecimal)
-                        {
-                            println!(
-                                "Expected up to 6 hexadecimal digits for a Unicode code point."
-                            );
-                            return Err(());
-                        }
-                        self.advance();
-                        digit_count += 1;
-                    }
-
-                    if self.is_at_end() {
-                        println!("Unterminated Unicode escape sequence.");
-                        return Err(());
-                    }
-
-                    // Closing bracket
-                    self.advance();
-                }
-
-                _ => {
-                    println!("Expected valid escape sequence.");
-                    return Err(());
-                }
-            }
-            return Ok(true);
-        }
-
-        // We don't care what sequence was found, just if there was one.
-        Ok(false)
-    }
-
     fn string(&mut self) -> Result<Token<'lex>, ()> {
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
@@ -883,31 +912,4 @@ impl<'lex> Lexer<'lex> {
         self.advance();
         Ok(self.new_token(TokenType::StringLiteral))
     }
-
-    fn char_literal(&mut self) -> Result<Token<'lex>, ()> {
-        let mut chs_found = 0;
-        while self.peek() != '\'' && !self.is_at_end() {
-            if self.escape_character()? {
-                chs_found += 1;
-            } else {
-                self.advance();
-                chs_found += 1;
-            }
-        }
-
-        if chs_found > 1 {
-            println!("Expected a single character, found more.");
-            return Err(());
-        } else if chs_found == 0 {
-            // Make this branch different as it has a different error
-            let _ = 0;
-            println!("Expected a single character, found none.");
-            return Err(());
-        }
-
-        // Closing `'`
-        self.advance();
-        Ok(self.new_token(TokenType::CharLiteral))
-    }
-}
 */

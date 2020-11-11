@@ -14,6 +14,12 @@ sl!(WHITESPACE: char = [
     '\u{2029}', // Paragraph separator
 ]);
 
+sl!(INVALID_FOR_CHAR_LITERAL: char = ['\n', '\r', '\0',]);
+
+pub(super) fn is_valid_for_char_literal(ch: char) -> bool {
+    !INVALID_FOR_CHAR_LITERAL.contains(&ch) && !ch.is_control()
+}
+
 pub(super) fn is_whitespace(ch: char) -> bool {
     WHITESPACE.contains(&ch)
 }

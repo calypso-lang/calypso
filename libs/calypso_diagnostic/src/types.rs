@@ -66,5 +66,9 @@ register_diagnostics! {
     E0016: "Expected a closing curly bracket after a Unicode codepoint, found `{ch}`.", // note for detailed information: this can be triggered by more than 6 codepoint characters
     E0017: "Expected a closing curly bracket after a Unicode codepoint, found whitespace.",
     E0018: "Expected up to 6 hexadecimal digits in a Unicode codepoint, found whitespace.",
-    E0019: "Expected at least 1 hexadecimal digit in a Unicode codepoint, found none."
+    E0019: "Expected at least 1 hexadecimal digit in a Unicode codepoint, found none.",
+    E0020: "Expected 1 non-control character in character literal, found a control character.", // note for detailed information: control character is found by std::char::is_control
+    E0021: "Expected 1 non-control character in character literal, found more than one character.",
+    E0022: "Expected 1 non-control character in character literal, found none.",
+    E0023: "Expected a single quote.",
 }
