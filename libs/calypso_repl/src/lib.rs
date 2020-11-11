@@ -1,3 +1,5 @@
+#![doc(html_root_url = "https://thepuzzlemaker.github.io/Calypso/rustdoc/")]
+
 use std::collections::HashMap;
 use std::sync::Arc;
 

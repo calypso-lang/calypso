@@ -1,3 +1,4 @@
+#![doc(html_root_url = "https://thepuzzlemaker.github.io/Calypso/rustdoc/")]
 #![warn(clippy::pedantic)]
 
 use clap::{load_yaml, App};
