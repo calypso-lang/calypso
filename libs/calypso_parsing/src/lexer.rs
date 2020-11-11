@@ -14,7 +14,7 @@ use std::sync::Arc;
 pub mod types;
 pub use types::*;
 
-pub mod helpers;
+mod helpers;
 use helpers::*;
 
 use std::ops::Deref;
