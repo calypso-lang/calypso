@@ -669,34 +669,6 @@ impl<'lex> Lexer<'lex> {
         Ok(false)
     }
 
-    /*
-    fn char_literal(&mut self) -> Result<Token<'lex>, ()> {
-        let mut chs_found = 0;
-        while self.peek() != '\'' && !self.is_at_end() {
-            if self.escape_character()? {
-                chs_found += 1;
-            } else {
-                self.advance();
-                chs_found += 1;
-            }
-        }
-
-        if chs_found > 1 {
-            println!("Expected a single character, found more.");
-            return Err(());
-        } else if chs_found == 0 {
-            // Make this branch different as it has a different error
-            let _ = 0;
-            println!("Expected a single character, found none.");
-            return Err(());
-        }
-
-        // Closing `'`
-        self.advance();
-        Ok(self.new_token(TokenType::CharLiteral))
-    }
-    */
-
     fn handle_char_literal(&mut self) -> CalResult<TokenType> {
         let mut chs_found = 0;
         while self.peek() != Some('\'') && !self.is_at_end() {
