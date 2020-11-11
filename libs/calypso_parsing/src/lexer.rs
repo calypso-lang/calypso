@@ -21,8 +21,7 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 
 pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
-
-type Lexeme<'lex> = &'lex [char];
+pub type Lexeme<'lex> = &'lex [char];
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'lex> {
