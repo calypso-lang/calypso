@@ -63,7 +63,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 [b2]: https://tokei.rs/b1/github/ThePuzzlemaker/Calypso?category=lines
 
-[b3]: https://img.shields.io/travis/com/ThePuzzlemaker/Calypso?label=docs
+[b3]: https://img.shields.io/travis/com/ThePuzzlemaker/Calypso
 [l3]: https://travis-ci.com/github/ThePuzzlemaker/Calypso
 
 [b4]: https://img.shields.io/badge/license-MIT-blue.svg
