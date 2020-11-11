@@ -7,8 +7,12 @@ cache:
 
 rust:
   - stable
+  - nightly
 
 jobs:
+  allow_failures:
+    - rust: nightly
+  fast_finsih: true
   include:
     - name: The Calypso Book
       before_script:
@@ -18,7 +22,7 @@ jobs:
       script:
         - cd docs && rm -rf book
         - export MDBOOK_OUTPUT__HTML__site_url="/Calypso" && mdbook build . && mdbook test .
-        - cargo doc --workspace --no-deps
+        - cargo +nightly doc --workspace --no-deps
         - mv -f ../target/doc ./book/rustdoc
       deploy:
         provider: pages
