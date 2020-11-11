@@ -97,6 +97,8 @@ impl<'lex> Lexer<'lex> {
         // Is valid character for identifier's first character
         if is_ident_start(ch) {
             return self.handle_identifier();
+        } else if ch == '\'' {
+            return self.handle_char_literal();
         }
 
         // TODO: literals
@@ -213,8 +215,6 @@ impl<'lex> Lexer<'lex> {
             // `'_' => Under` is already taken care of by idents
             '#' if self.match_next('!') => HashBang,
             '#' => Hash,
-
-            '\'' => self.handle_char_literal()?,
 
             // Unexpected character
             ch => {
@@ -534,7 +534,7 @@ impl<'lex> Lexer<'lex> {
                                     .diag(code!(E0014, ch = ch))
                                     .label(
                                         LabelStyle::Primary,
-                                        "found an invalid digit here, perhaps you meant to have a `}` here?",
+                                        "found an invalid digit here; perhaps you meant to have a `}` here?",
                                         self.new_span(),
                                         self.source_id,
                                     )
@@ -652,7 +652,7 @@ impl<'lex> Lexer<'lex> {
         Ok(false)
     }
 
-    fn handle_char_literal(&mut self) -> CalResult<TokenType> {
+    fn handle_char_literal(&mut self) -> CalResult<Token<'lex>> {
         let mut chs_found = 0;
         while self.peek() != Some('\'') && !self.is_at_end() {
             if self.handle_escape_character()? {
@@ -716,7 +716,7 @@ impl<'lex> Lexer<'lex> {
             return Err(diagnostic.into());
         }
 
-        Ok(TokenType::CharLiteral)
+        Ok(self.new_token(TokenType::CharLiteral))
     }
 }
 

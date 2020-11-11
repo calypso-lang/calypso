@@ -166,6 +166,7 @@ impl<Ctx> Repl<Ctx> {
                                 continue;
                             } else {
                                 eprintln!("error: could not find command `{}`", command);
+                                continue;
                             }
                         }
                         // If the command didn't match, then it must be valid syntax.
