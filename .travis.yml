@@ -19,9 +19,7 @@ jobs:
         - cd docs && rm -rf book
         - export MDBOOK_OUTPUT__HTML__site_url="/Calypso" && mdbook build . && mdbook test .
         - cargo doc --workspace --no-deps
-        - ls
-        - ls target
-        # - mv -f ./target/doc ./book/rustdoc
+        - mv -f ../target/doc ./book/rustdoc
       deploy:
         provider: pages
         cleanup: false
