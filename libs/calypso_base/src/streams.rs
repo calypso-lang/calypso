@@ -49,6 +49,7 @@ use std::str::CharIndices;
 
 pub type CharLoc = (usize, char);
 
+#[derive(Debug, Clone)]
 /// A stream emitting tuples of byte locations and characters from a string slice.
 pub struct StringStream<'s> {
     /// A reference to the underlying string

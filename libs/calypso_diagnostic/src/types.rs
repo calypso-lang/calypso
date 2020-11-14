@@ -51,6 +51,7 @@ register_diagnostics! {
     // If you feel that they are worthy, feel free to move them to the upper category
     // and write detailed information for them. (Most of them probably are, but I just haven't
     // gotten to it yet.)
+    E0000: "Testing diagnostic, please ignore. If this is encountered in regular usage, please file an issue.",
     E0003: "Encountered an unexpected character.",
     E0004: "Expected two hexadecimal digits in escape sequence, found none.",
     E0005: "Expected two hexadecimal digits in escape sequence, found an invalid digit `{ch}`.",

@@ -1,12 +1,13 @@
 use calypso_base::init_trie;
-use calypso_base::span::{Span, Spanned};
+use calypso_base::{
+    span::{Span, Spanned},
+    streams::{Stream, StringStream},
+};
 use calypso_diagnostic::{
-    code,
     diagnostic::{DiagnosticBuilder, LabelStyle, Severity},
     error::Result as CalResult,
-    FileMgr,
+    gen_error, FileMgr,
 };
-use calypso_util::buffer::Buffer;
 use radix_trie::Trie;
 
 use std::sync::Arc;
@@ -25,22 +26,22 @@ pub type Lexeme<'lex> = &'lex [char];
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'lex> {
-    buf: Buffer<'lex>,
+    stream: StringStream<'lex>,
     source_id: usize,
     files: Arc<FileMgr>,
 }
 
 impl<'lex> Deref for Lexer<'lex> {
-    type Target = Buffer<'lex>;
+    type Target = StringStream<'lex>;
 
     fn deref(&self) -> &Self::Target {
-        &self.buf
+        &self.stream
     }
 }
 
 impl<'lex> DerefMut for Lexer<'lex> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.buf
+        &mut self.stream
     }
 }
 
@@ -72,15 +73,24 @@ init_trie!(pub KEYWORD_TRIE: Keyword => {
 });
 
 impl<'lex> Lexer<'lex> {
-    pub fn new(source_id: usize, source: &'lex [char], files: Arc<FileMgr>) -> Self {
-        let buf = Buffer::new(source);
+    pub fn new(source_id: usize, source: &'lex str, files: Arc<FileMgr>) -> Self {
         Self {
-            buf,
+            stream: StringStream::new(source),
             source_id,
             files,
         }
     }
 
+    pub fn scan(&mut self) -> CalResult<Token<'lex>> {
+        gen_error!(self => {
+            E0000;
+            labels: [
+                LabelStyle::Primary => (self.source_id, Span::new(0,0)); "not yet implemented",
+            ],
+        })
+    }
+
+    /*
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
         self.skip_whitespace()?;
         self.current_to_start();
@@ -232,8 +242,10 @@ impl<'lex> Lexer<'lex> {
 
         Ok(self.new_token(token_type))
     }
+    */
 }
 
+/*
 impl<'lex> Lexer<'lex> {
     fn skip_whitespace(&mut self) -> CalResult<()> {
         loop {
@@ -268,7 +280,7 @@ impl<'lex> Lexer<'lex> {
         // xx -> true true -> true
         // x* -> true false -> true
         // /x -> false true -> true
-        // /* -> false false -> false
+        // /* -> false false -> false      */
         if self.peek() != Some('/') || self.peek_next() != Some('*') {
             return Ok(false);
         }
@@ -718,6 +730,7 @@ impl<'lex> Lexer<'lex> {
         Ok(self.new_token(TokenType::CharLiteral))
     }
 }
+*/
 
 /*
     fn number(&mut self) -> Result<Token<'lex>, ()> {

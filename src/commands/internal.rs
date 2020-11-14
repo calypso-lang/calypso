@@ -50,10 +50,9 @@ pub fn lexer(matches: &ArgMatches) {
         }
     };
 
-    let chars = contents.chars().collect::<Vec<char>>();
     let mut files = FileMgr::new();
-    let source_id = files.add(path.display().to_string(), contents);
-    let mut lexer = Lexer::new(source_id, &chars, Arc::new(files));
+    let source_id = files.add(path.display().to_string(), contents.clone());
+    let mut lexer = Lexer::new(source_id, &contents, Arc::new(files));
     let mut tokens = Vec::new();
     loop {
         let token = lexer.scan();
@@ -99,10 +98,9 @@ pub fn lexer_stdin(matches: &ArgMatches) {
         return;
     }
 
-    let chars = contents.chars().collect::<Vec<char>>();
     let mut files = FileMgr::new();
-    let source_id = files.add("<anon>".to_string(), contents);
-    let mut lexer = Lexer::new(source_id, &chars, Arc::new(files));
+    let source_id = files.add("<anon>".to_string(), contents.clone());
+    let mut lexer = Lexer::new(source_id, &contents, Arc::new(files));
     let mut tokens = Vec::new();
     loop {
         let token = lexer.scan();
@@ -140,10 +138,9 @@ pub fn lexer_stdin_repl() {
 
     let mut repl = Repl::new(
         Box::new(|_ctx, contents| {
-            let chars = contents.chars().collect::<Vec<char>>();
             let mut files = FileMgr::new();
-            let source_id = files.add("<anon>".to_string(), contents);
-            let mut lexer = Lexer::new(source_id, &chars, Arc::new(files));
+            let source_id = files.add("<anon>".to_string(), contents.clone());
+            let mut lexer = Lexer::new(source_id, &contents, Arc::new(files));
             let mut tokens = Vec::new();
             loop {
                 let token = lexer.scan();

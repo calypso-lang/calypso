@@ -9,6 +9,7 @@ use std::io::Cursor;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
+/// We use an `Arc<FileMgr>` for the Diagnostic because error_chain requires that the error be Send.
 pub struct Diagnostic(CodespanDiag<usize>, Arc<FileMgr>);
 
 #[derive(Clone, Debug)]
@@ -33,38 +34,34 @@ impl DiagnosticBuilder {
         }
     }
 
-    pub fn code(&mut self, code: impl Into<String>) -> &mut Self {
+    pub fn code(mut self, code: impl Into<String>) -> Self {
         self.code = Some(code.into());
         self
     }
 
-    pub fn message(&mut self, message: impl Into<String>) -> &mut Self {
+    pub fn message(mut self, message: impl Into<String>) -> Self {
         self.message = message.into();
         self
     }
 
     pub fn label(
-        &mut self,
+        mut self,
         style: LabelStyle,
         message: impl Into<String>,
         span: Span,
         file_id: usize,
-    ) -> &mut Self {
+    ) -> Self {
         self.labels
             .push(Label::new(style, file_id, span).with_message(message));
         self
     }
 
-    pub fn note(&mut self, message: impl Into<String>) -> &mut Self {
+    pub fn note(mut self, message: impl Into<String>) -> Self {
         self.notes.push(message.into());
         self
     }
 
-    pub fn diag(&mut self, builder: impl Fn(&mut Self) -> &mut Self) -> &mut Self {
-        builder(self)
-    }
-
-    pub fn build(&mut self) -> Diagnostic {
+    pub fn build(self) -> Diagnostic {
         let mut diagnostic = CodespanDiag::new(self.level);
         if let Some(code) = self.code.clone() {
             diagnostic = diagnostic.with_code(code)
