@@ -1,4 +1,4 @@
-<div style="background-color:#fff;width:250px;height:250px;float:right;"><img src="https://raw.githubusercontent.com/ThePuzzlemaker/Calypso/master/assets/logo.png" alt="Calypso logo" width="250" align="right"/></div>
+<img src="https://raw.githubusercontent.com/ThePuzzlemaker/Calypso/master/assets/logo.png" alt="Calypso logo" width="250" align="right"/>
 
 # Calypso
 
