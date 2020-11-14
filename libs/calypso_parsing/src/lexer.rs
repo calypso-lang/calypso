@@ -533,7 +533,7 @@ impl<'lex> Lexer<'lex> {
                                     .diag(code!(E0014, ch = ch))
                                     .label(
                                         LabelStyle::Primary,
-                                        "found an invalid digit here; perhaps you meant to have a `}` here?",
+                                        "found an invalid digit here. perhaps you meant to have a `}` here?",
                                         self.new_span(),
                                         self.source_id,
                                     )
