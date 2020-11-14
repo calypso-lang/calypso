@@ -7,3 +7,5 @@ mod macros;
 /// [`Span`](span::Span) and [`Spanned`](span::Spanned) types.
 pub mod span;
 pub use macros::*;
+/// Utilities for handling streams of data
+pub mod streams;
