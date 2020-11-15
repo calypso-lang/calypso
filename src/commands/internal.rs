@@ -64,7 +64,7 @@ pub fn lexer(matches: &ArgMatches) {
                 break;
             }
             let value = *token.value();
-            tokens.push((value.0, value.1.iter().collect::<String>(), token.span()));
+            tokens.push((value.0, value.1, token.span()));
         }
     }
     println!(
@@ -112,7 +112,7 @@ pub fn lexer_stdin(matches: &ArgMatches) {
                 break;
             }
             let value = *token.value();
-            tokens.push((value.0, value.1.iter().collect::<String>(), token.span()));
+            tokens.push((value.0, value.1, token.span()));
         }
     }
     println!(
@@ -152,7 +152,7 @@ pub fn lexer_stdin_repl() {
                         break;
                     }
                     let value = *token.value();
-                    tokens.push((value.0, value.1.iter().collect::<String>(), token.span()));
+                    tokens.push((value.0, value.1, token.span()));
                 }
             }
             Some(

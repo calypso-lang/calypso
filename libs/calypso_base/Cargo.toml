@@ -10,3 +10,6 @@ repository = "https://github.com/ThePuzzlemaker/Calypso/"
 license = "MIT"
 
 [dependencies]
+
+# [dev-dependencies]
+# proptest = "0.10.1"

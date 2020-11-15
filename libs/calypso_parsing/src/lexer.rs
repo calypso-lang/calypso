@@ -22,7 +22,7 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 
 pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
-pub type Lexeme<'lex> = &'lex [char];
+pub type Lexeme<'lex> = &'lex str;
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'lex> {
@@ -82,6 +82,7 @@ impl<'lex> Lexer<'lex> {
     }
 
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
+        self.skip_whitespace()?;
         gen_error!(self => {
             E0000;
             labels: [
@@ -245,18 +246,14 @@ impl<'lex> Lexer<'lex> {
     */
 }
 
-/*
 impl<'lex> Lexer<'lex> {
     fn skip_whitespace(&mut self) -> CalResult<()> {
-        loop {
-            self.handle_dangling_comment_ends()?;
-            if (!self.handle_comment()
-                && !self.handle_multiline_comment()?
-                && !self.match_next_if(is_whitespace))
-                || self.is_at_end()
-            {
-                break;
-            }
+        while !self.is_at_end()
+            && (self.handle_comment()
+                || self.handle_multiline_comment()?
+                || self.next_if(is_whitespace).is_some())
+        {
+            //self.handle_dangling_comment_ends()?; TODO
         }
         Ok(())
     }
@@ -266,15 +263,31 @@ impl<'lex> Lexer<'lex> {
         // x/ -> false true -> true
         // /x -> true false -> true
         // // -> false false -> false
-        if self.peek() != Some('/') || self.peek_next() != Some('/') {
+        if self.peek_cond(char_ne('/')) || self.peek2_cond(char_ne('/')) {
             return false;
         }
         // A comment goes until the end of the line,
         // so gorge all the characters until we get to the newline
         // (or the end, when it automatically stops gorging).
-        self.gorge_while(|c, _| c != '\n');
+        self.gorge_while(|(_, c), _| *c != '\n');
         true
     }
+
+    fn handle_multiline_comment(&mut self) -> CalResult<bool> {
+        // xx -> 11 -> 1
+        // x* -> 10 -> 1
+        // /x -> 01 -> 1
+        // /* -> 00 -> 0
+        if self.peek_cond(char_ne('/')) || self.peek2_cond(char_ne('*')) {
+            return Ok(false);
+        }
+
+        Ok(false)
+    }
+}
+
+/*
+impl<'lex> Lexer<'lex> {
 
     fn handle_multiline_comment(&mut self) -> CalResult<bool> {
         // xx -> true true -> true

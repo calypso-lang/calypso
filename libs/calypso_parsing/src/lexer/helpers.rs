@@ -14,20 +14,27 @@ sl!(WHITESPACE: char = [
     '\u{2029}', // Paragraph separator
 ]);
 
-sl!(INVALID_FOR_CHAR_LITERAL: char = ['\n', '\r', '\0',]);
-
+#[inline]
 pub(super) fn is_valid_for_char_literal(ch: char) -> bool {
-    !INVALID_FOR_CHAR_LITERAL.contains(&ch) && !ch.is_control()
+    !ch.is_control()
 }
 
-pub(super) fn is_whitespace(ch: char) -> bool {
-    WHITESPACE.contains(&ch)
+#[inline]
+pub(super) fn is_whitespace(elem: &(usize, char)) -> bool {
+    WHITESPACE.contains(&elem.1)
 }
 
+#[inline]
 pub(super) fn is_ident_start(ch: char) -> bool {
     ch.is_ascii_alphabetic() || ch == '_'
 }
 
+#[inline]
 pub(super) fn is_ident_continue(ch: char) -> bool {
     is_ident_start(ch) || ch.is_ascii_digit()
+}
+
+#[inline]
+pub(super) fn char_ne(ne: char) -> impl FnOnce(&(usize, char)) -> bool {
+    move |(_, ch)| *ch != ne
 }

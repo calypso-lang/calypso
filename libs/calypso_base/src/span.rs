@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use std::ops::Range;
 
-/// The location in a string in which some object spans.
+/// The location in a slice in which some object spans.
 ///
 /// # Example
 ///
@@ -57,6 +57,9 @@ impl Span {
     /// assert!(!invalid_span_start.is_valid_for(&input));
     /// assert!(!invalid_span_length.is_valid_for(&input));
     /// ```
+    ///
+    /// Note that if you're using a string as the buffer (as `&[u8]`),
+    /// the span will use byte indices.
     pub fn is_valid_for<T>(&self, buffer: &[T]) -> bool {
         self.start <= buffer.len() && self.end() <= buffer.len()
     }
