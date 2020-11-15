@@ -204,7 +204,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use proptest::prelude::*;
 
     /// This tests `prev`, `next`, `peek`, `peek2`, `peek3`
     #[test]
