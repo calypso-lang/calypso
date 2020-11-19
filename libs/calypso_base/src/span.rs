@@ -14,6 +14,14 @@ impl Span {
         Span { lo, hi }
     }
 
+    pub fn new_shrunk_hi(hi: usize) -> Self {
+        Span { lo: hi, hi }
+    }
+
+    pub fn new_shrunk_lo(lo: usize) -> Self {
+        Span { lo, hi: lo }
+    }
+
     /// Create a dummy span (that has a span equivalent to the range `0..0`).
     pub fn new_dummy() -> Self {
         Self { lo: 0, hi: 0 }
@@ -109,6 +117,10 @@ impl Span {
     pub fn until(self, end: Span) -> Span {
         Span::new(self.lo, end.lo)
     }
+
+    pub fn add_hi(self, amount: usize) -> Span {
+        self.with_hi(self.hi() + amount)
+    }
 }
 
 impl Default for Span {
@@ -174,3 +186,5 @@ where
         self.span
     }
 }
+
+impl<T: Copy + Debug> Copy for Spanned<T> {}

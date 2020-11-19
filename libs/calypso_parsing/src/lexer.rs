@@ -269,7 +269,7 @@ impl<'lex> Lexer<'lex> {
         // A comment goes until the end of the line,
         // so gorge all the characters until we get to the newline
         // (or the end, when it automatically stops gorging).
-        self.gorge_while(|(_, c), _| *c != '\n');
+        self.gorge_while(|spanned, _| spanned.value_owned() != '\n');
         true
     }
 

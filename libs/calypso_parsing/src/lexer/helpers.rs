@@ -20,8 +20,8 @@ pub(super) fn is_valid_for_char_literal(ch: char) -> bool {
 }
 
 #[inline]
-pub(super) fn is_whitespace(elem: &(usize, char)) -> bool {
-    WHITESPACE.contains(&elem.1)
+pub(super) fn is_whitespace(elem: &Spanned<char>) -> bool {
+    WHITESPACE.contains(elem.value())
 }
 
 #[inline]
@@ -34,7 +34,9 @@ pub(super) fn is_ident_continue(ch: char) -> bool {
     is_ident_start(ch) || ch.is_ascii_digit()
 }
 
+use calypso_base::span::Spanned;
+
 #[inline]
-pub(super) fn char_ne(ne: char) -> impl FnOnce(&(usize, char)) -> bool {
-    move |(_, ch)| *ch != ne
+pub(super) fn char_ne(ne: char) -> impl FnOnce(&Spanned<char>) -> bool {
+    move |spanned| spanned.value_owned() != ne
 }

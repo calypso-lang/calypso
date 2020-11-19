@@ -3,10 +3,16 @@ use std::ops::Index;
 use std::slice::SliceIndex;
 use std::str::CharIndices;
 
-/// A location in text at which a character is.
-/// The first element is the byte index of the character
-/// and the second is the character itself.
-pub type CharLoc = (usize, char);
+use crate::span::Spanned;
+
+impl From<(usize, char)> for Spanned<char> {
+    fn from(loc: (usize, char)) -> Spanned<char> {
+        let lo = loc.0;
+        let ch = loc.1;
+        let hi = lo + ch.len_utf8();
+        Spanned::new((lo..hi).into(), ch)
+    }
+}
 
 #[derive(Debug, Clone)]
 /// A stream emitting tuples of byte locations and characters from a string slice.
@@ -20,13 +26,13 @@ pub struct StringStream<'s> {
     /// The number of characters passed so far.
     chars_passed: usize,
     /// 1ch peek
-    peek: Option<CharLoc>,
+    peek: Option<Spanned<char>>,
     /// 2ch peek
-    peek2: Option<CharLoc>,
+    peek2: Option<Spanned<char>>,
     /// 3ch peek
-    peek3: Option<CharLoc>,
+    peek3: Option<Spanned<char>>,
     /// 1ch backwards peek
-    prev: Option<CharLoc>,
+    prev: Option<Spanned<char>>,
 }
 
 impl<'s> StringStream<'s> {
@@ -35,9 +41,9 @@ impl<'s> StringStream<'s> {
 
         Self {
             prev: None,
-            peek: indices.next(),
-            peek2: indices.next(),
-            peek3: indices.next(),
+            peek: indices.next().map(|v| v.into()),
+            peek2: indices.next().map(|v| v.into()),
+            peek3: indices.next().map(|v| v.into()),
             num_chars: string.chars().count(),
             indices,
             string,
@@ -47,13 +53,13 @@ impl<'s> StringStream<'s> {
 }
 
 impl<'s> Iterator for StringStream<'s> {
-    type Item = CharLoc;
+    type Item = Spanned<char>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.prev = self.peek.take();
         self.peek = self.peek2.take();
         self.peek2 = self.peek3.take();
-        self.peek3 = self.indices.next();
+        self.peek3 = self.indices.next().map(|v| v.into());
         self.chars_passed += 1;
         self.prev
     }
@@ -67,7 +73,7 @@ impl<'s> Iterator for StringStream<'s> {
 }
 
 impl<'s> Stream for StringStream<'s> {
-    type Elem = CharLoc;
+    type Elem = Spanned<char>;
 
     fn is_at_end(&self) -> bool {
         self.peek.is_none()
@@ -204,6 +210,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::span::{Span, Spanned};
 
     /// This tests `prev`, `next`, `peek`, `peek2`, `peek3`
     #[test]
@@ -212,31 +219,35 @@ mod tests {
         let string =
             "🌈‍🏳 TRANS RIGHTS ARE HUMAN RIGHTS! THIS THE WORLD SHALL KNOW! 🌈‍🏳 θισ 𝓲𝓼 a test 🇸 🇹 🇷 🇪 🇦 🇲. Thank you!";
         let mut stream = StringStream::new(string);
-        let mut curr_idx = 0;
+        let mut curr_span = Span::default();
 
         // pride flag is <rainbow><ZWJ><waving white flag> = U+1f308 U+200d U+1f3f3
         // U+1f308 = rainbow
+        curr_span = curr_span.add_hi('\u{1f308}'.len_utf8());
         assert!(stream.prev().is_none());
-        assert_eq!(stream.next().unwrap(), (curr_idx, '\u{1f308}'));
-        assert_eq!(*stream.prev().unwrap(), (curr_idx, '\u{1f308}'));
+        assert_eq!(stream.next().unwrap(), Spanned::new(curr_span, '\u{1f308}'));
+        assert_eq!(
+            *stream.prev().unwrap(),
+            Spanned::new(curr_span, '\u{1f308}')
+        );
+        curr_span = curr_span.shrink_to_hi().add_hi('\u{200d}'.len_utf8());
         // now the rest looks like this:
         // _: consumed,
         // _<ZWJ><waving white flag><space>
-        curr_idx += '\u{1f308}'.len_utf8();
         // U+200d = ZWJ
         // let's test the peek() methood here
-        assert_eq!(*stream.peek().unwrap(), (curr_idx, '\u{200d}'));
-        curr_idx += '\u{200d}'.len_utf8();
+        assert_eq!(*stream.peek().unwrap(), Spanned::new(curr_span, '\u{200d}'));
+        curr_span = curr_span.shrink_to_hi().add_hi('\u{1f3f3}'.len_utf8());
         // U+1f3f3 = waving white flag
         // let's test the peek2() method here
         assert_eq!(
             *stream.peek2().unwrap(),
-            ("\u{1f308}\u{200d}".len(), '\u{1f3f3}')
+            Spanned::new(curr_span, '\u{1f3f3}')
         );
-        curr_idx += '\u{1f3f3}'.len_utf8();
+        curr_span = curr_span.shrink_to_hi().add_hi(' '.len_utf8());
         // slice the whole thing and check it
-        assert_eq!(&stream[0..curr_idx], "🌈‍🏳");
+        assert_eq!(&stream[0..curr_span.hi() - 1], "🌈‍🏳");
         // the character 3 from here is a space
-        assert_eq!(*stream.peek3().unwrap(), (curr_idx, ' '));
+        assert_eq!(*stream.peek3().unwrap(), Spanned::new(curr_span, ' '));
     }
 }
