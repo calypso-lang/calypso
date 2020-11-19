@@ -29,6 +29,8 @@ pub struct Lexer<'lex> {
     stream: StringStream<'lex>,
     source_id: usize,
     files: Arc<FileMgr>,
+    start: Span,
+    current: Span,
 }
 
 impl<'lex> Deref for Lexer<'lex> {
@@ -78,6 +80,8 @@ impl<'lex> Lexer<'lex> {
             stream: StringStream::new(source),
             source_id,
             files,
+            start: Span::default(),
+            current: Span::default(),
         }
     }
 

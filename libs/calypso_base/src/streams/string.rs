@@ -19,7 +19,7 @@ impl From<(usize, char)> for Spanned<char> {
 pub struct StringStream<'s> {
     /// A reference to the underlying string
     string: &'s str,
-    /// The cached number of characters in the string
+    /// The cached number of characters in the string, as calculating that is O(n).
     num_chars: usize,
     /// The stream's current char and index
     indices: CharIndices<'s>,
