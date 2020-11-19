@@ -3,71 +3,129 @@ use std::fmt::Debug;
 use std::ops::Range;
 
 /// The location in a slice in which some object spans.
-///
-/// # Example
-///
-/// ```rust
-/// # use calypso_base::span::Span;
-/// let span = Span::new(1, 5);
-/// assert_eq!(span.start(), 1);
-/// assert_eq!(span.length(), 5);
-/// assert_eq!(span.end(), 1 + 5);
-/// ```
-#[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Span {
-    start: usize,
-    length: usize,
+    lo: usize,
+    hi: usize,
 }
 
 impl Span {
-    /// Get the start of the span.
-    pub fn start(&self) -> usize {
-        self.start
+    pub fn new(lo: usize, hi: usize) -> Self {
+        Span { lo, hi }
     }
 
-    /// Get the length of the span.
-    pub fn length(&self) -> usize {
-        self.length
+    /// Create a dummy span (that has a span equivalent to the range `0..0`).
+    pub fn new_dummy() -> Self {
+        Self { lo: 0, hi: 0 }
     }
 
-    /// Get the index where span ends (`start + length`)
-    pub fn end(&self) -> usize {
-        self.start + self.length
+    pub fn lo(&self) -> usize {
+        self.lo
     }
 
-    /// Create a new span from a start and a length
-    pub fn new(start: usize, length: usize) -> Self {
-        Self { start, length }
+    pub fn with_lo(self, lo: usize) -> Self {
+        Self { lo, ..self }
     }
 
-    /// Check if a span is within the range of `buffer`.
+    pub fn hi(&self) -> usize {
+        self.hi
+    }
+
+    pub fn with_hi(self, hi: usize) -> Self {
+        Self { hi, ..self }
+    }
+
+    /// Returns `true`  if this is a dummy span
+    pub fn is_dummy(&self) -> bool {
+        self.lo == 0 && self.hi == 0
+    }
+
+    /// Returns a new span representing an empty span at the beginning of this span
+    pub fn shrink_to_lo(&self) -> Span {
+        self.with_hi(self.lo)
+    }
+
+    /// Returns a new span representing an empty span at the end of this span.
+    pub fn shrink_to_hi(self) -> Span {
+        self.with_lo(self.hi)
+    }
+
+    /// Returns true if if `hi == lo`
+    pub fn is_empty(&self) -> bool {
+        self.hi == self.lo
+    }
+
+    /// Returns `self` if `self` is not a dummy span, and `other` otherwise.
+    pub fn substitute_dummy(self, other: Span) -> Span {
+        if self.is_dummy() {
+            other
+        } else {
+            self
+        }
+    }
+
+    /// Returns `true` if `self` fully encloses `other`.
+    pub fn contains(self, other: Span) -> bool {
+        self.lo <= other.lo && other.hi <= self.hi
+    }
+
+    /// Returns `true` if `self` touches `other`.
+    pub fn overlaps(self, other: Span) -> bool {
+        self.lo < other.hi && other.lo < other.hi
+    }
+
+    /// Returns a `Span` that would enclose both `self` and `end`.
     ///
-    /// # Example
-    ///
-    /// ```rust
-    /// # use calypso_base::span::Span;
-    /// let input = vec!['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-    /// // This span is valid for the input.
-    /// let valid_span = Span::new(0, 3);
-    /// // This span has an invalid start index, so it's not valid for the input.
-    /// let invalid_span_start = Span::new(7, 3);
-    /// // This span has an invalid length, so it's not valid for the input.
-    /// let invalid_span_length = Span::new(0, 10);
-    /// assert!(valid_span.is_valid_for(&input));
-    /// assert!(!invalid_span_start.is_valid_for(&input));
-    /// assert!(!invalid_span_length.is_valid_for(&input));
+    /// ```text
+    ///     ____             ___
+    ///     self lorem ipsum end
+    ///     ^^^^^^^^^^^^^^^^^^^^
     /// ```
+    pub fn to(self, end: Span) -> Span {
+        Span::new(
+            std::cmp::min(self.lo, end.lo),
+            std::cmp::max(self.hi, end.hi),
+        )
+    }
+
+    /// Returns a `Span` between the end of `self` to the beginning of `end`.
     ///
-    /// Note that if you're using a string as the buffer (as `&[u8]`),
-    /// the span will use byte indices.
-    pub fn is_valid_for<T>(&self, buffer: &[T]) -> bool {
-        self.start <= buffer.len() && self.end() <= buffer.len()
+    /// ```text
+    ///     ____             ___
+    ///     self lorem ipsum end
+    ///         ^^^^^^^^^^^^^
+    /// ```
+    pub fn between(self, end: Span) -> Span {
+        Span::new(self.hi, end.lo)
+    }
+
+    /// Returns a `Span` from the beginning of `self` until the beginning of `end`.
+    ///
+    /// ```text
+    ///     ____             ___
+    ///     self lorem ipsum end
+    ///     ^^^^^^^^^^^^^^^^^
+    /// ```
+    pub fn until(self, end: Span) -> Span {
+        Span::new(self.lo, end.lo)
+    }
+}
+
+impl Default for Span {
+    fn default() -> Self {
+        Self::new_dummy()
     }
 }
 
 impl From<Span> for Range<usize> {
     fn from(span: Span) -> Self {
-        (span.start())..(span.end())
+        span.lo..span.hi
+    }
+}
+
+impl From<Range<usize>> for Span {
+    fn from(range: Range<usize>) -> Self {
+        Span::new(range.start, range.end)
     }
 }
 

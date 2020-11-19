@@ -71,15 +71,7 @@ pub fn lexer(matches: &ArgMatches) {
         "{}",
         tokens
             .iter()
-            .map(|tok| {
-                format!(
-                    "{:?} @ {}..{}: `{}`",
-                    tok.0,
-                    tok.2.start(),
-                    tok.2.end(),
-                    tok.1,
-                )
-            })
+            .map(|tok| { format!("{:?} @ {}..{}: `{}`", tok.0, tok.2.lo(), tok.2.hi(), tok.1,) })
             .collect::<Vec<String>>()
             .join("\n")
     );
@@ -119,15 +111,7 @@ pub fn lexer_stdin(matches: &ArgMatches) {
         "{}",
         tokens
             .iter()
-            .map(|tok| {
-                format!(
-                    "{:?} @ {}..{}: `{}`",
-                    tok.0,
-                    tok.2.start(),
-                    tok.2.end(),
-                    tok.1,
-                )
-            })
+            .map(|tok| { format!("{:?} @ {}..{}: `{}`", tok.0, tok.2.lo(), tok.2.hi(), tok.1,) })
             .collect::<Vec<String>>()
             .join("\n")
     );
@@ -158,15 +142,9 @@ pub fn lexer_stdin_repl() {
             Some(
                 tokens
                     .iter()
-                    .map(|tok| {
-                        format!(
-                            "{:?} @ {}..{}: `{}`",
-                            tok.0,
-                            tok.2.start(),
-                            tok.2.end(),
-                            tok.1,
-                        )
-                    })
+                    .map(
+                        |tok| format!("{:?} @ {}..{}: `{}`", tok.0, tok.2.lo(), tok.2.hi(), tok.1,),
+                    )
                     .collect::<Vec<String>>()
                     .join("\n"),
             )
