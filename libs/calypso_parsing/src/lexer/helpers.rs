@@ -35,8 +35,3 @@ pub(super) fn is_ident_continue(ch: char) -> bool {
 }
 
 use calypso_base::span::Spanned;
-
-#[inline]
-pub(super) fn char_ne(ne: char) -> impl FnOnce(&Spanned<char>) -> bool {
-    move |spanned| spanned.value_owned() != ne
-}

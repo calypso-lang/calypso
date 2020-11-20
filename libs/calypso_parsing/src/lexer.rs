@@ -30,7 +30,6 @@ pub struct Lexer<'lex> {
     source_id: usize,
     files: Arc<FileMgr>,
     start: Span,
-    current: Span,
 }
 
 impl<'lex> Deref for Lexer<'lex> {
@@ -81,18 +80,125 @@ impl<'lex> Lexer<'lex> {
             source_id,
             files,
             start: Span::default(),
-            current: Span::default(),
         }
     }
 
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
         self.skip_whitespace()?;
-        gen_error!(self => {
-            E0000;
-            labels: [
-                LabelStyle::Primary => (self.source_id, Span::new(0,0)); "not yet implemented",
-            ],
-        })
+        self.current_to_start();
+
+        if self.is_at_end() {
+            return Ok(self.new_token(TokenType::Eof));
+        }
+
+        // We've already checked if we're at the end (which is when it gives none), so
+        // unwrapping should be safe here.
+        let span = self.next().unwrap();
+        let ch = span.value_owned();
+
+        // TODO: ident and literals
+
+        use TokenType::*;
+
+        let token_type = match ch {
+            '<' if self.next_if_eq(&'<').is_some() => {
+                if self.next_if_eq(&'=').is_some() {
+                    ShlAssign
+                } else {
+                    Shl
+                }
+            }
+            '<' if self.next_if_eq(&'=').is_some() => LessEqual,
+            '<' => Less,
+
+            '>' if self.next_if_eq(&'>').is_some() => {
+                if self.next_if_eq(&'=').is_some() {
+                    ShrAssign
+                } else {
+                    Shr
+                }
+            }
+            '>' if self.next_if_eq(&'=').is_some() => GreaterEqual,
+            '>' => Greater,
+
+            '=' if self.next_if_eq(&'=').is_some() => BoolEqual,
+            '=' => Equal,
+
+            '!' if self.next_if_eq(&'=').is_some() => NotEqual,
+            '!' => Bang,
+
+            '|' if self.next_if_eq(&'|').is_some() => BoolOr,
+            '|' if self.next_if_eq(&'=').is_some() => PipeAssign,
+            '|' => Pipe,
+
+            '&' if self.next_if_eq(&'&').is_some() => BoolAnd,
+            '&' if self.next_if_eq(&'=').is_some() => AndAssign,
+            '&' => And,
+
+            '+' if self.next_if_eq(&'=').is_some() => PlusAssign,
+            '+' => Plus,
+
+            '-' if self.next_if_eq(&'=').is_some() => MinusAssign,
+            '-' => Minus,
+
+            '*' if self.next_if_eq(&'*').is_some() => {
+                if self.next_if_eq(&'=').is_some() {
+                    ExpAssign
+                } else {
+                    Exp
+                }
+            }
+            '*' if self.next_if_eq(&'=').is_some() => StarAssign,
+            '*' => Star,
+
+            '/' if self.next_if_eq(&'=').is_some() => SlashAssign,
+            '/' => Slash,
+
+            '%' if self.next_if_eq(&'=').is_some() => RemAssign,
+            '%' => Rem,
+
+            '^' if self.next_if_eq(&'=').is_some() => CaretAssign,
+            '^' => Caret,
+
+            '~' => Tilde,
+
+            '(' => LeftParen,
+            ')' => RightParen,
+
+            '{' => LeftBrace,
+            '}' => RightBrace,
+
+            '[' => LeftBracket,
+            ']' => RightBracket,
+
+            ',' => Comma,
+            ';' => Semi,
+
+            '.' if self.next_if_eq(&'.').is_some() => {
+                if self.next_if_eq(&'=').is_some() {
+                    RangeClosed
+                } else {
+                    Range
+                }
+            }
+            '.' => Dot,
+
+            // `'_' => Under` is already taken care of by idents
+            '#' if self.next_if_eq(&'!').is_some() => HashBang,
+            '#' => Hash,
+
+            // Unexpected character
+            ch => gen_error!(self => {
+                E0003;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        format!("did not expect `{}` here", ch)
+                ]
+            } as TokenType)?,
+        };
+
+        Ok(self.new_token(token_type))
     }
 
     /*
@@ -252,28 +358,29 @@ impl<'lex> Lexer<'lex> {
 
 impl<'lex> Lexer<'lex> {
     fn skip_whitespace(&mut self) -> CalResult<()> {
+        self.handle_dangling_comment_ends()?;
         while !self.is_at_end()
             && (self.handle_comment()
                 || self.handle_multiline_comment()?
                 || self.next_if(is_whitespace).is_some())
         {
-            //self.handle_dangling_comment_ends()?; TODO
+            self.handle_dangling_comment_ends()?;
         }
         Ok(())
     }
 
     fn handle_comment(&mut self) -> bool {
-        // xx -> true true -> true
-        // x/ -> false true -> true
-        // /x -> true false -> true
-        // // -> false false -> false
-        if self.peek_cond(char_ne('/')) || self.peek2_cond(char_ne('/')) {
+        // xx -> 11 -> 1
+        // x/ -> 10 -> 1
+        // /x -> 01 -> 1
+        // // -> 00 -> 0
+        if self.peek_eq(&'/') != Some(true) || self.peek2_eq(&'/') != Some(true) {
             return false;
         }
         // A comment goes until the end of the line,
         // so gorge all the characters until we get to the newline
         // (or the end, when it automatically stops gorging).
-        self.gorge_while(|spanned, _| spanned.value_owned() != '\n');
+        self.gorge_while(|spanned, _| spanned != &'\n');
         true
     }
 
@@ -282,80 +389,71 @@ impl<'lex> Lexer<'lex> {
         // x* -> 10 -> 1
         // /x -> 01 -> 1
         // /* -> 00 -> 0
-        if self.peek_cond(char_ne('/')) || self.peek2_cond(char_ne('*')) {
-            return Ok(false);
-        }
-
-        Ok(false)
-    }
-}
-
-/*
-impl<'lex> Lexer<'lex> {
-
-    fn handle_multiline_comment(&mut self) -> CalResult<bool> {
-        // xx -> true true -> true
-        // x* -> true false -> true
-        // /x -> false true -> true
-        // /* -> false false -> false      */
-        if self.peek() != Some('/') || self.peek_next() != Some('*') {
+        if self.peek_eq(&'/') != Some(true) || self.peek2_eq(&'*') != Some(true) {
             return Ok(false);
         }
         self.current_to_start();
-        self.advance();
-        self.advance();
-        let mut nest = vec![Span::new(self.start(), self.current() - self.start())];
+        self.next();
+        self.next();
+        let mut stack = vec![self.new_span()];
 
         loop {
-            let ch = self.peek();
-            if ch.is_none() {
+            let span = self.peek();
+            let ch = span.map(|sp| sp.value_owned());
+            if span.is_none() {
+                if stack.len() == 1 {
+                    gen_error!(self => {
+                        E0002;
+                        labels: [
+                            LabelStyle::Primary =>
+                                (self.source_id, stack.pop().unwrap());
+                                "this multi-line comment's beginning has no corresponding end"
+                        ]
+                    } as ())?
+                }
                 return Ok(false);
             }
 
-            if ch == Some('/') && self.peek_next() == Some('*') {
-                // For error handling
+            if ch == Some('/') && self.peek2_eq(&'*') == Some(true) {
                 self.current_to_start();
-                self.advance();
-                self.advance();
-                nest.push(Span::new(self.start(), self.current() - self.start()));
-            } else if ch == Some('*') && self.peek_next() == Some('/') {
-                // For error handling
+                self.next();
+                self.next();
+                stack.push(self.new_span());
+            } else if ch == Some('*') && self.peek2_eq(&'/') == Some(true) {
                 self.current_to_start();
-                self.advance();
-                self.advance();
-                if nest.is_empty() {
-                    let diagnostic =
-                        DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                            .diag(code!(E0001))
-                            .label(
-                                LabelStyle::Primary,
-                                "this multi-line comment's end has no corresponding beginning",
-                                self.new_span(),
-                                self.source_id,
-                            )
-                            .build();
-                    return Err(diagnostic.into());
-                }
-                nest.pop();
+                self.next();
+                self.next();
+                // I don't think this is needed -- so there's an assert
+                // so that if this is an edge case, it's detected more easily.
+                assert!(!stack.is_empty());
+                // if stack.is_empty() {
+                //     gen_error!(self => {
+                //         E0001;
+                //         labels: [
+                //             LabelStyle::Primary =>
+                //                 (self.source_id, self.new_span());
+                //                 "this multi-line comment's end has no corresponding beginning"
+                //         ]
+                //     } as ())?
+                // }
+                stack.pop();
             } else {
-                self.advance();
+                self.next();
             }
 
-            if nest.is_empty() && !self.is_at_end() {
+            if stack.is_empty() && !self.is_at_end() {
                 break;
             }
 
-            if self.is_at_end() && !nest.is_empty() {
-                let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                    .diag(code!(E0002))
-                    .label(
-                        LabelStyle::Primary,
-                        "this multi-line comment's beginning has no corresponding end",
-                        nest.pop().unwrap(),
-                        self.source_id,
-                    )
-                    .build();
-                return Err(diagnostic.into());
+            if self.is_at_end() && !stack.is_empty() {
+                gen_error!(self => {
+                    E0002;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, stack.pop().unwrap());
+                            "this multi-line comment's beginning has no corresponding end"
+                    ]
+                } as ())?
             }
         }
 
@@ -363,37 +461,47 @@ impl<'lex> Lexer<'lex> {
     }
 
     fn handle_dangling_comment_ends(&mut self) -> CalResult<()> {
-        if self.peek() == Some('*') && self.peek_next() == Some('/') {
-            // For error handling
+        if self.peek_eq(&'*') == Some(true) && self.peek2_eq(&'/') == Some(true) {
             self.current_to_start();
-            self.advance();
-            self.advance();
-            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                .diag(code!(E0001))
-                .label(
-                    LabelStyle::Primary,
-                    "this multi-line comment's end has no corresponding beginning",
-                    self.new_span(),
-                    self.source_id,
-                )
-                .build();
-            return Err(diagnostic.into());
+            self.next();
+            self.next();
+            gen_error!(self => {
+                E0001;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "this multi-line comment's end has no corresponding beginning"
+                ]
+            } as ())?
         }
         Ok(())
     }
+}
 
-    fn new_token(&self, token_type: TokenType) -> Token<'lex> {
-        let start = self.start();
-        let current = self.current();
-        Token::new(self.new_span(), (token_type, self.slice(start, current)))
+impl<'lex> Lexer<'lex> {
+    /// Set the `start` span to the span of the next character or the empty span of the EOF.
+    fn current_to_start(&mut self) {
+        self.start = self.current();
+    }
+
+    /// Get the span of the next character or the empty span of the EOF.
+    fn current(&self) -> Span {
+        self.peek()
+            .map(|sp| sp.span())
+            .unwrap_or_else(|| Span::new_shrunk(self.stream[..].len()))
     }
 
     fn new_span(&self) -> Span {
-        let start = self.start();
-        let current = self.current();
-        Span::new(start, current - start)
+        self.start.until(self.current())
+    }
+
+    fn new_token(&self, r#type: TokenType) -> Token<'lex> {
+        let span = self.new_span();
+        Token::new(span, (r#type, self.slice(span)))
     }
 }
+
+/*
 
 impl<'lex> Lexer<'lex> {
     pub fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
