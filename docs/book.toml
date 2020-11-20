@@ -16,7 +16,7 @@ create-missing = true
 [output.html]
 mathjax-support = true
 curly-quotes = true
-git-repository-url = "https://github.com/ThePuzzlemaker/Calypso/tree/master/docs"
+git-repository-url = "https://github.com/calypso-lang/calypso/tree/master/docs"
 additional-css = ["src/styles.css"]
 theme = "src/theme"
 

@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/ThePuzzlemaker/Calypso/master/assets/logo.png" alt="Calypso logo" width="250" align="right"/>
+<img src="https://raw.githubusercontent.com/calypso-lang/calypso/master/assets/logo.png" alt="Calypso logo" width="250" align="right"/>
 
 # Calypso
 
@@ -69,10 +69,10 @@ The WIP logo was modified from an image made by [OpenClipart-Vectors](https://pi
 [l1]: https://discord.gg/jRaYGgeeJF
 [b1]: https://img.shields.io/badge/discord-%23calypso-informational
 
-[b2]: https://tokei.rs/b1/github/ThePuzzlemaker/Calypso?category=lines
+[b2]: https://tokei.rs/b1/github/calypso-lang/calypso?category=lines
 
-[b3]: https://img.shields.io/travis/com/ThePuzzlemaker/Calypso
-[l3]: https://travis-ci.com/github/ThePuzzlemaker/Calypso
+[b3]: https://img.shields.io/travis/com/calypso-lang/calypso
+[l3]: https://travis-ci.com/github/calypso-lang/calypso
 
 [b4]: https://img.shields.io/badge/license-MIT-blue.svg
 [l4]: ./LICENSE
