@@ -5,7 +5,7 @@ authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2018"
 description = "Diagnostics for Calypso"
 readme = "README.md"
-homepage = "https://github.com/calypso-lang/calypso/tree/master/calypso_diagnostic"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/calypso_diagnostic"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT"
 

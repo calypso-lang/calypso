@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/calypso-lang/calypso/master/assets/logo.png" alt="Calypso logo" width="250" align="right"/>
+<img src="https://raw.githubusercontent.com/calypso-lang/calypso/main/assets/logo.png" alt="Calypso logo" width="250" align="right"/>
 
 # Calypso
 
