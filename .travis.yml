@@ -27,7 +27,7 @@ jobs:
       deploy:
         provider: pages
         cleanup: false
-        deploy_key: "./dpl.key"
+        deploy_key: "../dpl.key"
         local_dir: ./book
         keep_history: false
         edge: true
