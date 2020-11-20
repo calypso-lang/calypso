@@ -25,7 +25,7 @@ jobs:
         - cargo +nightly doc --workspace --no-deps
         - mv -f ../target/doc ./book/rustdoc
       deploy:
-        provider: pages:git
+        provider: pages
         cleanup: false
         deploy_key: "./dpl.key"
         local_dir: ./book
