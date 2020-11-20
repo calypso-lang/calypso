@@ -32,9 +32,9 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 Docs for the `main` branch can be found [here](https://calypso-lang.github.io/rustdoc/calypso/index.html).
 
-## WIP Logo Credits
+## Logo Credits
 
-The WIP logo was modified from an image made by [OpenClipart-Vectors](https://pixabay.com/users/openclipart-vectors-30363/) from [Pixabay](https://pixabay.com/)
+The logo was modified from an image made by [OpenClipart-Vectors](https://pixabay.com/users/openclipart-vectors-30363/) from [Pixabay](https://pixabay.com/)
 
 [bcio1]: https://img.shields.io/crates/v/calypso
 [lcio1]: https://crates.io/crates/calypso
