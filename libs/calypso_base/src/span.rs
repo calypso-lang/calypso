@@ -14,12 +14,11 @@ impl Span {
         Span { lo, hi }
     }
 
-    pub fn new_shrunk_hi(hi: usize) -> Self {
-        Span { lo: hi, hi }
-    }
-
-    pub fn new_shrunk_lo(lo: usize) -> Self {
-        Span { lo, hi: lo }
+    pub fn new_shrunk(amount: usize) -> Self {
+        Span {
+            lo: amount,
+            hi: amount,
+        }
     }
 
     /// Create a dummy span (that has a span equivalent to the range `0..0`).
@@ -153,7 +152,7 @@ impl From<Range<usize>> for Span {
 /// assert_eq!(*spanned.value(), 42);
 /// assert_eq!(spanned.span(), Span::new(0, 1));
 /// ```
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub struct Spanned<T>
 where
     T: Debug,
@@ -188,3 +187,11 @@ where
 }
 
 impl<T: Copy + Debug> Copy for Spanned<T> {}
+
+impl<T: PartialEq + Debug> PartialEq<T> for Spanned<T> {
+    fn eq(&self, other: &T) -> bool {
+        self.value.eq(other)
+    }
+}
+
+impl<T: Eq + Debug> Eq for Spanned<T> {}

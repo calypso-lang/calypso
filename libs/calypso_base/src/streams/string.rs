@@ -1,5 +1,6 @@
 use super::Stream;
 use std::ops::Index;
+use std::ops::Range;
 use std::slice::SliceIndex;
 use std::str::CharIndices;
 
@@ -50,6 +51,10 @@ impl<'s> StringStream<'s> {
             chars_passed: 0,
         }
     }
+
+    pub fn slice(&self, range: impl Into<Range<usize>>) -> &'s str {
+        &self.string[range.into()]
+    }
 }
 
 impl<'s> Iterator for StringStream<'s> {
@@ -73,126 +78,24 @@ impl<'s> Iterator for StringStream<'s> {
 }
 
 impl<'s> Stream for StringStream<'s> {
-    type Elem = Spanned<char>;
-
     fn is_at_end(&self) -> bool {
         self.peek.is_none()
     }
 
-    fn peek(&self) -> Option<&Self::Elem> {
+    fn peek(&self) -> Option<&<Self as Iterator>::Item> {
         self.peek.as_ref()
     }
 
-    fn peek2(&self) -> Option<&Self::Elem> {
+    fn peek2(&self) -> Option<&<Self as Iterator>::Item> {
         self.peek2.as_ref()
     }
 
-    fn peek3(&self) -> Option<&Self::Elem> {
+    fn peek3(&self) -> Option<&<Self as Iterator>::Item> {
         self.peek3.as_ref()
     }
 
-    fn prev(&self) -> Option<&Self::Elem> {
+    fn prev(&self) -> Option<&<Self as Iterator>::Item> {
         self.prev.as_ref()
-    }
-
-    fn next_if(&mut self, func: impl FnOnce(&Self::Elem) -> bool) -> Option<Self::Elem> {
-        if func(self.peek()?) {
-            self.next()
-        } else {
-            None
-        }
-    }
-
-    fn next_if_eq<R>(&mut self, expected: &R) -> Option<Self::Elem>
-    where
-        R: ?Sized,
-        Self::Elem: PartialEq<R>,
-    {
-        if self.peek()? == expected {
-            self.next()
-        } else {
-            None
-        }
-    }
-
-    fn gorge_while(&mut self, mut func: impl FnMut(&Self::Elem, usize) -> bool) {
-        let mut count = 0;
-        while self.peek().is_some() && func(self.peek().unwrap(), count) {
-            self.next();
-            count += 1;
-        }
-    }
-
-    fn gorge_while_eq<R>(&mut self, expected: &R)
-    where
-        R: ?Sized,
-        Self::Elem: PartialEq<R>,
-    {
-        while self.next_if_eq(expected).is_some() {}
-    }
-
-    fn peek_eq<R>(&self, expected: &R) -> bool
-    where
-        R: ?Sized,
-        Self::Elem: PartialEq<R>,
-    {
-        if let Some(elem) = self.peek() {
-            elem == expected
-        } else {
-            false
-        }
-    }
-
-    fn peek_cond(&self, func: impl FnOnce(&Self::Elem) -> bool) -> bool {
-        self.peek().is_some() && func(self.peek().unwrap())
-    }
-
-    fn peek2_eq<R>(&self, expected: &R) -> bool
-    where
-        R: ?Sized,
-        Self::Elem: PartialEq<R>,
-    {
-        if let Some(elem) = self.peek2() {
-            elem == expected
-        } else {
-            false
-        }
-    }
-
-    fn peek2_cond(&self, func: impl FnOnce(&Self::Elem) -> bool) -> bool {
-        self.peek2().is_some() && func(self.peek2().unwrap())
-    }
-
-    fn peek3_eq<R>(&self, expected: &R) -> bool
-    where
-        R: ?Sized,
-        Self::Elem: PartialEq<R>,
-    {
-        if let Some(elem) = self.peek3() {
-            elem == expected
-        } else {
-            false
-        }
-    }
-
-    fn peek3_cond(&self, func: impl FnOnce(&Self::Elem) -> bool) -> bool {
-        self.peek3().is_some() && func(self.peek3().unwrap())
-    }
-
-    fn prev_eq<R>(&self, expected: &R) -> bool
-    where
-        R: ?Sized,
-        Self::Elem: PartialEq<R>,
-    {
-        if let Some(elem) = self.prev() {
-            elem == expected
-        } else {
-            false
-        }
-    }
-
-    fn prev_cond(&self, func: impl FnOnce(&Self::Elem) -> bool) -> bool {
-        self.prev().is_some() && func(self.prev().unwrap())
     }
 }
 
