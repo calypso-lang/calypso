@@ -25,13 +25,13 @@ jobs:
         - cargo +nightly doc --workspace --no-deps
         - mv -f ../target/doc ./book/rustdoc
       deploy:
-        provider: pages
+        provider: pages:git
         cleanup: false
         deploy_key: "./dpl.key"
         local_dir: ./book
         keep_history: false
         edge: true
-        target_branch: gh-pages
+        target_branch: main
         name: Travis CI
         email: deploy@travis-ci.org
         repo: calypso-lang/calypso.github.io
