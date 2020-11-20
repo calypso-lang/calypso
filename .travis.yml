@@ -35,6 +35,8 @@ jobs:
         name: Travis CI
         email: deploy@travis-ci.org
         repo: calypso-lang/calypso.github.io
+        on:
+          branch: main
     - name: "Calypso/x86_64-pc-linux-gnu"
       script:
         - cargo build --workspace
