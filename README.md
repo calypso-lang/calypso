@@ -30,7 +30,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 | `calypso_repl`         | [![calypso_repl][bcio5]][lcio5]        | [![calypso_repl][bdrs5]][ldrs5]            |
 | `calypso_util`         | [![calypso_util][bcio6]][lcio6]        | [![calypso_util][bdrs6]][ldrs6]            |
 
-Docs for the `main` branch can be found [here](https://thepuzzlemaker.github.io/Calypso/rustdoc/calypso/index.html).
+Docs for the `main` branch can be found [here](https://calypso-lang.github.io/rustdoc/calypso/index.html).
 
 ## WIP Logo Credits
 

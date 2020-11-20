@@ -34,7 +34,7 @@ jobs:
         target_branch: main
         name: Travis CI
         email: deploy@travis-ci.org
-        repo: calypso-lang/calypso.github.io
+        repo: calypso-lang/calypso-lang.github.io
         on:
           branch: main
     - name: "Calypso/x86_64-pc-linux-gnu"

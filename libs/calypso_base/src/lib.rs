@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://thepuzzlemaker.github.io/Calypso/rustdoc/calypso_base/index.html")]
+#![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_base/index.html")]
 
 //! Base types and utilities for Calypso that don't require any other Calypso packages
 

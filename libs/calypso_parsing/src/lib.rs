@@ -1,5 +1,5 @@
 #![doc(
-    html_root_url = "https://thepuzzlemaker.github.io/Calypso/rustdoc/calypso_parsing/index.html"
+    html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_parsing/index.html"
 )]
 
 #[macro_use]

@@ -1,1 +1,1 @@
-#![doc(html_root_url = "https://thepuzzlemaker.github.io/Calypso/rustdoc/calypso_util/index.html")]
+#![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_util/index.html")]
