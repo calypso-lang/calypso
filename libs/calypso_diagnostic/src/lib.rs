@@ -38,7 +38,7 @@ macro_rules! gen_error {
         $diag
     }};
 
-    ($self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; labels: $labels:tt, notes: $notes:tt$(,)? }) => {{
+    ($self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; labels: $labels:tt, notes: $notes:tt$(,)? } as $ty:ty) => {{
         let mut diagnostic = $crate::diagnostic::DiagnosticBuilder::new(
             $crate::diagnostic::Severity::Error,
             ::std::sync::Arc::clone(&($self).files),
@@ -55,10 +55,10 @@ macro_rules! gen_error {
             diagnostic = diagnostic.note(format!("note: this error has more details for troubleshooting, run `calypso explain {}`", code))
         };
 
-        Err(diagnostic.build().into())
+        $crate::error::Result::<$ty>::Err(diagnostic.build().into())
     }};
 
-    ($self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; labels: $labels:tt$(,)?}) => {{
+    ($self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; labels: $labels:tt$(,)?} as $ty:ty) => {{
         let mut diagnostic = $crate::diagnostic::DiagnosticBuilder::new(
             $crate::diagnostic::Severity::Error,
             ::std::sync::Arc::clone(&($self).files),
@@ -74,10 +74,10 @@ macro_rules! gen_error {
             diagnostic = diagnostic.note(format!("note: this error has more details for troubleshooting, run `calypso explain {}`", code))
         };
 
-        Err(diagnostic.build().into())
+        $crate::error::Result::<$ty>::Err(diagnostic.build().into())
     }};
 
-    ($self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; notes: $notes:tt$(,)? }) => {{
+    ($self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; notes: $notes:tt$(,)? } as $ty:ty) => {{
         let mut diagnostic = $crate::diagnostic::DiagnosticBuilder::new(
             $crate::diagnostic::Severity::Error,
             ::std::sync::Arc::clone(&($self).files),
@@ -93,10 +93,10 @@ macro_rules! gen_error {
             diagnostic = diagnostic.note(format!("note: this error has more details for troubleshooting, run `calypso explain {}`", code))
         };
 
-        Err(diagnostic.build().into())
+        $crate::error::Result::<$ty>::Err(diagnostic.build().into())
     }};
 
-    ($self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?$(;)? }) => {{
+    ($self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?$(;)? } as $ty:ty) => {{
         let mut diagnostic = $crate::diagnostic::DiagnosticBuilder::new(
             $crate::diagnostic::Severity::Error,
             ::std::sync::Arc::clone(&($self).files),
@@ -110,6 +110,6 @@ macro_rules! gen_error {
             diagnostic = diagnostic.note(format!("note: this error has more details for troubleshooting, run `calypso explain {}`", code))
         };
 
-        Err(diagnostic.build().into())
+        $crate::error::Result::<$ty>::Err(diagnostic.build().into())
     }}
 }
