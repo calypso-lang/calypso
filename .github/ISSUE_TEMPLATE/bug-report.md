@@ -1,5 +1,5 @@
 ---
-name: Bug Report
+name: Bug report
 about: Found something wrong? Let's fix it!
 title: 'bug: '
 labels: C-bug
