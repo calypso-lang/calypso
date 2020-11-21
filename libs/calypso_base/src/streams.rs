@@ -1,4 +1,6 @@
-/// A trait for streamed data.
+/// A trait for streamed data. For a stream, `EOF` means either
+/// the end of file / input if this stream is backed by a file or string,
+/// or the end of the stream.
 pub trait Stream: Iterator {
     /// This stream can no longer produce elements if this returns true
     fn is_at_end(&self) -> bool;
