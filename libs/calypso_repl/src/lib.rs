@@ -51,7 +51,7 @@ impl<Ctx> Repl<Ctx> {
             editor,
             ctx,
             prefix: String::from(":"),
-            cmd_regex: Regex::new(r":(?P<command>\S*)( (?P<args>.*))?").unwrap(),
+            cmd_regex: Regex::new(r"^:(?P<command>\S*)( (?P<args>.*))?").unwrap(),
         }
     }
 
@@ -59,7 +59,7 @@ impl<Ctx> Repl<Ctx> {
         self.prefix = prefix;
         // We escape the prefix, so it's guaranteed to be valid.
         Regex::new(&format!(
-            r"{}(?P<command>\S*)( (?P<args>.*))?",
+            r"^{}(?P<command>\S*)( (?P<args>.*))?",
             regex::escape(&self.prefix)
         ))
         .unwrap();

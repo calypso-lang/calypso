@@ -25,13 +25,13 @@ pub(super) fn is_whitespace(elem: &Spanned<char>) -> bool {
 }
 
 #[inline]
-pub(super) fn is_ident_start(ch: char) -> bool {
-    ch.is_ascii_alphabetic() || ch == '_'
+pub(super) fn is_ident_start(elem: &Spanned<char>) -> bool {
+    elem.value_owned().is_ascii_alphabetic() || elem.value_owned() == '_'
 }
 
 #[inline]
-pub(super) fn is_ident_continue(ch: char) -> bool {
-    is_ident_start(ch) || ch.is_ascii_digit()
+pub(super) fn is_ident_continue(elem: &Spanned<char>) -> bool {
+    is_ident_start(elem) || elem.value_owned().is_ascii_digit()
 }
 
 use calypso_base::span::Spanned;

@@ -96,7 +96,12 @@ impl<'lex> Lexer<'lex> {
         let span = self.next().unwrap();
         let ch = span.value_owned();
 
-        // TODO: ident and literals
+        // Is valid character for identifier's first character
+        if is_ident_start(&span) {
+            return self.handle_identifier();
+        } /*else if ch == '\'' {
+              return self.handle_char_literal();
+          }*/
 
         use TokenType::*;
 
@@ -214,12 +219,7 @@ impl<'lex> Lexer<'lex> {
         // unwrapping should be safe here.
         let ch = self.advance().unwrap();
 
-        // Is valid character for identifier's first character
-        if is_ident_start(ch) {
-            return self.handle_identifier();
-        } else if ch == '\'' {
-            return self.handle_char_literal();
-        }
+
 
         // TODO: literals
         /*if ch == '0' {
@@ -476,6 +476,27 @@ impl<'lex> Lexer<'lex> {
         }
         Ok(())
     }
+
+    fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
+        let mut token_type = TokenType::Ident;
+
+        let ch = self.peek();
+        // `_` is not an ident on its own, but all other [A-Za-z]{1} idents are.
+        if self.prev().unwrap() == &'_' && self.peek_cond(is_ident_continue) != Some(true) {
+            return Ok(self.new_token(TokenType::Under));
+        }
+
+        // Gorge while the character is a valid identifier character.
+        self.gorge_while(|sp, _| is_ident_continue(sp));
+
+        let keyword = KEYWORD_TRIE.get(&self.slice(self.new_span()).to_string());
+
+        if let Some(&keyword) = keyword {
+            token_type = TokenType::Keyword(keyword);
+        }
+
+        Ok(self.new_token(token_type))
+    }
 }
 
 impl<'lex> Lexer<'lex> {
@@ -504,32 +525,7 @@ impl<'lex> Lexer<'lex> {
 /*
 
 impl<'lex> Lexer<'lex> {
-    pub fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
-        let mut token_type = TokenType::Ident;
 
-        let ch = self.peek();
-        // `_` is not an ident on its own, but all other [A-Za-z]{1} idents are.
-        if self.last().unwrap() == '_' && (ch.is_none() || !is_ident_continue(ch.unwrap_or('\0'))) {
-            return Ok(self.new_token(TokenType::Under));
-        }
-
-        // Gorge while the character is a valid identifier character.
-        self.gorge_while(|ch, _| is_ident_continue(ch));
-
-        let keyword = KEYWORD_TRIE.get(
-            &self
-                .buf
-                .slice(self.start(), self.current())
-                .iter()
-                .collect::<String>(),
-        );
-
-        if let Some(&keyword) = keyword {
-            token_type = TokenType::Keyword(keyword);
-        }
-
-        Ok(self.new_token(token_type))
-    }
 
     fn handle_escape_character(&mut self) -> CalResult<bool> {
         let start = self.current();
