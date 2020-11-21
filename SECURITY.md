@@ -6,7 +6,7 @@ The following versions are supported:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| >=0.0.0 | :white_check:      |
+| >=0.0.0 | ✅                 |
 
 ## Reporting a Vulnerability
 
