@@ -1,4 +1,5 @@
 <img src="https://raw.githubusercontent.com/calypso-lang/assets/main/logo/logo.png" alt="Calypso logo" width="250" align="right"/>
+
 # Calypso
 
 [![CI Status][b3]][l3] [![License][b4]][l4] [![Discord][b1]][l1] ![Lines of Code][b2] <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
