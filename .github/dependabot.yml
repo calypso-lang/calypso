@@ -15,4 +15,3 @@ updates:
   - S-awaiting-review
   allow:
   - dependency-type: direct
-  - dependency-type: indirect
