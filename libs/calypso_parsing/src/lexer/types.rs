@@ -30,6 +30,9 @@
 /// - `Range`: `..`: Integer ranges
 /// - `RangeInc`: `..=`: Inclusive integer range
 ///
+/// ## Strings/Lists
+/// - `GreaterLess`: `<>`: Concatenation
+///
 /// ## Bitwise
 /// - `Shr`: `>>`: Shift right
 /// - `ShrAssign`: `>>=`: Shift right assignment
@@ -48,8 +51,19 @@
 ///
 /// # Keywords
 ///
-/// ## Numbers
+/// ## Values
 /// - `KwIs`: `is`: value A is at the same memory location as value B (aliased)
+/// - `KwIsa`: `isa`: value A is of type B
+///
+/// ## Types
+/// - `KwBoolTy`: `bool`
+/// - `KwSintTy`: `sint`
+/// - `KwUintTy`: `uint`
+/// - `KwFloatTy`: `float`
+/// - `KwStringTy`: `string`
+/// - `KwCharTy`: `char`
+/// - `KwTupleTy`: `tuple`
+/// - `KwArrayTy`: `array`
 ///
 /// ## Booleans
 /// - `KwFalse`: `false`, `KwTrue`: `true`: Booleans
@@ -100,8 +114,9 @@
 /// # Literals
 ///
 /// - `Ident`: `([A-Za-z_])([A-Za-z0-9_]*)`: Identifier
-/// - `IntLiteral`: `<DIGIT(s)>`: integer literal
-/// - `FloatLiteral`: `<DIGIT(s)>.<DIGIT(s)>`: float literal
+/// - `SintLiteral`: `[-]<DIGIT(s)>[s]`: Signed integer literal
+/// - `UintLiteral`: `<DIGIT(s)>[u]`: Unsigned integer literal
+/// - `FloatLiteral`: `<DIGIT(s)>.<DIGIT(s)>[f]`: float literal
 /// - `StringLiteral`: `"[STRING]"`: string literal
 /// - `CharLiteral`: `'<CHAR>'`: character literal
 pub enum TokenType {
@@ -139,6 +154,8 @@ pub enum TokenType {
 
     Range,
     RangeInc,
+
+    GreaterLess,
 
     Shr,
     ShrAssign,
@@ -182,7 +199,8 @@ pub enum TokenType {
 
     Ident,
 
-    IntLiteral(Radix),
+    SintLiteral(Radix),
+    UintLiteral(Radix),
     FloatLiteral,
     StringLiteral,
     CharLiteral,
@@ -191,6 +209,16 @@ pub enum TokenType {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Keyword {
     KwIs,
+    KwIsa,
+
+    KwBoolTy,
+    KwSintTy,
+    KwUintTy,
+    KwFloatTy,
+    KwStringTy,
+    KwCharTy,
+    KwTupleTy,
+    KwArrayTy,
 
     KwFalse,
     KwTrue,

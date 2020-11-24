@@ -10,3 +10,4 @@
 ---
 
 - [The Calypso Reference](reference/intro.md)
+  - [Types](reference/types.md)

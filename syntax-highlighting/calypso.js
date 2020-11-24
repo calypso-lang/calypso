@@ -5,7 +5,7 @@ const calypso = (hljs) => {
                  'ret break fn native mod use import pub ' +
                  'let mut del as';
 
-  let BUILTINS = "println";
+  let BUILTINS = "println typeof";
     
   return {
     name: 'Calypso',
@@ -28,10 +28,10 @@ const calypso = (hljs) => {
       {
         className: 'number',
         variants: [
-          { begin: '\\b0b([01_]+)' },
-          { begin: '\\b0o([0-7_]+)' },
-          { begin: '\\b0x([A-Fa-f0-9_]+)' },
-          { begin: '\\b(\\d[\\d_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)'}
+          { begin: '\\b0b([01_]+)([ufs]?)' },
+          { begin: '\\b0o([0-7_]+)([ufs]?)' },
+          { begin: '\\b0x([A-Fa-f0-9_]+)([ufs]?)' },
+          { begin: '\\b(\\d[\\d_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)([ufs]?)'}
         ],
         relevance: 0
       },

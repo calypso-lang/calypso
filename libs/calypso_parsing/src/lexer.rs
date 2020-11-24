@@ -45,6 +45,15 @@ impl<'lex> DerefMut for Lexer<'lex> {
 
 init_trie!(pub KEYWORD_TRIE: Keyword => {
     "is"     => KwIs,
+    "isa"    => KwIsa,
+    "bool"   => KwBoolTy,
+    "sint"   => KwSintTy,
+    "uint"   => KwUintTy,
+    "float"  => KwFloatTy,
+    "string" => KwStringTy,
+    "char"   => KwCharTy,
+    "tuple"  => KwTupleTy,
+    "array"  => KwArrayTy,
     "false"  => KwFalse,
     "true"   => KwTrue,
     "if"     => KwIf,
@@ -103,6 +112,7 @@ impl<'lex> Lexer<'lex> {
         use TokenType::*;
 
         let token_type = match ch {
+            '<' if self.next_if_eq(&'>').is_some() => GreaterLess,
             '<' if self.next_if_eq(&'<').is_some() => {
                 if self.next_if_eq(&'=').is_some() {
                     ShlAssign
@@ -511,6 +521,8 @@ impl<'lex> Lexer<'lex> {
                 | Some('"') => {
                     self.next();
                 }
+                Some('x') => self.handle_hex_escape()?,
+                Some('u') => (),
                 Some(ch) => {
                     if is_whitespace_ch(ch) {
                         gen_error!(self => {
@@ -548,12 +560,71 @@ impl<'lex> Lexer<'lex> {
         // We don't care *what* sequence was found, just if there was one.
         Ok(false)
     }
+
+    fn handle_hex_escape(&mut self) -> CalResult<()> {
+        // Handle the `x` in `\x41`
+        self.next();
+        self.current_to_start();
+        for i in 1..=2 {
+            let sp = self.peek();
+            if sp.is_none() || is_whitespace(sp.unwrap()) {
+                if i == 1 {
+                    gen_error!(self => {
+                        E0004;
+                        labels: [
+                            LabelStyle::Primary =>
+                                (self.source_id, self.new_span());
+                                "expected two hexadecimal digits here"
+                        ]
+                    } as ())?
+                } else if i == 2 {
+                    gen_error!(self => {
+                        E0009;
+                        labels: [
+                            LabelStyle::Primary =>
+                                (self.source_id, self.new_span());
+                                "found only one hexadecimal digit here"
+                        ],
+                        notes: [
+                            format!(
+                                "perhaps you meant to use `\\x0{}`?",
+                                self.prev().unwrap().value_owned()
+                            )
+                        ]
+                    } as ())?
+                } else {
+                    return Ok(());
+                }
+            }
+            let sp = *sp.unwrap();
+            let ch = sp.value_owned();
+
+            if ch.is_ascii_hexdigit() {
+                self.next();
+            } else {
+                self.set_start(sp.span());
+                gen_error!(self => {
+                    E0005, ch = ch;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            "found an invalid digit here"
+                    ]
+                } as ())?
+            }
+        }
+        Ok(())
+    }
 }
 
 impl<'lex> Lexer<'lex> {
     /// Set the `start` span to the span of the next character or the empty span of the EOF.
     fn current_to_start(&mut self) {
         self.start = self.current();
+    }
+
+    fn set_start(&mut self, start: Span) {
+        self.start = start;
     }
 
     /// Get the span of the next character or the empty span of the EOF.
@@ -579,73 +650,7 @@ impl<'lex> Lexer<'lex> {
 
 
     fn handle_escape_character(&mut self) -> CalResult<bool> {
-        let start = self.current();
-        if self.peek() == Some('\\') {
-            self.current_to_start();
-            self.advance();
-            match self.peek() {
-                Some('x') => {
-                    self.advance();
-                    self.current_to_start();
-                    for i in 1..=2 {
-                        let mut ch = self.peek();
-                        if is_whitespace(ch.unwrap_or('\0')) {
-                            ch = None;
-                        }
-                        if ch.is_none() {
-                            let diagnostic = if i == 1 {
-                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .diag(code!(E0004))
-                                    .label(
-                                        LabelStyle::Primary,
-                                        "expected two hexadecimal digits here",
-                                        self.new_span(),
-                                        self.source_id,
-                                    )
-                                    .build()
-                            } else if i == 2 {
-                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .diag(code!(E0009))
-                                    .label(
-                                        LabelStyle::Primary,
-                                        "found only one digit here",
-                                        self.new_span(),
-                                        self.source_id,
-                                    )
-                                    .note(format!(
-                                        "perhaps you meant to use `\\x0{}`?",
-                                        self.last().unwrap()
-                                    ))
-                                    .build()
-                            } else {
-                                return Ok(true);
-                            };
-                            return Err(diagnostic.into());
-                        }
-                        let ch = ch.unwrap();
 
-                        if ch.is_ascii_hexdigit() {
-                            self.advance();
-                        } else {
-                            self.set_start(start + 1 + i);
-                            let diagnostic =
-                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .diag(code!(E0005, ch = ch))
-                                    .label(
-                                        LabelStyle::Primary,
-                                        "found an invalid digit here",
-                                        self.new_span(),
-                                        self.source_id,
-                                    )
-                                    .build();
-                            return Err(diagnostic.into());
-                        }
-                    }
-                }
-                Some('n') | Some('r') | Some('t') | Some('\\') | Some('0') | Some('\'')
-                | Some('"') => {
-                    self.advance();
-                }
                 Some('u') => {
                     self.advance();
                     self.current_to_start();
