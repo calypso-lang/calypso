@@ -5,7 +5,8 @@ const calypso = (hljs) => {
                  'ret break fn native mod use import pub ' +
                  'let mut del as';
 
-  let BUILTINS = "println typeof";
+  let BUILTINS = "println typeof bool sint uint float" +
+                 "string char tuple array";
     
   return {
     name: 'Calypso',
