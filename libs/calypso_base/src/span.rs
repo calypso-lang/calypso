@@ -152,7 +152,7 @@ impl From<Range<usize>> for Span {
 /// assert_eq!(*spanned.value(), 42);
 /// assert_eq!(spanned.span(), Span::new(0, 1));
 /// ```
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Spanned<T>
 where
     T: Debug,
@@ -185,13 +185,8 @@ where
         self.span
     }
 }
-
-impl<T: Copy + Debug> Copy for Spanned<T> {}
-
 impl<T: PartialEq + Debug> PartialEq<T> for Spanned<T> {
     fn eq(&self, other: &T) -> bool {
         self.value.eq(other)
     }
 }
-
-impl<T: Eq + Debug> Eq for Spanned<T> {}
