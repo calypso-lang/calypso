@@ -1,6 +1,4 @@
-#![doc(
-    html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_diagnostic/index.html"
-)]
+#![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_diagnostic/index.html")]
 
 #[macro_use]
 extern crate error_chain;

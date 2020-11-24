@@ -3,11 +3,8 @@ use calypso_base::{
     span::{Span, Spanned},
     streams::{Stream, StringStream},
 };
-use calypso_diagnostic::{
-    diagnostic::{DiagnosticBuilder, LabelStyle, Severity},
-    error::Result as CalResult,
-    gen_error, FileMgr,
-};
+use calypso_diagnostic::{diagnostic::LabelStyle, error::Result as CalResult, gen_error, FileMgr};
+
 use radix_trie::Trie;
 
 use std::sync::Arc;
@@ -181,7 +178,7 @@ impl<'lex> Lexer<'lex> {
 
             '.' if self.next_if_eq(&'.').is_some() => {
                 if self.next_if_eq(&'=').is_some() {
-                    RangeClosed
+                    RangeInc
                 } else {
                     Range
                 }
@@ -191,6 +188,14 @@ impl<'lex> Lexer<'lex> {
             // `'_' => Under` is already taken care of by idents
             '#' if self.next_if_eq(&'!').is_some() => HashBang,
             '#' => Hash,
+
+            '$' => {
+                if self.handle_escape_character()? {
+                    HashBang
+                } else {
+                    Hash
+                }
+            }
 
             // Unexpected character
             ch => gen_error!(self => {
@@ -480,7 +485,6 @@ impl<'lex> Lexer<'lex> {
     fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
         let mut token_type = TokenType::Ident;
 
-        let ch = self.peek();
         // `_` is not an ident on its own, but all other [A-Za-z]{1} idents are.
         if self.prev().unwrap() == &'_' && self.peek_cond(is_ident_continue) != Some(true) {
             return Ok(self.new_token(TokenType::Under));
@@ -496,6 +500,53 @@ impl<'lex> Lexer<'lex> {
         }
 
         Ok(self.new_token(token_type))
+    }
+
+    fn handle_escape_character(&mut self) -> CalResult<bool> {
+        let saved_start = self.current();
+        self.current_to_start();
+        if self.next_if_eq(&'\\').is_some() {
+            match self.peek().map(|v| v.value_owned()) {
+                Some('n') | Some('r') | Some('t') | Some('\\') | Some('0') | Some('\'')
+                | Some('"') => {
+                    self.next();
+                }
+                Some(ch) => {
+                    if is_whitespace_ch(ch) {
+                        gen_error!(self => {
+                            E0008;
+                            labels: [
+                                LabelStyle::Primary =>
+                                    (self.source_id, self.new_span());
+                                    "expected an escape sequence here"
+                            ]
+                        } as ())?
+                    }
+                    self.next();
+                    gen_error!(self => {
+                        E0006, ch = ch;
+                        labels: [
+                            LabelStyle::Primary =>
+                                (self.source_id, self.new_span());
+                                "this escape sequence is unknown"
+                        ]
+                    } as ())?
+                }
+                None => gen_error!(self => {
+                        E0007;
+                        labels: [
+                            LabelStyle::Primary =>
+                                (self.source_id, self.new_span());
+                                "expected an escape sequence here"
+                        ]
+                    } as ())?,
+            }
+            self.start = saved_start;
+            return Ok(true);
+        }
+
+        // We don't care *what* sequence was found, just if there was one.
+        Ok(false)
     }
 }
 

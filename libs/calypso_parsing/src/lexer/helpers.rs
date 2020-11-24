@@ -14,14 +14,19 @@ sl!(WHITESPACE: char = [
     '\u{2029}', // Paragraph separator
 ]);
 
-#[inline]
-pub(super) fn is_valid_for_char_literal(ch: char) -> bool {
-    !ch.is_control()
-}
+// #[inline]
+// pub(super) fn is_valid_for_char_literal(ch: char) -> bool {
+//     !ch.is_control()
+// }
 
 #[inline]
 pub(super) fn is_whitespace(elem: &Spanned<char>) -> bool {
-    WHITESPACE.contains(elem.value())
+    is_whitespace_ch(elem.value_owned())
+}
+
+#[inline]
+pub(super) fn is_whitespace_ch(ch: char) -> bool {
+    WHITESPACE.contains(&ch)
 }
 
 #[inline]

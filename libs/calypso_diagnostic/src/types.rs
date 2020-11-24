@@ -57,7 +57,7 @@ register_diagnostics! {
     E0005: "Expected two hexadecimal digits in escape sequence, found an invalid digit `{ch}`.",
     E0006: "Expected a valid escape sequence, found `\\{ch}`.",
     E0007: "Expected a valid escape sequence, found EOF.",
-    E0008: "Expected a valid escape sequence, found whitespace, found one.",
+    E0008: "Expected a valid escape sequence, found whitespace.",
     E0009: "Expected two hexadecimal digits in escape sequence.",
     E0010: "Expected an opening curly bracket before a Unicode codepoint, found `{ch}`.",
     E0011: "Expected an opening curly bracket before a Unicode codepoint, found EOF.",

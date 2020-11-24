@@ -28,7 +28,7 @@
 /// - `Rem`: `%`: Remainder
 /// - `RemAssign`: `%=`: Remainder assignment
 /// - `Range`: `..`: Integer ranges
-/// - `RangeClosed`: `..=`: Open integer range
+/// - `RangeInc`: `..=`: Inclusive integer range
 ///
 /// ## Bitwise
 /// - `Shr`: `>>`: Shift right
@@ -138,7 +138,7 @@ pub enum TokenType {
     RemAssign,
 
     Range,
-    RangeClosed,
+    RangeInc,
 
     Shr,
     ShrAssign,
