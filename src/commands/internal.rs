@@ -71,7 +71,15 @@ pub fn lexer(matches: &ArgMatches) {
         "{}",
         tokens
             .iter()
-            .map(|tok| { format!("{:?} @ {}..{}: `{}`", tok.0, tok.2.lo(), tok.2.hi(), tok.1,) })
+            .map(|tok| {
+                format!(
+                    "{:?} @ {}..{}: `{:?}`",
+                    tok.0,
+                    tok.2.lo(),
+                    tok.2.hi(),
+                    tok.1,
+                )
+            })
             .collect::<Vec<String>>()
             .join("\n")
     );
@@ -86,7 +94,7 @@ pub fn lexer_stdin(matches: &ArgMatches) {
     let stdin = io::stdin();
     let mut contents = String::new();
     if let Err(err) = stdin.lock().read_to_string(&mut contents) {
-        error(format!("while reading from stdin: `{}`", err));
+        error(format!("while reading from stdin: `{:?}`", err));
         return;
     }
 
@@ -111,7 +119,7 @@ pub fn lexer_stdin(matches: &ArgMatches) {
         "{}",
         tokens
             .iter()
-            .map(|tok| { format!("{:?} @ {}..{}: `{}`", tok.0, tok.2.lo(), tok.2.hi(), tok.1,) })
+            .map(|tok| { format!("{:?} @ {}..{}: {:?}", tok.0, tok.2.lo(), tok.2.hi(), tok.1,) })
             .collect::<Vec<String>>()
             .join("\n")
     );
@@ -143,7 +151,7 @@ pub fn lexer_stdin_repl() {
                 tokens
                     .iter()
                     .map(
-                        |tok| format!("{:?} @ {}..{}: `{}`", tok.0, tok.2.lo(), tok.2.hi(), tok.1,),
+                        |tok| format!("{:?} @ {}..{}: {:?}", tok.0, tok.2.lo(), tok.2.hi(), tok.1,),
                     )
                     .collect::<Vec<String>>()
                     .join("\n"),

@@ -95,8 +95,9 @@
 /// ## Conversions
 /// - `KwAs`: `as`: convert to type, rename import
 ///
-/// # Other Characters
+/// # Special Tokens
 /// - `Eof`: end of file
+/// - `Ws`: Whitespace, including newlines. It just spans the whitespace.
 ///
 /// ## Grouping and Punctuation
 /// - `LeftParen`: `(`, `RightParen`: `)`: Left and right parentheses
@@ -179,6 +180,7 @@ pub enum TokenType {
     Keyword(Keyword),
 
     Eof,
+    Ws,
 
     LeftParen,
     RightParen,

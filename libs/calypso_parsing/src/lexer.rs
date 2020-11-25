@@ -90,7 +90,9 @@ impl<'lex> Lexer<'lex> {
     }
 
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
-        self.skip_whitespace()?;
+        if let Some(wstok) = self.handle_whitespace()? {
+            return Ok(wstok);
+        }
         self.current_to_start();
 
         if self.is_at_end() {
@@ -372,7 +374,8 @@ impl<'lex> Lexer<'lex> {
 }
 
 impl<'lex> Lexer<'lex> {
-    fn skip_whitespace(&mut self) -> CalResult<()> {
+    fn handle_whitespace(&mut self) -> CalResult<Option<Token<'lex>>> {
+        self.current_to_start();
         self.handle_dangling_comment_ends()?;
         while !self.is_at_end()
             && (self.handle_comment()
@@ -381,7 +384,11 @@ impl<'lex> Lexer<'lex> {
         {
             self.handle_dangling_comment_ends()?;
         }
-        Ok(())
+        if self.new_span().is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(self.new_token(TokenType::Ws)))
+        }
     }
 
     fn handle_comment(&mut self) -> bool {
