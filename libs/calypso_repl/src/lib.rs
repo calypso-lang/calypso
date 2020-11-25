@@ -9,9 +9,9 @@ use regex::Regex;
 
 /*
 == TODOs ==
-- [ ] Color!
-- [ ] Clean this code up
-- [ ] Find if any helpful Rustyline key bindings are missing
+todo(@ThePuzzlemaker: repl): Color!
+todo(@ThePuzzlemaker: repl): Clean this code up
+todo(@ThePuzzlemaker: repl): Find if any helpful Rustyline key bindings are missing
 */
 
 /// A struct for doing REPL-like activities.

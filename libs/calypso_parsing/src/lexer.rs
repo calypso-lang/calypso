@@ -238,7 +238,7 @@ impl<'lex> Lexer<'lex> {
 
 
 
-        // TODO: literals
+        // _T_O_D_O_: literals
         /*if ch == '0' {
             let peek = self.peek();
             if peek.is_some() {
