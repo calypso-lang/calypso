@@ -10,7 +10,7 @@ pub fn error<E: Display>(error: E) {
     );
 }
 
-pub fn info<C: Display, I: Display>(category: C, info: I) {
+pub fn _info<C: Display, I: Display>(category: C, info: I) {
     println!(
         "{}{}",
         Color::Green.bold().paint(format!("{}", category)),
@@ -18,7 +18,7 @@ pub fn info<C: Display, I: Display>(category: C, info: I) {
     );
 }
 
-pub fn warn<W: Display>(warning: W) {
+pub fn _warn<W: Display>(warning: W) {
     eprintln!(
         "{}{}",
         Color::Yellow.bold().paint("warning"),
