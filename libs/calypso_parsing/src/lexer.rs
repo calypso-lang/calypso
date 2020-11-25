@@ -201,14 +201,6 @@ impl<'lex> Lexer<'lex> {
             '#' if self.next_if_eq(&'!').is_some() => HashBang,
             '#' => Hash,
 
-            '$' => {
-                if self.handle_escape_character()? {
-                    HashBang
-                } else {
-                    Hash
-                }
-            }
-
             // Unexpected character
             ch => gen_error!(self => {
                 E0003;
@@ -529,7 +521,7 @@ impl<'lex> Lexer<'lex> {
                     self.next();
                 }
                 Some('x') => self.handle_hex_escape()?,
-                Some('u') => (),
+                Some('u') => self.handle_unicode_escape()?,
                 Some(ch) => {
                     if is_whitespace_ch(ch) {
                         gen_error!(self => {
@@ -622,6 +614,125 @@ impl<'lex> Lexer<'lex> {
         }
         Ok(())
     }
+
+    fn handle_unicode_escape(&mut self) -> CalResult<()> {
+        // Handle the `u` in `\u{1234}`
+        self.next();
+        self.current_to_start();
+        match self.peek().copied() {
+            Some(sp) if is_whitespace(&sp) => gen_error!(self => {
+                    E0012;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            "this should be an opening curly bracket"
+                    ]
+                } as ())?,
+            None => gen_error!(self => {
+                E0011;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "this should be an opening curly bracket"
+                ]
+            } as ())?,
+            Some(sp) if sp != '{' => {
+                self.next();
+                gen_error!(self => {
+                    E0010, ch = sp.value_owned();
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            "this should be an opening curly bracket"
+                    ]
+                } as ())?
+            }
+            _ => (),
+        }
+        self.next();
+
+        let mut count = 0;
+        while self.peek_eq(&'}') != Some(true) && !self.is_at_end() {
+            self.current_to_start();
+            let sp = self.peek().unwrap();
+            let ch = sp.value_owned();
+            if count == 6 {
+                break;
+            } else if is_whitespace(&sp) {
+                gen_error!(self => {
+                    E0018;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            "expected a hexadecimal digit here"
+                    ]
+                } as ())?
+            } else if !ch.is_ascii_hexdigit() {
+                gen_error!(self => {
+                    E0014, ch = ch;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            "found an invalid digit here. perhaps you meant to put a `}` here?"
+                    ]
+                } as ())?
+            }
+            self.next();
+            count += 1;
+        }
+
+        if self.is_at_end() {
+            self.current_to_start();
+            gen_error!(self => {
+                E0015;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected a closing curly bracket here"
+                ]
+            } as ())?
+        }
+
+        let sp = *self.peek().unwrap();
+        if is_whitespace(&sp) {
+            self.current_to_start();
+            gen_error!(self => {
+                E0017;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected a closing curly bracket here"
+                ]
+            } as ())?
+        } else if self.peek_eq(&'}') != Some(true) {
+            gen_error!(self => {
+                E0016, ch = sp.value_owned();
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected a closing curly bracket here"
+                ]
+            } as ())?
+        }
+
+        // We need to check for this after curly bracket checks
+        if count == 0 {
+            gen_error!(self => {
+                E0019;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected at least one hex digit here"
+                ],
+                notes: [
+                    "if you wanted a null byte, you can use `\\u{0}` or `\\0`"
+                ]
+            } as ())?
+        }
+        // Handle closing `}`
+        self.next();
+        Ok(())
+    }
 }
 
 impl<'lex> Lexer<'lex> {
@@ -652,200 +763,6 @@ impl<'lex> Lexer<'lex> {
 }
 
 /*
-
-impl<'lex> Lexer<'lex> {
-
-
-    fn handle_escape_character(&mut self) -> CalResult<bool> {
-
-                Some('u') => {
-                    self.advance();
-                    self.current_to_start();
-                    match self.peek() {
-                        Some(ch) if is_whitespace(ch) => {
-                            let diagnostic =
-                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .diag(code!(E0012))
-                                    .label(
-                                        LabelStyle::Primary,
-                                        "this should be an opening curly bracket",
-                                        self.new_span(),
-                                        self.source_id,
-                                    )
-                                    .build();
-                            return Err(diagnostic.into());
-                        }
-                        None => {
-                            let diagnostic =
-                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .diag(code!(E0011))
-                                    .label(
-                                        LabelStyle::Primary,
-                                        "this should be an opening curly bracket",
-                                        self.new_span(),
-                                        self.source_id,
-                                    )
-                                    .build();
-                            return Err(diagnostic.into());
-                        }
-                        _ => (),
-                    }
-                    if !self.match_next('{') {
-                        self.advance();
-                        let diagnostic =
-                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                .diag(code!(E0010, ch = self.last().unwrap()))
-                                .label(
-                                    LabelStyle::Primary,
-                                    "this should be an opening curly bracket",
-                                    self.new_span(),
-                                    self.source_id,
-                                )
-                                .build();
-                        return Err(diagnostic.into());
-                    }
-
-                    let mut count = 0;
-                    while self.peek() != Some('}') && !self.is_at_end() {
-                        self.current_to_start();
-                        let ch = self.peek().unwrap();
-                        if count == 6 {
-                            break;
-                        } else if ch.is_whitespace() {
-                            let diagnostic =
-                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .diag(code!(E0018))
-                                    .label(
-                                        LabelStyle::Primary,
-                                        "expected a hexadecimal digit here",
-                                        self.new_span(),
-                                        self.source_id,
-                                    )
-                                    .build();
-                            return Err(diagnostic.into());
-                        } else if !ch.is_ascii_hexdigit() {
-                            let diagnostic =
-                                DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                    .diag(code!(E0014, ch = ch))
-                                    .label(
-                                        LabelStyle::Primary,
-                                        "found an invalid digit here. perhaps you meant to have a `}` here?",
-                                        self.new_span(),
-                                        self.source_id,
-                                    )
-                                    .build();
-                            return Err(diagnostic.into());
-                        }
-                        self.advance();
-                        count += 1;
-                    }
-
-                    if count == 0 {
-                        let diagnostic =
-                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                .diag(code!(E0019))
-                                .label(
-                                    LabelStyle::Primary,
-                                    "expected at least one hex digit here",
-                                    self.new_span(),
-                                    self.source_id,
-                                )
-                                .note("if you wanted a null byte, you can use `\\u{0}` or `\\0`")
-                                .build();
-                        return Err(diagnostic.into());
-                    }
-                    self.current_to_start();
-
-                    if self.is_at_end() {
-                        let diagnostic =
-                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                .diag(code!(E0015))
-                                .label(
-                                    LabelStyle::Primary,
-                                    "expected a closing curly bracket here",
-                                    self.new_span(),
-                                    self.source_id,
-                                )
-                                .build();
-                        return Err(diagnostic.into());
-                    }
-
-                    let ch = self.peek().unwrap();
-                    if is_whitespace(ch) {
-                        self.current_to_start();
-                        let diagnostic =
-                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                .diag(code!(E0017))
-                                .label(
-                                    LabelStyle::Primary,
-                                    "expected a closing curly bracket here",
-                                    self.new_span(),
-                                    self.source_id,
-                                )
-                                .build();
-                        return Err(diagnostic.into());
-                    } else if !self.match_next('}') {
-                        let diagnostic =
-                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                .diag(code!(E0016, ch = ch))
-                                .label(
-                                    LabelStyle::Primary,
-                                    "expected a closing curly bracket here",
-                                    self.new_span(),
-                                    self.source_id,
-                                )
-                                .build();
-                        return Err(diagnostic.into());
-                    }
-                }
-                Some(ch) => {
-                    if is_whitespace(ch) {
-                        let diagnostic =
-                            DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                                .diag(code!(E0008))
-                                .label(
-                                    LabelStyle::Primary,
-                                    "expected an escape sequence here",
-                                    self.new_span(),
-                                    self.source_id,
-                                )
-                                .build();
-                        return Err(diagnostic.into());
-                    }
-                    self.advance();
-                    let diagnostic =
-                        DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                            .diag(code!(E0006, ch = ch))
-                            .label(
-                                LabelStyle::Primary,
-                                "this escape sequence is unknown",
-                                self.new_span(),
-                                self.source_id,
-                            )
-                            .build();
-                    return Err(diagnostic.into());
-                }
-                None => {
-                    let diagnostic =
-                        DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                            .diag(code!(E0007))
-                            .label(
-                                LabelStyle::Primary,
-                                "expected an escape sequence here",
-                                self.new_span(),
-                                self.source_id,
-                            )
-                            .build();
-                    return Err(diagnostic.into());
-                }
-            };
-            self.set_start(start);
-            return Ok(true);
-        }
-
-        // We don't care *what* sequence was found, just if there was one.
-        Ok(false)
-    }
 
     fn handle_char_literal(&mut self) -> CalResult<Token<'lex>> {
         let mut chs_found = 0;
