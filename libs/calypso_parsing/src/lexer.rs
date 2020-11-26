@@ -107,9 +107,11 @@ impl<'lex> Lexer<'lex> {
         // Is valid character for identifier's first character
         if is_ident_start(&span) {
             return self.handle_identifier();
-        } /*else if ch == '\'' {
-              return self.handle_char_literal();
-          }*/
+        } else if ch == '\'' {
+            return self.handle_char_literal();
+        } else if ch == '"' {
+            return self.handle_string_literal();
+        }
 
         use TokenType::*;
 
@@ -512,7 +514,7 @@ impl<'lex> Lexer<'lex> {
     }
 
     fn handle_escape_character(&mut self) -> CalResult<bool> {
-        let saved_start = self.current();
+        let saved_start = self.start;
         self.current_to_start();
         if self.next_if_eq(&'\\').is_some() {
             match self.peek().map(|v| v.value_owned()) {
@@ -552,10 +554,11 @@ impl<'lex> Lexer<'lex> {
                         ]
                     } as ())?,
             }
-            self.start = saved_start;
+            self.set_start(saved_start);
             return Ok(true);
         }
 
+        self.set_start(saved_start);
         // We don't care *what* sequence was found, just if there was one.
         Ok(false)
     }
@@ -733,6 +736,109 @@ impl<'lex> Lexer<'lex> {
         self.next();
         Ok(())
     }
+
+    fn handle_char_literal(&mut self) -> CalResult<Token<'lex>> {
+        let saved_start = self.start;
+        let mut chs_found = 0;
+        let mut expected_quote_here = Span::new_dummy();
+        while self.peek_eq(&'\'') != Some(true) && !self.is_at_end() {
+            if self.handle_escape_character()? {
+                chs_found += 1;
+            } else if is_valid_for_char_literal(self.peek().unwrap()) {
+                self.next();
+                chs_found += 1;
+            } else {
+                gen_error!(self => {
+                    E0020;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            format!(
+                                "this character ({:?}) is invalid here; it must be escaped",
+                                self.peek().unwrap().value_owned()
+                            )
+                    ]
+                } as ())?
+            }
+            if chs_found == 1 {
+                expected_quote_here = self.current();
+            }
+        }
+
+        if chs_found > 1 {
+            self.set_start(expected_quote_here);
+            gen_error!(self => {
+                E0021;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected a `'` here"
+                ]
+            } as ())?
+        } else if chs_found == 0 {
+            gen_error!(self => {
+                E0022;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected one character here"
+                ]
+            } as ())?
+        }
+
+        if self.is_at_end() {
+            self.current_to_start();
+            gen_error!(self => {
+                E0023;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected a `'` here"
+                ]
+            } as ())?
+        }
+        self.next();
+
+        self.set_start(saved_start);
+        Ok(self.new_token(TokenType::CharLiteral))
+    }
+
+    fn handle_string_literal(&mut self) -> CalResult<Token<'lex>> {
+        while self.peek_eq(&'"') != Some(true) && !self.is_at_end() {
+            let sp = *self.peek().unwrap();
+            if self.handle_escape_character()? {
+                self.next();
+            } else if sp == '\n' || sp == '\r' {
+                self.current_to_start();
+                gen_error!(self => {
+                    E0025;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            "newlines or carriage returns are not valid in string literals"
+                    ]
+                } as ())?
+            } else {
+                self.next();
+            }
+        }
+
+        if self.peek_eq(&'"') != Some(true) {
+            self.current_to_start();
+            gen_error!(self => {
+                E0024;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected a `\"` here"
+                ]
+            } as ())?
+        }
+
+        self.next();
+
+        Ok(self.new_token(TokenType::StringLiteral))
+    }
 }
 
 impl<'lex> Lexer<'lex> {
@@ -761,77 +867,6 @@ impl<'lex> Lexer<'lex> {
         Token::new(span, (r#type, self.slice(span)))
     }
 }
-
-/*
-
-    fn handle_char_literal(&mut self) -> CalResult<Token<'lex>> {
-        let mut chs_found = 0;
-        while self.peek() != Some('\'') && !self.is_at_end() {
-            if self.handle_escape_character()? {
-                chs_found += 1;
-            } else if is_valid_for_char_literal(self.peek().unwrap()) {
-                self.advance();
-                chs_found += 1;
-            } else {
-                let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                    .diag(code!(E0020))
-                    .label(
-                        LabelStyle::Primary,
-                        "the character after this one is invalid here; it must be escaped",
-                        self.new_span(),
-                        self.source_id,
-                    )
-                    .build();
-                return Err(diagnostic.into());
-            }
-        }
-
-        if chs_found > 1 {
-            let start = self.start();
-            self.set_start(start + 2);
-            self.advance();
-            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                .diag(code!(E0021))
-                .label(
-                    LabelStyle::Primary,
-                    "expected just a `'` here",
-                    self.new_span(),
-                    self.source_id,
-                )
-                .build();
-            return Err(diagnostic.into());
-        } else if chs_found == 0 {
-            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                .diag(code!(E0022))
-                .label(
-                    LabelStyle::Primary,
-                    "expected at least one character here",
-                    self.new_span(),
-                    self.source_id,
-                )
-                .build();
-            return Err(diagnostic.into());
-        }
-
-        if !self.match_next('\'') {
-            self.current_to_start();
-            self.advance();
-            let diagnostic = DiagnosticBuilder::new(Severity::Error, Arc::clone(&self.files))
-                .diag(code!(E0023))
-                .label(
-                    LabelStyle::Primary,
-                    "expected a single quote here",
-                    self.new_span(),
-                    self.source_id,
-                )
-                .build();
-            return Err(diagnostic.into());
-        }
-
-        Ok(self.new_token(TokenType::CharLiteral))
-    }
-}
-*/
 
 /*
     fn number(&mut self) -> Result<Token<'lex>, ()> {

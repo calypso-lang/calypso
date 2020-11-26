@@ -15,7 +15,8 @@ sl!(WHITESPACE: char = [
 ]);
 
 #[inline]
-pub(super) fn is_valid_for_char_literal(ch: char) -> bool {
+pub(super) fn is_valid_for_char_literal(elem: &Spanned<char>) -> bool {
+    let ch = elem.value_owned();
     ch != '\n' && ch != '\r' && ch != '\t'
 }
 
