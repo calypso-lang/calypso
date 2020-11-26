@@ -31,18 +31,23 @@ fn dump_cc(cc: Cc, compressed: bool, reader: &mut (impl Read + BufRead + Seek)) 
     println!("=> compressed:  {}", if compressed { "yes" } else { "no" });
     println!("=> ABI version: {}", cc.header.abi);
     println!("=== sections ===");
-    for section in cc.sections {
+    for (idx, section) in cc.sections.into_iter().enumerate() {
         let config = HexConfig {
             title: false,
             ascii: true,
             group: 0,
+            width: 16,
             ..HexConfig::simple()
         };
-        println!(":: {}", section.name);
+        println!(":: idx {}", idx);
+        println!("  => name:         TODO @ .shstrtab<+{:x}>", section.name);
         println!("  => type:         {:x}", section.section_type);
         println!("  => flags:        {:x}", section.flags);
         println!("  => offset:       {:x}", section.offset);
         println!("  => size:         {:x}", section.size);
+        reader
+            .seek(SeekFrom::Start(0))
+            .expect("Failed to seek to start of file");
         println!(
             "  => hexdump:\n{}",
             config_hex(

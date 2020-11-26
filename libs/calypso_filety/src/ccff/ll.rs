@@ -56,12 +56,10 @@ impl CcSectionHdr {
             let end = offset + self.size as usize;
             Ok(rest[offset..end].to_vec())
         } else {
-            reader.seek(SeekFrom::Start(3))?;
+            reader.seek(SeekFrom::Start(3 + self.offset))?;
             let mut rest = Vec::new();
             reader.read_to_end(&mut rest)?;
-            let offset = self.offset as usize;
-            let end = offset + self.size as usize;
-            Ok(rest[offset..end].to_vec())
+            Ok(rest[0..self.size as usize].to_vec())
         }
     }
 }
