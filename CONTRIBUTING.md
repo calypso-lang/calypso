@@ -24,3 +24,4 @@ TYPE(@USER: CATEGORY): MESSAGE
   - `parse`: parsing and lexing
   - `infra`: infrastructure code (e.g. `calypso_base` and `calypso_util`)
   - `diag`: diagnostics
+  - `filety`: binary file types

@@ -1,0 +1,22 @@
+[package]
+name = "calypso_filety"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "Binary file type descriptions, parsers, etc. for Calypso"
+readme = "README.md"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/calypso_filety"
+repository = "https://github.com/calypso-lang/calypso/"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1.0.117", features = ["derive"] }
+bincode = "1.3.1"
+flate2 = "1.0.19"
+calypso_diagnostic = { path = "../calypso_diagnostic", version = "0.1.0" }
+
+pretty-hex = "0.2.1"
+
+[[bin]]
+name = "readccff"
+path = "src/bin/readccff.rs"
