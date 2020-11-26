@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use rustyline::{config::Configurer, error::ReadlineError, Cmd, Editor, KeyPress, Movement};
+use rustyline::{config::Configurer, error::ReadlineError, Cmd, Editor, KeyEvent, Movement};
 
 use regex::Regex;
 
@@ -43,7 +43,7 @@ impl<Ctx> Repl<Ctx> {
         editor.set_auto_add_history(true);
         editor.set_tab_stop(4);
         editor.set_history_ignore_space(false);
-        editor.bind_sequence(KeyPress::Ctrl('C'), Cmd::Kill(Movement::WholeLine));
+        editor.bind_sequence(KeyEvent::ctrl('C'), Cmd::Kill(Movement::WholeLine));
         Self {
             eval,
             cmds: Vec::new(),
