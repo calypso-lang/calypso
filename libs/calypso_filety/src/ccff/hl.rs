@@ -17,9 +17,31 @@ pub struct ContainerHeader {
     abi: u8,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum SectionType {
+    // Section header string table (`1`)
+    ShStrTab,
+    Other(u64),
+}
+
+impl From<SectionType> for u64 {
+    fn from(r#type: SectionType) -> Self {
+        match r#type {
+            SectionType::ShStrTab => 1,
+            SectionType::Other(r#type) => {
+                assert!(
+                    r#type != 0 && r#type != 1,
+                    "SectionType::Other cannot have a section type of ShStrTab (1)"
+                );
+                r#type
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Section {
-    r#type: u64,
+    r#type: SectionType,
     flags: u64,
     data: Vec<u8>,
 }
@@ -34,6 +56,11 @@ impl ContainerFile {
 
     pub fn add_section(&mut self, name: String, section: Section) -> &mut Self {
         assert!(name.starts_with('.'), "section name must start with `.`");
+        let type_u64: u64 = section.r#type.into();
+        assert!(
+            type_u64 != 1,
+            "can only have 1 section with type of ShStrTab"
+        );
         self.sections.insert(name, section);
         self
     }
@@ -69,8 +96,7 @@ impl ContainerFile {
             strtab_indices.insert(name, strtab.len());
             strtab.extend(bincode::serialize(name)?);
         }
-        // 1: section header string table
-        let shstrtab = Section::new(1, 0, strtab);
+        let shstrtab = Section::new(SectionType::ShStrTab, 0, strtab);
 
         let mut data = Vec::new();
         let mut data_indices = HashMap::new();
@@ -89,7 +115,7 @@ impl ContainerFile {
         let mut sections = Vec::new();
         sections.push(CcSectionHdr {
             name: *strtab_indices.get(".shstrtab").unwrap() as u64,
-            section_type: shstrtab.r#type,
+            section_type: shstrtab.r#type.into(),
             flags: shstrtab.flags,
             offset: (*data_indices.get(".shstrtab").unwrap() + data_offset) as u64,
             size: shstrtab.get_data().len() as u64,
@@ -99,7 +125,7 @@ impl ContainerFile {
             let strtab_index = *strtab_indices.get(&&**name).unwrap();
             sections.push(CcSectionHdr {
                 name: strtab_index as u64,
-                section_type: section.r#type,
+                section_type: section.r#type.into(),
                 flags: section.flags,
                 offset: data_index as u64,
                 size: section.get_data().len() as u64,
@@ -142,7 +168,7 @@ impl ContainerHeader {
 }
 
 impl Section {
-    pub fn new(r#type: u64, flags: u64, data: Vec<u8>) -> Self {
+    pub fn new(r#type: SectionType, flags: u64, data: Vec<u8>) -> Self {
         Self {
             r#type,
             flags,
@@ -150,11 +176,11 @@ impl Section {
         }
     }
 
-    pub fn get_type(&self) -> u64 {
+    pub fn get_type(&self) -> SectionType {
         self.r#type
     }
 
-    pub fn set_type(&mut self, r#type: u64) -> &mut Self {
+    pub fn set_type(&mut self, r#type: SectionType) -> &mut Self {
         self.r#type = r#type;
         self
     }
