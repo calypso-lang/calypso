@@ -203,7 +203,7 @@ impl ContainerFile {
             let end = offset + section.size as usize;
             let data = data[offset..end].to_vec();
             let mut section = Section::new(section.section_type.into(), section.flags, data);
-            section.offset = Some(offset as u64);
+            section.offset = Some(offset as u64 + ll.size() as u64);
             section.name_offset = Some(name_offset);
             container.add_section(name, section);
         }
