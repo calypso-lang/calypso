@@ -20,3 +20,11 @@ pretty-hex = "0.2.1"
 [[bin]]
 name = "readccff"
 path = "src/bin/readccff.rs"
+
+[[example]]
+name = "ccff_simple_compressed"
+path = "examples/ccff/simple_compressed.rs"
+
+[[example]]
+name = "ccff_simple"
+path = "examples/ccff/simple.rs"

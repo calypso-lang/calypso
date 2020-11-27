@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::io::prelude::*;
-use std::io::{BufWriter, Cursor};
 use std::mem;
 
 use calypso_diagnostic::error::Result as CalResult;
@@ -122,16 +120,9 @@ impl ContainerFile {
 
     pub fn into_bytes(self, compression: Compression) -> CalResult<Vec<u8>> {
         let (ll, data) = self.into_ll()?;
-        let buf = Vec::new();
-        let cursor = Cursor::new(buf);
-        let mut writer = BufWriter::new(cursor);
-        ll.write(&mut writer, compression)?;
-        writer.write_all(&data)?;
+        let bytes = ll.write(compression, &data)?;
 
-        Ok(writer
-            .into_inner()
-            .map_err(|_| "failed to flush buffer")?
-            .into_inner())
+        Ok(bytes)
     }
 }
 

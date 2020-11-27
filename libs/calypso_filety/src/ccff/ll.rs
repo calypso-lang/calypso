@@ -96,16 +96,23 @@ impl Cc {
         })
     }
 
-    pub fn write(&self, writer: &mut impl Write, compression: Compression) -> CalResult<()> {
-        if let Compression::Compressed(level) = compression {
-            writer.write_all(&MAGIC_BYTES_COMPRESSED)?;
-            let encoder = ZlibEncoder::new(writer, level);
-            bincode::serialize_into(encoder, self)?;
+    pub fn write(&self, compression: Compression, data: &[u8]) -> CalResult<Vec<u8>> {
+        let vec = if let Compression::Compressed(level) = compression {
+            let mut encoded = Vec::new();
+            encoded.extend(&bincode::serialize(self)?);
+            encoded.extend(data);
+            let mut compressor = ZlibEncoder::new(Vec::new(), level);
+            compressor.write_all(&encoded)?;
+            let mut vec = MAGIC_BYTES_COMPRESSED.to_vec();
+            vec.extend(compressor.finish()?);
+            vec
         } else {
-            writer.write_all(&MAGIC_BYTES_UNCOMPRESSED)?;
-            bincode::serialize_into(writer, self)?;
-        }
+            let mut vec = MAGIC_BYTES_UNCOMPRESSED.to_vec();
+            vec.extend(&bincode::serialize(self)?);
+            vec.extend(data);
+            vec
+        };
 
-        Ok(())
+        Ok(vec)
     }
 }
