@@ -4,7 +4,8 @@ pub const MAGIC_BYTES_UNCOMPRESSED: [u8; 3] = [b'\xCC', b'\xFF', b'U'];
 use flate2::{bufread::ZlibDecoder, write::ZlibEncoder};
 use serde::{Deserialize, Serialize};
 
-use std::io::{prelude::*, SeekFrom};
+use std::io::prelude::*;
+use std::mem;
 
 use calypso_diagnostic::error::Result as CalResult;
 
@@ -46,47 +47,42 @@ pub struct CcSectionHdr {
 }
 
 impl CcSectionHdr {
-    pub fn get(&self, reader: &mut (impl Read + BufRead + Seek)) -> CalResult<Vec<u8>> {
-        if Cc::is_compressed(reader)? {
-            reader.seek(SeekFrom::Start(3))?;
-            let mut decoder = ZlibDecoder::new(reader);
-            let mut rest = Vec::new();
-            decoder.read_to_end(&mut rest)?;
-            let offset = self.offset as usize;
-            let end = offset + self.size as usize;
-            Ok(rest[offset..end].to_vec())
-        } else {
-            reader.seek(SeekFrom::Start(3 + self.offset))?;
-            let mut rest = Vec::new();
-            reader.read_to_end(&mut rest)?;
-            Ok(rest[0..self.size as usize].to_vec())
-        }
+    pub fn get<'a>(&self, data: &'a [u8]) -> Option<&'a [u8]> {
+        let offset = self.offset as usize;
+        let end = offset + self.size as usize;
+        data.get(offset..end)
     }
 }
 
 impl Cc {
-    pub fn load(reader: &mut (impl Read + BufRead + Seek)) -> CalResult<Self> {
-        let mut magic = [0, 0, 0];
-        reader.read_exact(&mut magic)?;
-        reader.seek(SeekFrom::Start(3))?;
-        let cc = if magic == MAGIC_BYTES_COMPRESSED {
-            let decoder = ZlibDecoder::new(reader);
-            bincode::deserialize_from(decoder)?
-        } else if magic == MAGIC_BYTES_UNCOMPRESSED {
-            let mut rest = Vec::new();
-            reader.read_to_end(&mut rest)?;
-            bincode::deserialize(&rest)?
+    pub fn load(buf: Vec<u8>) -> CalResult<(Self, Vec<u8>)> {
+        let rest = &buf[3..];
+        let rest = if Self::is_compressed(&buf)? {
+            let mut decoder = ZlibDecoder::new(rest);
+            let mut vec = Vec::new();
+            decoder.read_to_end(&mut vec)?;
+            vec
         } else {
-            return Err("invalid magic bytes for CCFF file".into());
+            rest.to_vec()
         };
 
-        Ok(cc)
+        let cc: Cc = bincode::deserialize(&rest)?;
+        let data = rest[cc.size()..].to_vec();
+
+        Ok((cc, data))
     }
 
-    pub fn is_compressed(reader: &mut (impl Read + Seek)) -> CalResult<bool> {
-        let mut magic = [0, 0, 0];
-        reader.read_exact(&mut magic)?;
-        reader.seek(SeekFrom::Start(0))?;
+    pub fn size(&self) -> usize {
+        let num_sections = self.sections.len();
+        let section_hdr_size = mem::size_of::<CcSectionHdr>();
+        let hdr_size = mem::size_of::<CcHdr>();
+        // there are `num_sections` section headers, then the main header, then a `u64` used for
+        // the size of the Vec<CcSectionHdr> in bincode
+        (section_hdr_size * num_sections) + hdr_size + mem::size_of::<u64>()
+    }
+
+    pub fn is_compressed(buf: &[u8]) -> CalResult<bool> {
+        let magic = &buf[0..3];
         Ok(if magic == MAGIC_BYTES_COMPRESSED {
             true
         } else if magic == MAGIC_BYTES_UNCOMPRESSED {
