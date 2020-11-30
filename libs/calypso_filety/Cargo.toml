@@ -1,11 +1,11 @@
 [package]
 name = "calypso_filety"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2018"
 description = "Binary file type descriptions, parsers, etc. for Calypso"
 readme = "README.md"
-homepage = "https://github.com/calypso-lang/calypso/tree/main/calypso_filety"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_filety"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT"
 
