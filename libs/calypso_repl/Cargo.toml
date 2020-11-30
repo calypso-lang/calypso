@@ -5,7 +5,7 @@ authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2018"
 description = "REPL utilities for Calypso"
 readme = "README.md"
-homepage = "https://github.com/calypso-lang/calypso/tree/main/calypso_repl"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_repl"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT"
 

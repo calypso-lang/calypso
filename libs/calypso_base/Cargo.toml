@@ -5,7 +5,7 @@ authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2018"
 description = "Base types and utilities for Calypso that don't require any other Calypso packages"
 readme = "README.md"
-homepage = "https://github.com/calypso-lang/calypso/tree/main/calypso_base"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_base"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT"
 
