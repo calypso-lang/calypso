@@ -13,5 +13,5 @@ license = "MIT"
 error-chain = "0.12.4"
 calypso_base = { path = "../calypso_base", version = "0.1.0" }
 lazy_static = "1.4.0"
-codespan-reporting = "0.9.5"
+codespan-reporting = "0.11.0"
 strfmt = "0.1.6"
