@@ -25,3 +25,13 @@ TYPE(@USER: CATEGORY): MESSAGE
   - `infra`: infrastructure code (e.g. `calypso_base` and `calypso_util`)
   - `diag`: diagnostics
   - `filety`: binary file types
+
+## Versioning Policy
+
+Subcrates (crates in `libs/`) may publish versions independently of all other crates.
+No version of any crate published to crates.io may contain build issues. The `main`
+branch, however, may contain **temporary** build issues due to breaking changes in a
+subcrate. When bumping a subcrate's version, please bump the dependents' version of
+that subcrate. If it is possible for you, please fix any compatibility issues. If
+not, please ping a relevant team member for that subcrate if your PR is accepted
+and they will fix it before the PR is merged.
