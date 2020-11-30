@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::mem;
 use std::slice::Iter;
 
-use calypso_diagnostic::error::Result as CalResult;
-
 use super::ll::{Cc, CcHdr, CcSectionHdr};
 use super::Compression;
+
+use bincode::ErrorKind;
 
 #[derive(Debug, Clone)]
 pub struct ContainerFile {
@@ -16,7 +16,8 @@ pub struct ContainerFile {
 
 #[derive(Debug, Copy, Clone)]
 pub struct ContainerHeader {
-    abi: u8,
+    abi: u64,
+    filety: u64,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -116,7 +117,7 @@ impl ContainerFile {
         self.sections.iter()
     }
 
-    pub fn into_ll(self) -> CalResult<(Cc, Vec<u8>)> {
+    pub fn into_ll(self) -> bincode::Result<(Cc, Vec<u8>)> {
         let mut strtab = Vec::new();
         let mut strtab_indices = HashMap::new();
         strtab_indices.insert(".shstrtab", 0);
@@ -167,6 +168,7 @@ impl ContainerFile {
 
         let hdr = CcHdr {
             abi: self.header.abi,
+            filety: self.header.filety,
         };
 
         let ll = Cc {
@@ -177,24 +179,32 @@ impl ContainerFile {
         Ok((ll, data))
     }
 
-    pub fn into_bytes(self, compression: Compression) -> CalResult<Vec<u8>> {
+    pub fn into_bytes(self, compression: Compression) -> bincode::Result<Vec<u8>> {
         let (ll, data) = self.into_ll()?;
         let bytes = ll.write(compression, &data)?;
 
         Ok(bytes)
     }
 
-    pub fn from_ll(ll: Cc, data: Vec<u8>) -> CalResult<Self> {
-        let header = ContainerHeader { abi: ll.header.abi };
+    pub fn from_ll(ll: Cc, data: Vec<u8>) -> bincode::Result<Self> {
+        let header = ContainerHeader {
+            abi: ll.header.abi,
+            filety: ll.header.filety,
+        };
         let mut container = Self::new(header);
-        if ll
+        let section_type = ll
             .sections
             .first()
-            .ok_or("the section header string table must be present")?
-            .section_type
-            != 1
-        {
-            return Err("the section header string table must be first".into());
+            .ok_or_else(|| {
+                Box::new(ErrorKind::Custom(
+                    "the section header string table must be present".to_string(),
+                ))
+            })?
+            .section_type;
+        if section_type != 1 {
+            return Err(Box::new(ErrorKind::Custom(
+                "the section header string table must be first".to_string(),
+            )));
         }
         for section in &ll.sections {
             let name_offset = section.name;
@@ -210,27 +220,36 @@ impl ContainerFile {
         Ok(container)
     }
 
-    pub fn from_bytes(buf: Vec<u8>) -> CalResult<Self> {
+    pub fn from_bytes(buf: Vec<u8>) -> bincode::Result<Self> {
         let (ll, data) = Cc::load(buf)?;
         Self::from_ll(ll, data)
     }
 
-    pub fn is_compressed(buf: &[u8]) -> CalResult<bool> {
+    pub fn is_compressed(buf: &[u8]) -> bincode::Result<bool> {
         Cc::is_compressed(buf)
     }
 }
 
 impl ContainerHeader {
-    pub fn new(abi: u8) -> Self {
-        Self { abi }
+    pub fn new(abi: u64, filety: u64) -> Self {
+        Self { abi, filety }
     }
 
-    pub fn get_abi(&self) -> u8 {
+    pub fn get_abi(&self) -> u64 {
         self.abi
     }
 
-    pub fn set_abi(&mut self, abi: u8) -> &mut Self {
+    pub fn set_abi(&mut self, abi: u64) -> &mut Self {
         self.abi = abi;
+        self
+    }
+
+    pub fn get_filety(&self) -> u64 {
+        self.filety
+    }
+
+    pub fn set_filety(&mut self, filety: u64) -> &mut Self {
+        self.filety = filety;
         self
     }
 }

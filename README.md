@@ -27,6 +27,8 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 | `calypso`              | [![calypso][bcio1]][lcio1]             | [![calypso][bdrs1]][ldrs1]                 |
 | `calypso_base`         | [![calypso_base][bcio2]][lcio2]        | [![calypso_base][bdrs2]][ldrs2]            |
 | `calypso_diagnostic`   | [![calypso_diagnostic][bcio3]][lcio3]  | [![calypso_diagnostic][bdrs3]][ldrs3]      |
+| `calypso_filety`       | [![calypso_filety][bcio7]][lcio7]      | [![calypso_filety][bdrs7]][ldrs7]          |
+| `calypso_opt`          | [![calypso_opt][bcio8]][lcio8]         | [![calypso_opt][bdrs8]][ldrs8]             |
 | `calypso_parsing`      | [![calypso_parsing][bcio4]][lcio4]     | [![calypso_parsing][bdrs4]][ldrs4]         |
 | `calypso_repl`         | [![calypso_repl][bcio5]][lcio5]        | [![calypso_repl][bdrs5]][ldrs5]            |
 | `calypso_util`         | [![calypso_util][bcio6]][lcio6]        | [![calypso_util][bdrs6]][ldrs6]            |
@@ -80,12 +82,22 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 [bcio5]: https://img.shields.io/crates/v/calypso_repl
 [lcio5]: https://crates.io/crates/calypso_repl
 [bdrs5]: https://docs.rs/calypso_repl/badge.svg
-[ldrs5]: https://docs.rs/calypso_repl/*
+[ldrs5]: https://docs.rs/calypso_repl/*calypso_util
 
 [bcio6]: https://img.shields.io/crates/v/calypso_util
 [lcio6]: https://crates.io/crates/calypso_util
 [bdrs6]: https://docs.rs/calypso_util/badge.svg
 [ldrs6]: https://docs.rs/calypso_util/*
+
+[bcio7]: https://img.shields.io/crates/v/calypso_filety
+[lcio7]: https://crates.io/crates/calypso_filety
+[bdrs7]: https://docs.rs/calypso_filety/badge.svg
+[ldrs7]: https://docs.rs/calypso_filety/*
+
+[bcio8]: https://img.shields.io/crates/v/calypso_opt
+[lcio8]: https://crates.io/crates/calypso_opt
+[bdrs8]: https://docs.rs/calypso_opt/badge.svg
+[ldrs8]: https://docs.rs/calypso_opt/*
 
 [l1]: https://discord.gg/jRaYGgeeJF
 [b1]: https://img.shields.io/badge/discord-%23calypso-informational

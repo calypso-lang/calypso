@@ -27,6 +27,7 @@ fn dump_cc(container: ContainerFile, compressed: bool) {
     println!("=== metadata ===");
     println!("=> compressed:  {}", if compressed { "yes" } else { "no" });
     println!("=> ABI version: {}", container.get_header().get_abi());
+    println!("=> File type:   {}", container.get_header().get_filety());
     println!("=== sections ===");
     for (idx, (name, section)) in container.sections_iter().enumerate() {
         let config = HexConfig {

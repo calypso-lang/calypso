@@ -144,7 +144,6 @@ version = "0.1.0"
 name = "calypso_diagnostic"
 version = "0.1.0"
 dependencies = [
- "bincode",
  "calypso_base",
  "codespan-reporting",
  "error-chain",
@@ -157,7 +156,6 @@ name = "calypso_filety"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "calypso_diagnostic",
  "flate2",
  "pretty-hex",
  "serde",

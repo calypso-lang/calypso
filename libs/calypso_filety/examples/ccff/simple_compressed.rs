@@ -1,6 +1,6 @@
 use calypso_filety::{ccff::hl::*, ccff::*};
 fn main() {
-    let hdr = ContainerHeader::new(1);
+    let hdr = ContainerHeader::new(1, 1);
     let mut container = ContainerFile::new(hdr);
     let code_section = Section::new(
         SectionType::Other(2),

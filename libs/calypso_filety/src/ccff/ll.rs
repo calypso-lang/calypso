@@ -7,9 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::io::prelude::*;
 use std::mem;
 
-use calypso_diagnostic::error::Result as CalResult;
-
 use super::Compression;
+
+use bincode::ErrorKind;
 
 /// A CCFF file (minus its data)
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -24,8 +24,10 @@ pub struct Cc {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[repr(C)]
 pub struct CcHdr {
-    /// A user-defined ABI version. This is used in the bytecode as the VM version.
-    pub abi: u8,
+    /// A user-defined ABI version.
+    pub abi: u64,
+    /// A user-defined file type.
+    pub filety: u64,
 }
 
 /// The header for a single CCFF section
@@ -55,7 +57,7 @@ impl CcSectionHdr {
 }
 
 impl Cc {
-    pub fn load(buf: Vec<u8>) -> CalResult<(Self, Vec<u8>)> {
+    pub fn load(buf: Vec<u8>) -> bincode::Result<(Self, Vec<u8>)> {
         let rest = &buf[3..];
         let rest = if Self::is_compressed(&buf)? {
             let mut decoder = ZlibDecoder::new(rest);
@@ -81,18 +83,20 @@ impl Cc {
         (section_hdr_size * num_sections) + hdr_size + mem::size_of::<u64>()
     }
 
-    pub fn is_compressed(buf: &[u8]) -> CalResult<bool> {
+    pub fn is_compressed(buf: &[u8]) -> bincode::Result<bool> {
         let magic = &buf[0..3];
         Ok(if magic == MAGIC_BYTES_COMPRESSED {
             true
         } else if magic == MAGIC_BYTES_UNCOMPRESSED {
             false
         } else {
-            return Err("invalid magic bytes for CCFF file".into());
+            return Err(Box::new(ErrorKind::Custom(
+                "invalid magic bytes for CCFF file".to_string(),
+            )));
         })
     }
 
-    pub fn write(&self, compression: Compression, data: &[u8]) -> CalResult<Vec<u8>> {
+    pub fn write(&self, compression: Compression, data: &[u8]) -> bincode::Result<Vec<u8>> {
         let vec = if let Compression::Compressed(level) = compression {
             let mut encoded = Vec::new();
             encoded.extend(&bincode::serialize(self)?);
