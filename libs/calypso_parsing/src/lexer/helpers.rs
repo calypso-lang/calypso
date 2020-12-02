@@ -40,4 +40,9 @@ pub(super) fn is_ident_continue(elem: &Spanned<char>) -> bool {
     is_ident_start(elem) || elem.value_owned().is_ascii_digit()
 }
 
+#[inline]
+pub(super) fn is_ident_end(elem: &Spanned<char>) -> bool {
+    elem == &'!' || elem == &'?'
+}
+
 use calypso_base::span::Spanned;

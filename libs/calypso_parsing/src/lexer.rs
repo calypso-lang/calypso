@@ -501,8 +501,12 @@ impl<'lex> Lexer<'lex> {
             return Ok(self.new_token(TokenType::Under));
         }
 
-        // Gorge while the character is a valid identifier character.
-        self.gorge_while(|sp, _| is_ident_continue(sp));
+        // Gorge while the character is a valid identifier character (and not an ident_end character).
+        self.gorge_while(|sp, _| is_ident_continue(sp) && !is_ident_end(sp));
+
+        if self.peek_cond(is_ident_end) == Some(true) {
+            self.next();
+        }
 
         let keyword = KEYWORD_TRIE.get(&self.slice(self.new_span()).to_string());
 
