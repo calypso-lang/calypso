@@ -3,7 +3,7 @@ use calypso_base::{
     span::{Span, Spanned},
     streams::{Stream, StringStream},
 };
-use calypso_diagnostic::{diagnostic::LabelStyle, error::Result as CalResult, gen_error, FileMgr};
+use calypso_diagnostic::prelude::*;
 
 use radix_trie::Trie;
 
@@ -90,7 +90,8 @@ impl<'lex> Lexer<'lex> {
     }
 
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
-        if let Some(wstok) = self.handle_whitespace()? {
+        if let Some(wstok) = self.handle_whitespace()?.unwrap_good() {
+            // todo
             return Ok(wstok);
         }
         self.current_to_start();
@@ -204,14 +205,14 @@ impl<'lex> Lexer<'lex> {
             '#' => Hash,
 
             // Unexpected character
-            ch => gen_error!(self => {
+            ch => gen_error!(Err(self => {
                 E0003;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         format!("did not expect `{}` here", ch)
                 ]
-            } as TokenType)?,
+            }) as TokenType)?,
         };
 
         Ok(self.new_token(token_type))
@@ -368,20 +369,20 @@ impl<'lex> Lexer<'lex> {
 }
 
 impl<'lex> Lexer<'lex> {
-    fn handle_whitespace(&mut self) -> CalResult<Option<Token<'lex>>> {
+    fn handle_whitespace(&mut self) -> CalResultSync<Option<Token<'lex>>> {
         self.current_to_start();
         self.handle_dangling_comment_ends()?;
         while !self.is_at_end()
             && (self.handle_comment()
-                || self.handle_multiline_comment()?
+                || self.handle_multiline_comment()?.unwrap_good() // fixme
                 || self.next_if(is_whitespace).is_some())
         {
             self.handle_dangling_comment_ends()?;
         }
         if self.new_span().is_empty() {
-            Ok(None)
+            Ok(Good(None))
         } else {
-            Ok(Some(self.new_token(TokenType::Ws)))
+            Ok(Good(Some(self.new_token(TokenType::Ws))))
         }
     }
 
@@ -400,34 +401,40 @@ impl<'lex> Lexer<'lex> {
         true
     }
 
-    fn handle_multiline_comment(&mut self) -> CalResult<bool> {
+    fn handle_multiline_comment(&mut self) -> CalResultSync<bool> {
         // xx -> 11 -> 1
         // x* -> 10 -> 1
         // /x -> 01 -> 1
         // /* -> 00 -> 0
         if self.peek_eq(&'/') != Some(true) || self.peek2_eq(&'*') != Some(true) {
-            return Ok(false);
+            return Ok(Good(false));
         }
         self.current_to_start();
         self.next();
         self.next();
         let mut stack = vec![self.new_span()];
+        let mut report = Report::new();
 
         loop {
             let span = self.peek();
             let ch = span.map(|sp| sp.value_owned());
             if span.is_none() {
                 if stack.len() == 1 {
-                    gen_error!(self => {
+                    self.next();
+                    self.next();
+                    gen_error!(report, self => {
                         E0002;
                         labels: [
                             LabelStyle::Primary =>
                                 (self.source_id, stack.pop().unwrap());
                                 "this multi-line comment's beginning has no corresponding end"
                         ]
-                    } as ())?
+                    });
+                } else if !report.is_empty() {
+                    return Ok(Syncd(false, report));
+                } else {
+                    return Ok(Good(false));
                 }
-                return Ok(false);
             }
 
             if ch == Some('/') && self.peek2_eq(&'*') == Some(true) {
@@ -439,19 +446,6 @@ impl<'lex> Lexer<'lex> {
                 self.current_to_start();
                 self.next();
                 self.next();
-                // I don't think this is needed -- so there's an assert
-                // so that if this is an edge case, it's detected more easily.
-                assert!(!stack.is_empty());
-                // if stack.is_empty() {
-                //     gen_error!(self => {
-                //         E0001;
-                //         labels: [
-                //             LabelStyle::Primary =>
-                //                 (self.source_id, self.new_span());
-                //                 "this multi-line comment's end has no corresponding beginning"
-                //         ]
-                //     } as ())?
-                // }
                 stack.pop();
             } else {
                 self.next();
@@ -462,35 +456,43 @@ impl<'lex> Lexer<'lex> {
             }
 
             if self.is_at_end() && !stack.is_empty() {
-                gen_error!(self => {
+                gen_error!(report, self => {
                     E0002;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, stack.pop().unwrap());
                             "this multi-line comment's beginning has no corresponding end"
                     ]
-                } as ())?
+                });
             }
         }
 
-        Ok(true)
+        if !report.is_empty() {
+            Ok(Syncd(true, report))
+        } else {
+            Ok(Good(true))
+        }
     }
 
-    fn handle_dangling_comment_ends(&mut self) -> CalResult<()> {
+    fn handle_dangling_comment_ends(&mut self) -> CalResultSync<()> {
         if self.peek_eq(&'*') == Some(true) && self.peek2_eq(&'/') == Some(true) {
             self.current_to_start();
             self.next();
             self.next();
-            gen_error!(self => {
-                E0001;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "this multi-line comment's end has no corresponding beginning"
-                ]
-            } as ())?
+            Ok(Syncd(
+                (),
+                gen_error!(Report::new(), self => {
+                    E0001;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            "this multi-line comment's end has no corresponding beginning"
+                    ]
+                }),
+            ))
+        } else {
+            Ok(Good(()))
         }
-        Ok(())
     }
 
     fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
@@ -530,33 +532,33 @@ impl<'lex> Lexer<'lex> {
                 Some('u') => self.handle_unicode_escape()?,
                 Some(ch) => {
                     if is_whitespace_ch(ch) {
-                        gen_error!(self => {
+                        gen_error!(Err(self => {
                             E0008;
                             labels: [
                                 LabelStyle::Primary =>
                                     (self.source_id, self.new_span());
                                     "expected an escape sequence here"
                             ]
-                        } as ())?
+                        }) as ())?
                     }
                     self.next();
-                    gen_error!(self => {
+                    gen_error!(Err(self => {
                         E0006, ch = ch;
                         labels: [
                             LabelStyle::Primary =>
                                 (self.source_id, self.new_span());
                                 "this escape sequence is unknown"
                         ]
-                    } as ())?
+                    }) as ())?
                 }
-                None => gen_error!(self => {
+                None => gen_error!(Err(self => {
                         E0007;
                         labels: [
                             LabelStyle::Primary =>
                                 (self.source_id, self.new_span());
                                 "expected an escape sequence here"
                         ]
-                    } as ())?,
+                    }) as ())?,
             }
             self.set_start(saved_start);
             return Ok(true);
@@ -575,16 +577,16 @@ impl<'lex> Lexer<'lex> {
             let sp = self.peek();
             if sp.is_none() || is_whitespace(sp.unwrap()) {
                 if i == 1 {
-                    gen_error!(self => {
+                    gen_error!(Err(self => {
                         E0004;
                         labels: [
                             LabelStyle::Primary =>
                                 (self.source_id, self.new_span());
                                 "expected two hexadecimal digits here"
                         ]
-                    } as ())?
+                    }) as ())?
                 } else if i == 2 {
-                    gen_error!(self => {
+                    gen_error!(Err(self => {
                         E0009;
                         labels: [
                             LabelStyle::Primary =>
@@ -597,7 +599,7 @@ impl<'lex> Lexer<'lex> {
                                 self.prev().unwrap().value_owned()
                             )
                         ]
-                    } as ())?
+                    }) as ())?
                 } else {
                     return Ok(());
                 }
@@ -609,14 +611,14 @@ impl<'lex> Lexer<'lex> {
                 self.next();
             } else {
                 self.set_start(sp.span());
-                gen_error!(self => {
+                gen_error!(Err(self => {
                     E0005, ch = ch;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());
                             "found an invalid digit here"
                     ]
-                } as ())?
+                }) as ())?
             }
         }
         Ok(())
@@ -627,32 +629,32 @@ impl<'lex> Lexer<'lex> {
         self.next();
         self.current_to_start();
         match self.peek().copied() {
-            Some(sp) if is_whitespace(&sp) => gen_error!(self => {
+            Some(sp) if is_whitespace(&sp) => gen_error!(Err(self => {
                     E0012;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());
                             "this should be an opening curly bracket"
                     ]
-                } as ())?,
-            None => gen_error!(self => {
+                }) as ())?,
+            None => gen_error!(Err(self => {
                 E0011;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "this should be an opening curly bracket"
                 ]
-            } as ())?,
+            }) as ())?,
             Some(sp) if sp != '{' => {
                 self.next();
-                gen_error!(self => {
+                gen_error!(Err(self => {
                     E0010, ch = sp.value_owned();
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());
                             "this should be an opening curly bracket"
                     ]
-                } as ())?
+                }) as ())?
             }
             _ => (),
         }
@@ -666,23 +668,23 @@ impl<'lex> Lexer<'lex> {
             if count == 6 {
                 break;
             } else if is_whitespace(&sp) {
-                gen_error!(self => {
+                gen_error!(Err(self => {
                     E0018;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());
                             "expected a hexadecimal digit here"
                     ]
-                } as ())?
+                }) as ())?
             } else if !ch.is_ascii_hexdigit() {
-                gen_error!(self => {
+                gen_error!(Err(self => {
                     E0014, ch = ch;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());
                             "found an invalid digit here. perhaps you meant to put a `}` here?"
                     ]
-                } as ())?
+                }) as ())?
             }
             self.next();
             count += 1;
@@ -690,41 +692,41 @@ impl<'lex> Lexer<'lex> {
 
         if self.is_at_end() {
             self.current_to_start();
-            gen_error!(self => {
+            gen_error!(Err(self => {
                 E0015;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected a closing curly bracket here"
                 ]
-            } as ())?
+            }) as ())?
         }
 
         let sp = *self.peek().unwrap();
         if is_whitespace(&sp) {
             self.current_to_start();
-            gen_error!(self => {
+            gen_error!(Err(self => {
                 E0017;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected a closing curly bracket here"
                 ]
-            } as ())?
+            }) as ())?
         } else if self.peek_eq(&'}') != Some(true) {
-            gen_error!(self => {
+            gen_error!(Err(self => {
                 E0016, ch = sp.value_owned();
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected a closing curly bracket here"
                 ]
-            } as ())?
+            }) as ())?
         }
 
         // We need to check for this after curly bracket checks
         if count == 0 {
-            gen_error!(self => {
+            gen_error!(Err(self => {
                 E0019;
                 labels: [
                     LabelStyle::Primary =>
@@ -734,7 +736,7 @@ impl<'lex> Lexer<'lex> {
                 notes: [
                     "if you wanted a null byte, you can use `\\u{0}` or `\\0`"
                 ]
-            } as ())?
+            }) as ())?
         }
         // Handle closing `}`
         self.next();
@@ -752,7 +754,7 @@ impl<'lex> Lexer<'lex> {
                 self.next();
                 chs_found += 1;
             } else {
-                gen_error!(self => {
+                gen_error!(Err(self => {
                     E0020;
                     labels: [
                         LabelStyle::Primary =>
@@ -762,7 +764,7 @@ impl<'lex> Lexer<'lex> {
                                 self.peek().unwrap().value_owned()
                             )
                     ]
-                } as ())?
+                }) as ())?
             }
             if chs_found == 1 {
                 expected_quote_here = self.current();
@@ -771,35 +773,35 @@ impl<'lex> Lexer<'lex> {
 
         if chs_found > 1 {
             self.set_start(expected_quote_here);
-            gen_error!(self => {
+            gen_error!(Err(self => {
                 E0021;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected a `'` here"
                 ]
-            } as ())?
+            }) as ())?
         } else if chs_found == 0 {
-            gen_error!(self => {
+            gen_error!(Err(self => {
                 E0022;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected one character here"
                 ]
-            } as ())?
+            }) as ())?
         }
 
         if self.is_at_end() {
             self.current_to_start();
-            gen_error!(self => {
+            gen_error!(Err(self => {
                 E0023;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected a `'` here"
                 ]
-            } as ())?
+            }) as ())?
         }
         self.next();
 
@@ -814,14 +816,14 @@ impl<'lex> Lexer<'lex> {
                 self.next();
             } else if sp == '\n' || sp == '\r' {
                 self.current_to_start();
-                gen_error!(self => {
+                gen_error!(Err(self => {
                     E0025;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());
                             "newlines or carriage returns are not valid in string literals"
                     ]
-                } as ())?
+                }) as ())?
             } else {
                 self.next();
             }
@@ -829,14 +831,14 @@ impl<'lex> Lexer<'lex> {
 
         if self.peek_eq(&'"') != Some(true) {
             self.current_to_start();
-            gen_error!(self => {
+            gen_error!(Err(self => {
                 E0024;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected a `\"` here"
                 ]
-            } as ())?
+            }) as ())?
         }
 
         self.next();
