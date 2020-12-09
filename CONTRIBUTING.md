@@ -35,3 +35,10 @@ subcrate. When bumping a subcrate's version, please bump the dependents' version
 that subcrate. If it is possible for you, please fix any compatibility issues. If
 not, please ping a relevant team member for that subcrate if your PR is accepted
 and they will fix it before the PR is merged.
+
+## Notes to myself
+
+If anyone joins as a major contributor, this will no longer be notes to myself
+but notes to the core team.
+
+- Please do not assign milestones to non-tracking issues.
