@@ -1,29 +1,28 @@
+use super::error::Result as CalResult;
 use super::{reporting, FileMgr};
 use calypso_base::span::Span;
 use reporting::diagnostic::{Diagnostic as CodespanDiag, Label};
-pub use reporting::diagnostic::{LabelStyle, Severity};
-use reporting::term::{self, termcolor::Ansi};
+use reporting::term::{self, termcolor::Buffer};
 
 use std::fmt;
-use std::io::Cursor;
-use std::sync::Arc;
+
+pub use reporting::diagnostic::{LabelStyle, Severity};
 
 #[derive(Clone, Debug)]
-/// We use an `Arc<FileMgr>` for the Diagnostic because error_chain requires that the error be Send.
-pub struct Diagnostic(CodespanDiag<usize>, Arc<FileMgr>);
+pub struct Diagnostic(CodespanDiag<usize>, String);
 
 #[derive(Clone, Debug)]
-pub struct DiagnosticBuilder {
+pub struct DiagnosticBuilder<'a> {
     level: Severity,
     code: Option<String>,
     message: String,
     labels: Vec<Label<usize>>,
     notes: Vec<String>,
-    files: Arc<FileMgr>,
+    files: &'a FileMgr,
 }
 
-impl DiagnosticBuilder {
-    pub fn new(level: Severity, files: Arc<FileMgr>) -> Self {
+impl<'a> DiagnosticBuilder<'a> {
+    pub fn new(level: Severity, files: &'a FileMgr) -> Self {
         Self {
             level,
             code: None,
@@ -61,7 +60,7 @@ impl DiagnosticBuilder {
         self
     }
 
-    pub fn build(self) -> Diagnostic {
+    pub fn build(self) -> CalResult<Diagnostic> {
         let mut diagnostic = CodespanDiag::new(self.level);
         if let Some(code) = self.code.clone() {
             diagnostic = diagnostic.with_code(code)
@@ -69,12 +68,14 @@ impl DiagnosticBuilder {
         if !self.message.is_empty() {
             diagnostic = diagnostic.with_message(self.message.clone())
         }
-        Diagnostic(
-            diagnostic
-                .with_labels(self.labels.clone())
-                .with_notes(self.notes.clone()),
-            Arc::clone(&self.files),
-        )
+        let diagnostic = diagnostic.with_labels(self.labels).with_notes(self.notes);
+        let mut buf = Buffer::ansi();
+        let config = term::Config::default();
+
+        term::emit(&mut buf, &config, self.files, &diagnostic)?;
+        let buf = buf.into_inner();
+        let rendered = String::from_utf8(buf)?;
+        Ok(Diagnostic(diagnostic, rendered))
     }
 }
 
@@ -82,20 +83,19 @@ impl Diagnostic {
     pub fn reason(&self) -> &str {
         &self.0.message
     }
+
+    pub fn code(&self) -> Option<&String> {
+        self.0.code.as_ref()
+    }
+
+    pub fn rendered(&self) -> &str {
+        &self.1
+    }
 }
 
 impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let buffer = Vec::new();
-        let cursor = Cursor::new(buffer);
-        let mut stream = Ansi::new(cursor);
-        let config = term::Config::default();
-
-        term::emit(&mut stream, &config, &*self.1, &self.0).map_err(|_| fmt::Error)?;
-        let cursor = stream.into_inner();
-        let buffer = cursor.into_inner();
-        let data = std::str::from_utf8(&buffer).map_err(|_| fmt::Error)?;
-        f.write_str(data)
+        write!(f, "{}", self.1)
     }
 }
 

@@ -7,6 +7,8 @@ error_chain! {
 
     foreign_links {
         Io(::std::io::Error);
+        FromUtf8(::std::string::FromUtf8Error);
+        DiagnosticRendering(::codespan_reporting::files::Error);
     }
 
     errors {

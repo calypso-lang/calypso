@@ -8,11 +8,10 @@ use std::fs;
 use std::io;
 use std::io::prelude::*;
 use std::path::Path;
-use std::sync::Arc;
 
-use crate::messages::error;
+use crate::messages::{error, error_chained};
 
-use calypso_diagnostic::FileMgr;
+use calypso_diagnostic::prelude::*;
 use calypso_parsing::lexer::{Lexer, TokenType};
 use calypso_repl::Repl;
 
@@ -41,23 +40,21 @@ pub fn lexer(matches: &ArgMatches) {
     let contents = match fs::read_to_string(&path) {
         Ok(v) => v,
         Err(err) => {
-            error(format!(
-                "while reading file `{}`: `{}`",
-                path.display(),
-                err
-            ));
+            error(format!("while reading file `{}`:", path.display()));
+            error_chained(err);
             return;
         }
     };
 
     let mut files = FileMgr::new();
     let source_id = files.add(path.display().to_string(), contents.clone());
-    let mut lexer = Lexer::new(source_id, &contents, Arc::new(files));
+    let mut lexer = Lexer::new(source_id, &contents, &files);
     let mut tokens = Vec::new();
     loop {
         let token = lexer.scan();
         if let Err(err) = token {
-            error(format!("while lexing input: \n{}", err));
+            error("while lexing input:");
+            error_chained(err);
             break;
         } else if let Ok(token) = token {
             if token.value().0 == TokenType::Eof {
@@ -94,18 +91,20 @@ pub fn lexer_stdin(matches: &ArgMatches) {
     let stdin = io::stdin();
     let mut contents = String::new();
     if let Err(err) = stdin.lock().read_to_string(&mut contents) {
-        error(format!("while reading from stdin: `{:?}`", err));
+        error("while reading from stdin:");
+        error_chained(err);
         return;
     }
 
     let mut files = FileMgr::new();
     let source_id = files.add("<anon>".to_string(), contents.clone());
-    let mut lexer = Lexer::new(source_id, &contents, Arc::new(files));
+    let mut lexer = Lexer::new(source_id, &contents, &files);
     let mut tokens = Vec::new();
     loop {
         let token = lexer.scan();
         if let Err(err) = token {
-            error(format!("while lexing input: \n{}", err));
+            error("while lexing input:");
+            error_chained(err);
             break;
         } else if let Ok(token) = token {
             if token.value().0 == TokenType::Eof {
@@ -132,12 +131,13 @@ pub fn lexer_stdin_repl() {
         Box::new(|_ctx, contents| {
             let mut files = FileMgr::new();
             let source_id = files.add("<anon>".to_string(), contents.clone());
-            let mut lexer = Lexer::new(source_id, &contents, Arc::new(files));
+            let mut lexer = Lexer::new(source_id, &contents, &files);
             let mut tokens = Vec::new();
             loop {
                 let token = lexer.scan();
                 if let Err(err) = token {
-                    error(format!("while lexing input: \n{}", err));
+                    error("while lexing input:");
+                    error_chained(err);
                     break;
                 } else if let Ok(token) = token {
                     if token.value().0 == TokenType::Eof {

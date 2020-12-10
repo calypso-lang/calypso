@@ -11,6 +11,11 @@ pub enum SyncState<T> {
     /// synchronize, and it also succeded at
     /// producing `T`.
     Good(T),
+    /// The lexer/parser didn't have to
+    /// synchronize, and it also succeded at
+    /// producing `T`, albeit with some type of
+    /// warning or note.
+    GoodWithReport(T, Report),
     /// The lexer/parser went into panic mode
     /// and may have produced some `T` before
     /// panicking and producing a diagnostic
@@ -23,6 +28,7 @@ impl<T> SyncState<T> {
         use SyncState::*;
         match self {
             Good(val) => val,
+            GoodWithReport(val, _) => val,
             Panic(..) => {
                 panic!("Called `SyncState::unwrap_good` on a `Panic` value.")
             }

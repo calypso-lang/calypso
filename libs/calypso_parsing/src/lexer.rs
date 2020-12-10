@@ -25,7 +25,7 @@ pub type Lexeme<'lex> = &'lex str;
 pub struct Lexer<'lex> {
     stream: StringStream<'lex>,
     source_id: usize,
-    files: Arc<FileMgr>,
+    files: &'lex FileMgr,
     start: Span,
 }
 
@@ -80,7 +80,7 @@ init_trie!(pub KEYWORD_TRIE: Keyword => {
 });
 
 impl<'lex> Lexer<'lex> {
-    pub fn new(source_id: usize, source: &'lex str, files: Arc<FileMgr>) -> Self {
+    pub fn new(source_id: usize, source: &'lex str, files: &'lex FileMgr) -> Self {
         Self {
             stream: StringStream::new(source),
             source_id,
