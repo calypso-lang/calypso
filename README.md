@@ -6,9 +6,17 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 > # :warning: WARNING :warning:
-> This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THISE CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY!
+> This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THISE CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY UNLESS OTHERWISE SPECIFIED!
 
 Calypso is a general-purpose scripting language focused on flexibility but simplicity. It's written in Rust and is currently very work-in-progress.
+
+## Compatibility
+
+The MSRV (Minimum Supported Rust Version) is currently Rust 1.48.0.
+
+Calypso is developed and tested on these platforms:
+- Arch Linux
+- I'd hope there's more in the future...but I don't currently have the infra to test those :(
 
 ## License
 
