@@ -16,20 +16,38 @@ pub type FileMgr = reporting::files::SimpleFiles<String, String>;
 
 pub extern crate strfmt;
 
+/// Generate errors or report synchronized errors.
+///
+/// Panic errors are handled with [`Result`]s.
+/// They can be generated as follows:
+/// ```rust,ignore
+/// gen_error!(Err(self => {
+///     E0005, fmt_values = "values";
+///     labels: [
+///         LabelStyle::Primary =>
+///             (source_id, span);
+///             "label message",
+///         LabelStyle::Secondary =>
+///             (source_id2, span2);
+///             "label message 2"
+///     ],
+///     notes: [
+///         "note 1",
+///         "note 2"
+///     ]
+/// }) as ())?
+/// ```
+/// The `as ()` at the end is to change the `Ok` type of the result, if necessary.
+/// Panic errors should only be used if there is **ABSOLUTE CONFIDENCE** that
+/// there is **NO** way to recover from this error.
 #[macro_export]
 macro_rules! gen_error {
     (Err($($rest:tt)*) as $ty:ty) => {
         $crate::error::Result::<$ty>::Err($crate::gen_error!(@i1 $($rest)*).into())
     };
 
-    ($report:ident, $($rest:tt)*) => {{
-        $report.add($crate::gen_error!(@i1 $($rest)*));
-    }};
-
-    ($report:expr, $($rest:tt)*) => {{
-        let mut report = $report;
-        report.add($crate::gen_error!(@i1 $($rest)*));
-        report
+    (sync $grcx:expr, $($rest:tt)*) => {{
+        $grcx.report_syncd($crate::gen_error!(@i1 $($rest)*));
     }};
 
     (@i3 $diagnostic:ident; notes: [$($note:expr),*$(,)?]) => {{

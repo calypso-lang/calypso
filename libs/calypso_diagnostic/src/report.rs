@@ -2,9 +2,8 @@ use crate::diagnostic::Diagnostic;
 
 #[derive(Clone, Debug, Default)]
 pub struct GlobalReportingCtxt {
-    errors: Vec<SyncState>,
+    errors: Vec<Diagnostic>,
     nonfatals: Vec<Diagnostic>,
-    panic: bool,
 }
 
 impl GlobalReportingCtxt {
@@ -12,12 +11,8 @@ impl GlobalReportingCtxt {
         Self::default()
     }
 
-    pub fn report_fatal(&mut self, value: Diagnostic) {
-        self.errors.push(Err(value));
-    }
-
     pub fn report_syncd(&mut self, value: Diagnostic) {
-        self.errors.push(Ok(value));
+        self.errors.push(value);
     }
 
     pub fn report_non_fatal(&mut self, value: Diagnostic) {
@@ -28,12 +23,7 @@ impl GlobalReportingCtxt {
         &self.nonfatals
     }
 
-    pub fn errors(&self) -> &[SyncState] {
+    pub fn errors(&self) -> &[Diagnostic] {
         &self.errors
     }
 }
-
-/// A synchronization state. `Ok(Diagnostic)` means
-/// synchronization was required and `Err(Diagnostic)`
-/// means that it was a fatal error.
-type SyncState = Result<Diagnostic, Diagnostic>;

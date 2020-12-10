@@ -98,6 +98,7 @@
 /// # Special Tokens
 /// - `Eof`: end of file
 /// - `Ws`: Whitespace, including newlines. It just spans the whitespace.
+/// - `Sync`: Synchronization-consumed characters.
 ///
 /// ## Grouping and Punctuation
 /// - `LeftParen`: `(`, `RightParen`: `)`: Left and right parentheses
@@ -181,6 +182,7 @@ pub enum TokenType {
 
     Eof,
     Ws,
+    Sync,
 
     LeftParen,
     RightParen,

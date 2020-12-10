@@ -4,14 +4,17 @@ use clap::ArgMatches;
 
 // use pest::Parser;
 
+use std::cell::RefCell;
 use std::fs;
 use std::io;
 use std::io::prelude::*;
 use std::path::Path;
+use std::rc::Rc;
 
 use crate::messages::{error, error_chained};
 
 use calypso_diagnostic::prelude::*;
+use calypso_diagnostic::report::GlobalReportingCtxt;
 use calypso_parsing::lexer::{Lexer, TokenType};
 use calypso_repl::Repl;
 
@@ -48,7 +51,8 @@ pub fn lexer(matches: &ArgMatches) {
 
     let mut files = FileMgr::new();
     let source_id = files.add(path.display().to_string(), contents.clone());
-    let mut lexer = Lexer::new(source_id, &contents, &files);
+    let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
+    let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
     let mut tokens = Vec::new();
     loop {
         let token = lexer.scan();
@@ -98,7 +102,8 @@ pub fn lexer_stdin(matches: &ArgMatches) {
 
     let mut files = FileMgr::new();
     let source_id = files.add("<anon>".to_string(), contents.clone());
-    let mut lexer = Lexer::new(source_id, &contents, &files);
+    let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
+    let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
     let mut tokens = Vec::new();
     loop {
         let token = lexer.scan();
@@ -131,7 +136,8 @@ pub fn lexer_stdin_repl() {
         Box::new(|_ctx, contents| {
             let mut files = FileMgr::new();
             let source_id = files.add("<anon>".to_string(), contents.clone());
-            let mut lexer = Lexer::new(source_id, &contents, &files);
+            let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
+            let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
             let mut tokens = Vec::new();
             loop {
                 let token = lexer.scan();

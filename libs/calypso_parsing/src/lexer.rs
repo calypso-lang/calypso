@@ -4,10 +4,9 @@ use calypso_base::{
     streams::{Stream, StringStream},
 };
 use calypso_diagnostic::prelude::*;
+use calypso_diagnostic::report::GlobalReportingCtxt;
 
 use radix_trie::Trie;
-
-use std::sync::Arc;
 
 pub mod types;
 pub use types::*;
@@ -15,18 +14,21 @@ pub use types::*;
 mod helpers;
 use helpers::*;
 
+use std::cell::RefCell;
 use std::ops::Deref;
 use std::ops::DerefMut;
+use std::rc::Rc;
 
 pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
 pub type Lexeme<'lex> = &'lex str;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Lexer<'lex> {
     stream: StringStream<'lex>,
     source_id: usize,
     files: &'lex FileMgr,
     start: Span,
+    grcx: Rc<RefCell<GlobalReportingCtxt>>,
 }
 
 impl<'lex> Deref for Lexer<'lex> {
@@ -80,18 +82,23 @@ init_trie!(pub KEYWORD_TRIE: Keyword => {
 });
 
 impl<'lex> Lexer<'lex> {
-    pub fn new(source_id: usize, source: &'lex str, files: &'lex FileMgr) -> Self {
+    pub fn new(
+        source_id: usize,
+        source: &'lex str,
+        files: &'lex FileMgr,
+        grcx: Rc<RefCell<GlobalReportingCtxt>>,
+    ) -> Self {
         Self {
             stream: StringStream::new(source),
             source_id,
             files,
             start: Span::default(),
+            grcx,
         }
     }
 
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
-        if let Some(wstok) = self.handle_whitespace()?.unwrap_good() {
-            // todo
+        if let Some(wstok) = self.handle_whitespace()? {
             return Ok(wstok);
         }
         self.current_to_start();
@@ -205,14 +212,17 @@ impl<'lex> Lexer<'lex> {
             '#' => Hash,
 
             // Unexpected character
-            ch => gen_error!(Err(self => {
-                E0003;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        format!("did not expect `{}` here", ch)
-                ]
-            }) as TokenType)?,
+            ch => {
+                gen_error!(sync self.grcx.borrow_mut(), self => {
+                    E0003;
+                    labels: [
+                        LabelStyle::Primary =>
+                            (self.source_id, self.new_span());
+                            format!("did not expect `{}` here", ch)
+                    ]
+                });
+                Sync
+            }
         };
 
         Ok(self.new_token(token_type))
@@ -369,20 +379,20 @@ impl<'lex> Lexer<'lex> {
 }
 
 impl<'lex> Lexer<'lex> {
-    fn handle_whitespace(&mut self) -> CalResultSync<Option<Token<'lex>>> {
+    fn handle_whitespace(&mut self) -> CalResult<Option<Token<'lex>>> {
         self.current_to_start();
         self.handle_dangling_comment_ends()?;
         while !self.is_at_end()
             && (self.handle_comment()
-                || self.handle_multiline_comment()?.unwrap_good() // fixme
+                || self.handle_multiline_comment()?
                 || self.next_if(is_whitespace).is_some())
         {
             self.handle_dangling_comment_ends()?;
         }
         if self.new_span().is_empty() {
-            Ok(Good(None))
+            Ok(None)
         } else {
-            Ok(Good(Some(self.new_token(TokenType::Ws))))
+            Ok(Some(self.new_token(TokenType::Ws)))
         }
     }
 
@@ -401,40 +411,26 @@ impl<'lex> Lexer<'lex> {
         true
     }
 
-    fn handle_multiline_comment(&mut self) -> CalResultSync<bool> {
+    fn handle_multiline_comment(&mut self) -> CalResult<bool> {
         // xx -> 11 -> 1
         // x* -> 10 -> 1
         // /x -> 01 -> 1
         // /* -> 00 -> 0
         if self.peek_eq(&'/') != Some(true) || self.peek2_eq(&'*') != Some(true) {
-            return Ok(Good(false));
+            return Ok(false);
         }
+        let start = self.start;
         self.current_to_start();
         self.next();
         self.next();
         let mut stack = vec![self.new_span()];
-        let mut report = Report::new();
 
         loop {
             let span = self.peek();
             let ch = span.map(|sp| sp.value_owned());
-            if span.is_none() {
-                if stack.len() == 1 {
-                    self.next();
-                    self.next();
-                    gen_error!(report, self => {
-                        E0002;
-                        labels: [
-                            LabelStyle::Primary =>
-                                (self.source_id, stack.pop().unwrap());
-                                "this multi-line comment's beginning has no corresponding end"
-                        ]
-                    });
-                } else if !report.is_empty() {
-                    return Ok(Syncd(false, report));
-                } else {
-                    return Ok(Good(false));
-                }
+
+            if stack.is_empty() {
+                break;
             }
 
             if ch == Some('/') && self.peek2_eq(&'*') == Some(true) {
@@ -451,48 +447,39 @@ impl<'lex> Lexer<'lex> {
                 self.next();
             }
 
-            if stack.is_empty() && !self.is_at_end() {
-                break;
-            }
-
             if self.is_at_end() && !stack.is_empty() {
-                gen_error!(report, self => {
+                // There's no way to tell whether stuff after a /* was intended to be a comment
+                // or code, so we make this a fatal error.
+                gen_error!(Err(self => {
                     E0002;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, stack.pop().unwrap());
                             "this multi-line comment's beginning has no corresponding end"
                     ]
-                });
+                }) as ())?
             }
         }
 
-        if !report.is_empty() {
-            Ok(Syncd(true, report))
-        } else {
-            Ok(Good(true))
-        }
+        self.set_start(start);
+        Ok(true)
     }
 
-    fn handle_dangling_comment_ends(&mut self) -> CalResultSync<()> {
+    fn handle_dangling_comment_ends(&mut self) -> CalResult<()> {
         if self.peek_eq(&'*') == Some(true) && self.peek2_eq(&'/') == Some(true) {
             self.current_to_start();
             self.next();
             self.next();
-            Ok(Syncd(
-                (),
-                gen_error!(Report::new(), self => {
-                    E0001;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            "this multi-line comment's end has no corresponding beginning"
-                    ]
-                }),
-            ))
-        } else {
-            Ok(Good(()))
+            gen_error!(sync self.grcx.borrow_mut(), self => {
+                E0001;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "this multi-line comment's end has no corresponding beginning"
+                ]
+            });
         }
+        Ok(())
     }
 
     fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
