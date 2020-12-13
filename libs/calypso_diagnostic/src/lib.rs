@@ -1,4 +1,5 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_diagnostic/index.html")]
+#![warn(clippy::pedantic)]
 
 #[macro_use]
 extern crate error_chain;
@@ -6,15 +7,15 @@ extern crate error_chain;
 #[macro_use]
 extern crate lazy_static;
 
+pub extern crate codespan_reporting as reporting;
+pub extern crate strfmt;
+
 pub mod diagnostic;
 pub mod error;
 pub mod report;
 pub mod types;
 
-pub extern crate codespan_reporting as reporting;
 pub type FileMgr = reporting::files::SimpleFiles<String, String>;
-
-pub extern crate strfmt;
 
 /// Generate errors or report synchronized errors.
 ///
@@ -70,7 +71,7 @@ macro_rules! gen_error {
     }};
 
     (@i1 $self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; $($rest:tt)* }) => {{
-        let mut diagnostic = $crate::diagnostic::DiagnosticBuilder::new(
+        let mut diagnostic = $crate::diagnostic::Builder::new(
             $crate::diagnostic::Severity::Error,
             &($self).files,
         );

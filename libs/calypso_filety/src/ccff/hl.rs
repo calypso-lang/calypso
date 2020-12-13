@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::mem;
 use std::slice::Iter;
 
+use bincode::ErrorKind;
+
 use super::ll::{Cc, CcHdr, CcSectionHdr};
 use super::Compression;
-
-use bincode::ErrorKind;
 
 #[derive(Debug, Clone)]
 pub struct ContainerFile {

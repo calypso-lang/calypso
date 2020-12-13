@@ -7,6 +7,7 @@ pub struct GlobalReportingCtxt {
 }
 
 impl GlobalReportingCtxt {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -19,10 +20,12 @@ impl GlobalReportingCtxt {
         self.nonfatals.push(value);
     }
 
+    #[must_use]
     pub fn nonfatals(&self) -> &[Diagnostic] {
         &self.nonfatals
     }
 
+    #[must_use]
     pub fn errors(&self) -> &[Diagnostic] {
         &self.errors
     }

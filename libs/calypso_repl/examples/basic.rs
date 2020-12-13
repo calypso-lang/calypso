@@ -12,8 +12,6 @@ pub fn main() {
         }),
         Ctx { line_no: 0 },
     );
-    repl.run("Preamble!!!!!".to_string(), |ctx| {
-        format!("{}:> ", ctx.line_no)
-    })
-    .expect("oops");
+    repl.run("Preamble!!!!!", |ctx| format!("{}:> ", ctx.line_no))
+        .expect("oops");
 }

@@ -1,9 +1,9 @@
-use super::Stream;
 use std::ops::Index;
 use std::ops::Range;
 use std::slice::SliceIndex;
 use std::str::CharIndices;
 
+use super::Stream;
 use crate::span::Spanned;
 
 impl From<(usize, char)> for Spanned<char> {
@@ -37,6 +37,7 @@ pub struct StringStream<'s> {
 }
 
 impl<'s> StringStream<'s> {
+    #[must_use]
     pub fn new(string: &'s str) -> Self {
         let mut indices = string.char_indices();
 

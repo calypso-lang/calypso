@@ -1,11 +1,11 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_repl/index.html")]
+#![warn(clippy::pedantic)]
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use rustyline::{config::Configurer, error::ReadlineError, Cmd, Editor, KeyEvent, Movement};
-
 use regex::Regex;
+use rustyline::{config::Configurer, error::ReadlineError, Cmd, Editor, KeyEvent, Movement};
 
 /*
 == TODOs ==
@@ -69,7 +69,7 @@ impl<Ctx> Repl<Ctx> {
     /// Extend the commands vector
     pub fn commands(mut self, commands: Vec<Arc<Command<Ctx>>>) -> Self {
         for command in &commands {
-            self.cache_command(Arc::clone(command));
+            self.cache_command(&command);
         }
         self.cmds.extend(commands);
         self
@@ -78,14 +78,18 @@ impl<Ctx> Repl<Ctx> {
     /// Add a command
     pub fn command(mut self, command: Command<Ctx>) -> Self {
         let arc = Arc::new(command);
-        self.cache_command(Arc::clone(&arc));
+        self.cache_command(&Arc::clone(&arc));
         self.cmds.push(arc);
         self
     }
 
+    /// Run the REPL.
+    ///
+    /// # Errors
+    /// The only errors currently returned by this function are errors from `rustyline`.
     pub fn run(
         &mut self,
-        preamble: String,
+        preamble: &str,
         prompt: impl Fn(&mut Ctx) -> String,
     ) -> Result<(), ReadlineError> {
         let rl = &mut self.editor;
@@ -100,11 +104,7 @@ impl<Ctx> Repl<Ctx> {
                         let args = captures.name("args");
                         if let Some(command) = command {
                             let command = command.as_str();
-                            let args = if let Some(args) = args {
-                                args.as_str()
-                            } else {
-                                ""
-                            };
+                            let args = args.map_or("", |v| v.as_str());
                             if command == "?" || command == "h" || command == "help" {
                                 if args.is_empty() {
                                     for command in &self.cmds {
@@ -185,7 +185,7 @@ impl<Ctx> Repl<Ctx> {
         Ok(())
     }
 
-    fn cache_command(&mut self, command: Arc<Command<Ctx>>) {
+    fn cache_command(&mut self, command: &Arc<Command<Ctx>>) {
         if self.cache.contains_key(&command.name) || &command.name == "help" {
             panic!(
                 "adding command would overwrite existing an command named `{}`",
@@ -225,6 +225,7 @@ pub struct Command<Ctx> {
 }
 
 impl<Ctx> Command<Ctx> {
+    #[must_use]
     pub fn new(name: String, description: String, help: String, eval: Eval<Ctx>) -> Self {
         Self {
             name,
@@ -235,12 +236,14 @@ impl<Ctx> Command<Ctx> {
         }
     }
 
+    #[must_use]
     /// Extend the aliases vector
     pub fn aliases(mut self, aliases: Vec<String>) -> Self {
         self.aliases.extend(aliases);
         self
     }
 
+    #[must_use]
     /// Add an alias
     pub fn alias(mut self, alias: String) -> Self {
         self.aliases.push(alias);

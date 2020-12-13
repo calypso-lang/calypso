@@ -1,15 +1,14 @@
-pub const MAGIC_BYTES_COMPRESSED: [u8; 3] = [b'\xCC', b'\xFF', b'Z'];
-pub const MAGIC_BYTES_UNCOMPRESSED: [u8; 3] = [b'\xCC', b'\xFF', b'U'];
-
-use flate2::{bufread::ZlibDecoder, write::ZlibEncoder};
-use serde::{Deserialize, Serialize};
-
 use std::io::prelude::*;
 use std::mem;
 
+use bincode::ErrorKind;
+use flate2::{bufread::ZlibDecoder, write::ZlibEncoder};
+use serde::{Deserialize, Serialize};
+
 use super::Compression;
 
-use bincode::ErrorKind;
+pub const MAGIC_BYTES_COMPRESSED: [u8; 3] = [b'\xCC', b'\xFF', b'Z'];
+pub const MAGIC_BYTES_UNCOMPRESSED: [u8; 3] = [b'\xCC', b'\xFF', b'U'];
 
 /// A CCFF file (minus its data)
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -22,9 +22,18 @@ TYPE(@USER: CATEGORY): MESSAGE
   - `doc`: documentation, whether in the book or just rustdoc
   - `repl`: REPL, whether in its implementation or usage
   - `parse`: parsing and lexing
-  - `infra`: infrastructure code (e.g. `calypso_base` and `calypso_util`)
+  - `frame`: framework code (e.g. `calypso_base` and `calypso_util`)
   - `diag`: diagnostics
   - `filety`: binary file types
+
+## Import Order
+
+Imports should go in this order (in separate blocks):
+1. Standard library imports (`std`, `core`, `alloc`, etc.)
+2. External crate imports, excluding Calypso subcrates (e.g. `regex::Regex`). These may be in separate blocks.
+3. Calypso subcrates (e.g. `calypso_parsing`)
+4. Local imports (e.g. `super::Foo`, `crate::foo::Bar`)
+5. All re-exports (e.g. `pub use foo::bar`, `pub use super::Bar`)
 
 ## Versioning Policy
 

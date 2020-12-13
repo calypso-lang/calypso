@@ -1,7 +1,8 @@
-use super::Stream;
 use std::ops::Index;
 use std::slice::Iter;
 use std::slice::SliceIndex;
+
+use super::Stream;
 
 /// A generic stream.
 ///

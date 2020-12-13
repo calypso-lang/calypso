@@ -1,3 +1,4 @@
+use calypso_base::span::Spanned;
 use calypso_base::static_list as sl;
 
 sl!(WHITESPACE: char = [
@@ -44,5 +45,3 @@ pub(super) fn is_ident_continue(elem: &Spanned<char>) -> bool {
 pub(super) fn is_ident_end(elem: &Spanned<char>) -> bool {
     elem == &'!' || elem == &'?'
 }
-
-use calypso_base::span::Spanned;

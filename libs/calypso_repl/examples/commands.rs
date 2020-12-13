@@ -1,6 +1,6 @@
-use calypso_repl::*;
-
 use std::sync::Arc;
+
+use calypso_repl::*;
 
 struct Ctx {
     line_no: usize,
@@ -33,8 +33,6 @@ pub fn main() {
     .alias("quit".to_string())
     .alias("q".to_string());
     repl = repl.commands(vec![Arc::new(hello_cmd), Arc::new(exit_cmd)]);
-    repl.run("Preamble!!!!!".to_string(), |ctx| {
-        format!("{}:> ", ctx.line_no)
-    })
-    .expect("oops");
+    repl.run("Preamble!!!!!", |ctx| format!("{}:> ", ctx.line_no))
+        .expect("oops");
 }

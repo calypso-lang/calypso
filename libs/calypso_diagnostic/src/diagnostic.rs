@@ -12,7 +12,7 @@ pub use reporting::diagnostic::{LabelStyle, Severity};
 pub struct Diagnostic(CodespanDiag<usize>, String);
 
 #[derive(Clone, Debug)]
-pub struct DiagnosticBuilder<'a> {
+pub struct Builder<'a> {
     level: Severity,
     code: Option<String>,
     message: String,
@@ -21,7 +21,8 @@ pub struct DiagnosticBuilder<'a> {
     files: &'a FileMgr,
 }
 
-impl<'a> DiagnosticBuilder<'a> {
+impl<'a> Builder<'a> {
+    #[must_use]
     pub fn new(level: Severity, files: &'a FileMgr) -> Self {
         Self {
             level,
@@ -60,6 +61,11 @@ impl<'a> DiagnosticBuilder<'a> {
         self
     }
 
+    /// Build the diagnostic. This pre-renders the diagnostic.
+    ///
+    /// # Errors
+    /// As the diagnostic is pre-rendered, it returns an error if
+    /// `codespan_reporting` fails to render it.
     pub fn build(self) -> CalResult<Diagnostic> {
         let mut diagnostic = CodespanDiag::new(self.level);
         if let Some(code) = self.code.clone() {
@@ -80,14 +86,17 @@ impl<'a> DiagnosticBuilder<'a> {
 }
 
 impl Diagnostic {
+    #[must_use]
     pub fn reason(&self) -> &str {
         &self.0.message
     }
 
-    pub fn code(&self) -> Option<&String> {
-        self.0.code.as_ref()
+    #[must_use]
+    pub fn code(&self) -> Option<&str> {
+        self.0.code.as_ref().map(AsRef::as_ref)
     }
 
+    #[must_use]
     pub fn rendered(&self) -> &str {
         &self.1
     }

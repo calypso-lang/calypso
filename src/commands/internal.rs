@@ -1,7 +1,5 @@
 // use calypso_parsing::raw::{pest, CalypsoParser, Rule};
 
-use clap::ArgMatches;
-
 // use pest::Parser;
 
 use std::cell::RefCell;
@@ -10,6 +8,8 @@ use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::rc::Rc;
+
+use clap::ArgMatches;
 
 use crate::messages::{error, error_chained};
 
@@ -166,7 +166,7 @@ pub fn lexer_stdin_repl() {
         ReplCtx {},
     );
     repl.run(
-        format!(
+        &format!(
             "Calypso CLI v{} - internal debugging command: lexer",
             env!("CARGO_PKG_VERSION")
         ),

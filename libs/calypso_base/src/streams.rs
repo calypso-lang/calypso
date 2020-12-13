@@ -1,3 +1,11 @@
+pub use self::str::*;
+pub use generic::*;
+
+/// Generic streams
+mod generic;
+/// String streams
+mod str;
+
 /// A trait for streamed data. For a stream, `EOF` means either
 /// the end of file / input if this stream is backed by a file or string,
 /// or the end of the stream.
@@ -144,11 +152,3 @@ pub trait Stream: Iterator {
         self.prev().map(func)
     }
 }
-
-/// String Streams
-mod string;
-pub use string::*;
-
-/// Generic Streams
-mod generic;
-pub use generic::*;

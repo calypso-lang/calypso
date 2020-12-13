@@ -1,9 +1,11 @@
-use calypso_filety::ccff;
-use ccff::hl::*;
-
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
+
+use pretty_hex::{config_hex, HexConfig};
+
+use calypso_filety::ccff;
+use ccff::hl::*;
 
 fn main() {
     let mut args = env::args();
@@ -20,8 +22,6 @@ fn main() {
         return;
     }
 }
-
-use pretty_hex::{config_hex, HexConfig};
 
 fn dump_cc(container: ContainerFile, compressed: bool) {
     println!("=== metadata ===");

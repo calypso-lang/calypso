@@ -1,5 +1,5 @@
-pub mod internal;
+pub use explain::explain;
 pub use internal::internal;
 
 pub mod explain;
-pub use explain::explain;
+pub mod internal;
