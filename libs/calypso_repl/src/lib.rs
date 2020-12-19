@@ -252,6 +252,7 @@ impl<Ctx> Command<Ctx> {
     }
 }
 
+/*
 pub extern crate actix;
 pub extern crate actix_rt;
 use actix::prelude::*;
@@ -334,4 +335,4 @@ impl Handler<Load> for Control {
     fn handle(&mut self, msg: Load, _ctx: &mut Context<Self>) {
         println!("{}", msg.0);
     }
-}
+}*/

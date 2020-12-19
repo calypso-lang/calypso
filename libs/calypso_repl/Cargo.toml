@@ -12,9 +12,3 @@ license = "MIT"
 [dependencies]
 rustyline = "7.1.0"
 regex = "1.4.2"
-# # Unfortunately, this causes a bug that doesn't have a released fix yet.
-# # # Disable resolver feature as it includes some extra deps that are not needed.
-# # # actix = { version = "0.10.0", default-features = false }
-# actix = "0.10.0"
-# actix-rt = "1.1"
-# futures = "0.3.8"
