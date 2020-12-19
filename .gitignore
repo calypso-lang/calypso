@@ -14,5 +14,7 @@ Session.vim
 # Cargo output directory
 /target
 
-ignoreme
+# Local working/ideas directory
+local
+
 dpl.key
