@@ -10,6 +10,32 @@
 
 Calypso is a mostly imperative language with some functional influences that is focused on flexibility and simplicity.
 
+## Example
+
+The following example is an implementation of [FizzBuzz](https://en.wikipedia.org/wiki/Fizz_buzz) that goes until a number specified in the CLI arguments of the program, or 100 if that is not present.
+
+```
+import atlas.env
+
+fn fizzbuzz(max) {
+    (1..=max).map(n -> {
+        case: 15.divides(n) -> "FizzBuzz",
+              3.divides(n)  -> "Fizz",
+              5.divides(n)  -> "Buzz",
+              _              -> n.to_string
+    })
+}
+
+fn main() {
+    env.args()
+    |> Iter.get?(1)
+    |> Option.unwrap_or!("100")
+    |> uint.parse!
+    |> fizzbuzz
+    |> Iter.each(&println)
+}
+```
+
 ## Compatibility
 
 The MSRV (Minimum Supported Rust Version) is currently Rust 1.48.0.

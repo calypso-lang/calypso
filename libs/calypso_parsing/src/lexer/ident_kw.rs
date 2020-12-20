@@ -41,7 +41,8 @@ init_trie!(pub KEYWORD_TRIE: Keyword => {
     "undef"  => Undef,
     "null"   => Null,
     "del"    => Del,
-    "as"     => As
+    "as"     => As,
+    "panic"  => Panic
 });
 
 impl<'lex> Lexer<'lex> {
@@ -56,7 +57,11 @@ impl<'lex> Lexer<'lex> {
         // Gorge while the character is a valid identifier character (and not an ident_end character).
         self.gorge_while(|sp, _| is_ident_continue(sp) && !is_ident_end(sp));
 
-        if self.peek_cond(is_ident_end) == Some(true) {
+        // Allow `abc!` and `abc?` as well as `abc!?` but not `abc?!`
+        if self.peek_eq(&'!') == Some(true) {
+            self.next();
+        }
+        if self.peek_eq(&'?') == Some(true) {
             self.next();
         }
 

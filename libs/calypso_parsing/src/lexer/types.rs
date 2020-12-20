@@ -195,6 +195,8 @@ pub enum Keyword {
     Del,
     /// `as`
     As,
+    /// `panic`
+    Panic,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
