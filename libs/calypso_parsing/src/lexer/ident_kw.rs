@@ -57,7 +57,7 @@ impl<'lex> Lexer<'lex> {
         // Gorge while the character is a valid identifier character (and not an ident_end character).
         self.gorge_while(|sp, _| is_ident_continue(sp) && !is_ident_end(sp));
 
-        // Allow `abc!` and `abc?` as well as `abc!?` but not `abc?!`
+        // Allow `abc!`, `abc?`, and `abc!?` but not `abc?!`
         if self.peek_eq(&'!') == Some(true) {
             self.next();
         }
