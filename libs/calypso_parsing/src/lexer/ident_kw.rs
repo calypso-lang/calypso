@@ -10,7 +10,6 @@ use calypso_diagnostic::prelude::*;
 init_trie!(pub KEYWORD_TRIE: Keyword => {
     "is"     => Is,
     "isa"    => Isa,
-
     "bool"   => BoolTy,
     "sint"   => SintTy,
     "uint"   => UintTy,
@@ -19,34 +18,29 @@ init_trie!(pub KEYWORD_TRIE: Keyword => {
     "char"   => CharTy,
     "tuple"  => TupleTy,
     "array"  => ArrayTy,
-
     "false"  => False,
     "true"   => True,
-
     "if"     => If,
     "else"   => Else,
-
     "for"    => For,
     "in"     => In,
     "loop"   => Loop,
     "while"  => While,
-    "match"  => Match,
+    "case"   => Case,
+    "cond"   => Cond,
     "ret"    => Ret,
     "break"  => Break,
-
     "fn"     => Fn,
-    "native" => Native,
+    "native" => Extern,
     "mod"    => Mod,
     "use"    => Use,
     "import" => Import,
     "pub"    => Pub,
-
     "let"    => Let,
     "mut"    => Mut,
     "undef"  => Undef,
     "null"   => Null,
     "del"    => Del,
-
     "as"     => As
 });
 

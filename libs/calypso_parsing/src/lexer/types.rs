@@ -1,256 +1,199 @@
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 /// Types of Calypso tokens
-///
-/// # Operators
-///
-/// ## Booleans
-/// - `Less`: `<`: less than
-/// - `BoolEqual`: `==`: equal to
-/// - `Greater`: `>`: greater than
-/// - `LessEqual`: `<=`: less than or equal to
-/// - `NotEqual`: `!=`: not equal to
-/// - `GreaterEqual`: `>=`: greater than or equal to
-/// - `BoolOr`: `||`: Boolean OR
-/// - `BoolAnd`: `&&`: Boolean AND
-/// - `Bang`: `!`: Boolean NOT
-///
-/// ## Numbers
-/// - `Plus`: `+`: Addition
-/// - `PlusAssign`: `+=`: Addition assignment
-/// - `Minus`: `-`: Subtraction (binary) and Negation (unary)
-/// - `MinusAssign`: `-=`: Subtraction assignment
-/// - `Star`: `*`: Multiplication
-/// - `StarAssign`: `*=`: Multiplication
-/// - `Slash`: `/`: Division
-/// - `SlashAssign`: `/=`: Division assignment
-/// - `Exp`: `**`: Exponentiation
-/// - `ExpAssign`: `**=`: Exponentiation assignment
-/// - `Rem`: `%`: Remainder
-/// - `RemAssign`: `%=`: Remainder assignment
-/// - `Range`: `..`: Integer ranges
-/// - `RangeInc`: `..=`: Inclusive integer range
-///
-/// ## Strings/Lists
-/// - `GreaterLess`: `<>`: Concatenation
-///
-/// ## Bitwise
-/// - `Shr`: `>>`: Shift right
-/// - `ShrAssign`: `>>=`: Shift right assignment
-/// - `Shl`: `<<`: Shift left
-/// - `ShlAssign`: `<<=`: Shift left assignment
-/// - `Pipe`: `|`: Bitwise OR
-/// - `PipeAssign`: `|=`: Bitwise OR assignment
-/// - `And`: `&`: Bitwise AND
-/// - `AndAssign`: `&=`: Bitwise AND assignment
-/// - `Caret`: `^`: Bitwise XOR
-/// - `CaretAssign`: `^=`: Bitwise XOR assignment
-/// - `Tilde`: `~`: Bitwise NOT
-///
-/// ## Variables
-/// - `Equal`: `=`: Variable assignment
-///
-/// # Keywords
-///
-/// ## Values
-/// - `KwIs`: `is`: value A is at the same memory location as value B (aliased)
-/// - `KwIsa`: `isa`: value A is of type B
-///
-/// ## Types
-/// - `KwBoolTy`: `bool`
-/// - `KwSintTy`: `sint`
-/// - `KwUintTy`: `uint`
-/// - `KwFloatTy`: `float`
-/// - `KwStringTy`: `string`
-/// - `KwCharTy`: `char`
-/// - `KwTupleTy`: `tuple`
-/// - `KwArrayTy`: `array`
-///
-/// ## Booleans
-/// - `KwFalse`: `false`, `KwTrue`: `true`: Booleans
-///
-/// ## Control flow
-/// - `KwIf`: `if`, `KwElse`: `else`: `if`, `else if`, `else` blocks
-/// - `KwFor`: `for`, `KwIn`: `in`: `for...in` loops
-/// - `KwLoop`: `loop`: endless loops
-/// - `KwWhile`: `while`: `while` loops
-/// - `KwMatch`: `match`: pattern matching
-/// - `KwRet`: `ret`: return a value or nothing to short-circuit
-/// - `KwBreak`: `break`: break out of a loop
-///
-/// ## Functions and Modularity
-/// - `KwFn`: `fn`: function definition
-/// - `KwNative`: `native: native function (i.e. Rust/C ABI)
-/// - `KwMod`: `mod`: module declaration
-/// - `KwUse`: `use`: use an external package
-/// - `KwImport`: `import`: import a path
-/// - `KwPub`: `pub`: public visibility
-///
-/// ## Variables
-/// - `KwLet`: `let`: define a variable
-/// - `KwMut`: `mut`: mutable variable
-/// - `KwUndef`: `undef`: variable is not defined, but is not `null` as that is explicitly set
-/// - `KwNull`: `null`: explicit none-type
-/// - `KwDel`: `del`: delete a value (garbage-collect its value, then set it back to `undef` or, in strict mode, make the variable totally undefined)
-///
-/// ## Conversions
-/// - `KwAs`: `as`: convert to type, rename import
-///
-/// # Special Tokens
-/// - `Eof`: end of file
-/// - `Ws`: Whitespace, including newlines. It just spans the whitespace.
-/// - `Sync`: Synchronization-consumed characters.
-///
-/// ## Grouping and Punctuation
-/// - `LeftParen`: `(`, `RightParen`: `)`: Left and right parentheses
-/// - `LeftBrace`: `{`, `RightBrace`: `}`: Left and right braces
-/// - `LeftBracket`: `[`, `RightBracket`: `]`: Left and right brackets
-/// - `Comma`: `,`: Comma
-/// - `Semi`: `;`: Semicolon
-/// - `Dot`: `.`: Methods, imports, etc...
-/// - `Under`: `_`: Nothing at the moment, but it's not an identifier on its own.
-///
-/// ## Attributes
-/// - `Hash`: `#`: Attributes
-/// - `HashBang`: `#!`: Global attributes
-///
-/// # Literals
-///
-/// - `Ident`: `([A-Za-z_])([A-Za-z0-9_]*)`: Identifier
-/// - `SintLiteral`: `[-]<DIGIT(s)>[s]`: Signed integer literal
-/// - `UintLiteral`: `<DIGIT(s)>[u]`: Unsigned integer literal
-/// - `FloatLiteral`: `<DIGIT(s)>.<DIGIT(s)>[f]`: float literal
-/// - `StringLiteral`: `"[STRING]"`: string literal
-/// - `CharLiteral`: `'<CHAR>'`: character literal
 pub enum TokenType {
-    Less,
-    LessEqual,
-
-    NotEqual,
-    BoolEqual,
-
-    Greater,
-    GreaterEqual,
-
-    BoolOr,
-    BoolAnd,
-
+    /// `<`
+    Lt,
+    /// `<=`
+    LtEq,
+    /// `!=`
+    BangEq,
+    /// `==`
+    EqEq,
+    /// `>`
+    Gt,
+    /// `>=`
+    GtEq,
+    /// `||`
+    PipePipe,
+    /// `&&`
+    AndAnd,
+    /// `!`
     Bang,
-
+    /// `+`
     Plus,
-    PlusAssign,
-
+    /// `+=`
+    PlusEq,
+    /// `-`
     Minus,
-    MinusAssign,
-
+    /// `-=`
+    MinusEq,
+    /// `*`
     Star,
-    StarAssign,
-
+    /// `*=`
+    StarEq,
+    /// `/`
     Slash,
-    SlashAssign,
-
-    Exp,
-    ExpAssign,
-
-    Rem,
-    RemAssign,
-
-    Range,
-    RangeInc,
-
-    GreaterLess,
-
-    Shr,
-    ShrAssign,
-
-    Shl,
-    ShlAssign,
-
+    /// `/=`
+    SlashEq,
+    /// `**`
+    StarStar,
+    /// `**=`
+    StarStarEq,
+    /// `%`
+    Percent,
+    /// `%=`
+    PercentEq,
+    /// `..`
+    DotDot,
+    /// `..=`
+    DotDotEq,
+    /// `<>`
+    LtGt,
+    /// `<<`
+    LtLt,
+    /// `<<=`
+    LtLtEq,
+    /// `>>`
+    GtGt,
+    /// `>>=`
+    GtGtEq,
+    /// `|`
     Pipe,
-    PipeAssign,
-
+    /// `|=`
+    PipeEq,
+    /// `&`
     And,
-    AndAssign,
-
+    /// `&=`
+    AndEq,
+    /// `^`
     Caret,
-    CaretAssign,
-
+    /// `^=`
+    CaretEq,
+    /// `~`
     Tilde,
-
-    Equal,
-
+    /// `=`
+    Eq,
+    /// Keywords
     Keyword(Keyword),
-
+    /// End of file
     Eof,
+    /// Whitespace, including newlines. This token just spans the whitespace
     Ws,
-    Sync,
-
-    LeftParen,
-    RightParen,
-
-    LeftBrace,
-    RightBrace,
-
-    LeftBracket,
-    RightBracket,
-
+    /// Unexpected characters consumed by synchronization. These are invalid in regular code.
+    Unexpected,
+    /// `(`
+    LParen,
+    /// `)`
+    RParen,
+    /// `{`
+    LBrace,
+    /// `}`
+    RBrace,
+    /// `[`
+    LBracket,
+    /// `]`
+    RBracket,
+    /// `,`
     Comma,
+    /// `;`
     Semi,
+    /// `.`
     Dot,
+    /// `_`
     Under,
-
+    /// `:`
+    Colon,
+    /// `->`
+    Arrow,
+    /// `|>`
+    PipeGt,
+    /// `#`
     Hash,
+    /// `#!`
     HashBang,
-
+    /// Identifiers, excluding keywords.
     Ident,
-
+    /// Signed integer literal
     SintLiteral(Radix),
+    /// Unsigned integer literal
     UintLiteral(Radix),
+    /// Float literal
     FloatLiteral,
+    /// String literal
     StringLiteral,
+    /// Character literal
     CharLiteral,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Keyword {
+    /// `is`
     Is,
+    /// `isa`
     Isa,
-
+    /// `bool`
     BoolTy,
+    /// `sint`
     SintTy,
+    /// `uint`
     UintTy,
+    /// `float`
     FloatTy,
+    /// `string`
     StringTy,
+    /// `char`
     CharTy,
+    /// `tuple`
     TupleTy,
+    /// `array`
     ArrayTy,
-
+    /// `false`
     False,
+    /// `true`
     True,
-
+    /// `if`
     If,
+    /// `else`
     Else,
-
+    /// `for`
     For,
+    /// `in`
     In,
+    /// `loop`
     Loop,
+    /// `wile`
     While,
-    Match,
+    /// `case`
+    Case,
+    /// `cond`
+    Cond,
+    /// `ret`
     Ret,
+    /// `break`
     Break,
-
+    /// `fn`
     Fn,
-    Native,
+    /// `extern`
+    Extern,
+    /// `mod`
     Mod,
+    /// `use`
     Use,
+    /// `import`
     Import,
+    /// `pub`
     Pub,
-
+    /// `let`
     Let,
+    /// `mut`
     Mut,
+    /// `undef`
     Undef,
+    /// `null`
     Null,
+    /// `del`
     Del,
-
+    /// `as`
     As,
 }
 

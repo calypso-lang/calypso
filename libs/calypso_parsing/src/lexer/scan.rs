@@ -36,85 +36,87 @@ impl<'lex> Lexer<'lex> {
         }
 
         let token_type = match ch {
-            '<' if self.next_if_eq(&'>').is_some() => TokenType::GreaterLess,
+            '<' if self.next_if_eq(&'>').is_some() => TokenType::LtGt,
             '<' if self.next_if_eq(&'<').is_some() => {
                 if self.next_if_eq(&'=').is_some() {
-                    TokenType::ShlAssign
+                    TokenType::LtLtEq
                 } else {
-                    TokenType::Shl
+                    TokenType::Lt
                 }
             }
-            '<' if self.next_if_eq(&'=').is_some() => TokenType::LessEqual,
-            '<' => TokenType::Less,
+            '<' if self.next_if_eq(&'=').is_some() => TokenType::LtEq,
+            '<' => TokenType::Lt,
 
             '>' if self.next_if_eq(&'>').is_some() => {
                 if self.next_if_eq(&'=').is_some() {
-                    TokenType::ShrAssign
+                    TokenType::GtGtEq
                 } else {
-                    TokenType::Shr
+                    TokenType::GtGt
                 }
             }
-            '>' if self.next_if_eq(&'=').is_some() => TokenType::GreaterEqual,
-            '>' => TokenType::Greater,
+            '>' if self.next_if_eq(&'=').is_some() => TokenType::GtEq,
+            '>' => TokenType::Gt,
 
-            '=' if self.next_if_eq(&'=').is_some() => TokenType::BoolEqual,
-            '=' => TokenType::Equal,
+            '=' if self.next_if_eq(&'=').is_some() => TokenType::EqEq,
+            '=' => TokenType::Eq,
 
-            '!' if self.next_if_eq(&'=').is_some() => TokenType::NotEqual,
+            '!' if self.next_if_eq(&'=').is_some() => TokenType::BangEq,
             '!' => TokenType::Bang,
 
-            '|' if self.next_if_eq(&'|').is_some() => TokenType::BoolOr,
-            '|' if self.next_if_eq(&'=').is_some() => TokenType::PipeAssign,
+            '|' if self.next_if_eq(&'>').is_some() => TokenType::PipeGt,
+            '|' if self.next_if_eq(&'|').is_some() => TokenType::PipePipe,
+            '|' if self.next_if_eq(&'=').is_some() => TokenType::PipeEq,
             '|' => TokenType::Pipe,
 
-            '&' if self.next_if_eq(&'&').is_some() => TokenType::BoolAnd,
-            '&' if self.next_if_eq(&'=').is_some() => TokenType::AndAssign,
+            '&' if self.next_if_eq(&'&').is_some() => TokenType::AndAnd,
+            '&' if self.next_if_eq(&'=').is_some() => TokenType::AndEq,
             '&' => TokenType::And,
 
-            '+' if self.next_if_eq(&'=').is_some() => TokenType::PlusAssign,
+            '+' if self.next_if_eq(&'=').is_some() => TokenType::PlusEq,
             '+' => TokenType::Plus,
 
-            '-' if self.next_if_eq(&'=').is_some() => TokenType::MinusAssign,
+            '-' if self.next_if_eq(&'=').is_some() => TokenType::MinusEq,
+            '-' if self.next_if_eq(&'>').is_some() => TokenType::Arrow,
             '-' => TokenType::Minus,
 
             '*' if self.next_if_eq(&'*').is_some() => {
                 if self.next_if_eq(&'=').is_some() {
-                    TokenType::ExpAssign
+                    TokenType::StarStarEq
                 } else {
-                    TokenType::Exp
+                    TokenType::StarStar
                 }
             }
-            '*' if self.next_if_eq(&'=').is_some() => TokenType::StarAssign,
+            '*' if self.next_if_eq(&'=').is_some() => TokenType::StarEq,
             '*' => TokenType::Star,
 
-            '/' if self.next_if_eq(&'=').is_some() => TokenType::SlashAssign,
+            '/' if self.next_if_eq(&'=').is_some() => TokenType::SlashEq,
             '/' => TokenType::Slash,
 
-            '%' if self.next_if_eq(&'=').is_some() => TokenType::RemAssign,
-            '%' => TokenType::Rem,
+            '%' if self.next_if_eq(&'=').is_some() => TokenType::PercentEq,
+            '%' => TokenType::Percent,
 
-            '^' if self.next_if_eq(&'=').is_some() => TokenType::CaretAssign,
+            '^' if self.next_if_eq(&'=').is_some() => TokenType::CaretEq,
             '^' => TokenType::Caret,
 
             '~' => TokenType::Tilde,
 
-            '(' => TokenType::LeftParen,
-            ')' => TokenType::RightParen,
+            '(' => TokenType::LParen,
+            ')' => TokenType::RParen,
 
-            '{' => TokenType::LeftBrace,
-            '}' => TokenType::RightBrace,
+            '{' => TokenType::LBrace,
+            '}' => TokenType::RBrace,
 
-            '[' => TokenType::LeftBracket,
-            ']' => TokenType::RightBracket,
+            '[' => TokenType::LBracket,
+            ']' => TokenType::RBracket,
 
             ',' => TokenType::Comma,
             ';' => TokenType::Semi,
 
             '.' if self.next_if_eq(&'.').is_some() => {
                 if self.next_if_eq(&'=').is_some() {
-                    TokenType::RangeInc
+                    TokenType::DotDotEq
                 } else {
-                    TokenType::Range
+                    TokenType::DotDot
                 }
             }
             '.' => TokenType::Dot,
@@ -133,7 +135,7 @@ impl<'lex> Lexer<'lex> {
                             format!("did not expect `{}` here", ch)
                     ]
                 });
-                TokenType::Sync
+                TokenType::Unexpected
             }
         };
 

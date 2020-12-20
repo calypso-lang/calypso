@@ -11,8 +11,6 @@ Calypso code will be written in code blocks like this:
 Hello! This is a code block!
 ```
 
-Syntax highlighting will be added eventually, but as of now, these will just be plain text in a monospace font.
-
 Things to look out for or further explanations of things may be provided in notes like this:
 > Note: This is a note!
 
