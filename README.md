@@ -22,14 +22,14 @@ fn fizzbuzz(max) {
         case: 15.divides(n) -> "FizzBuzz",
               3.divides(n)  -> "Fizz",
               5.divides(n)  -> "Buzz",
-              _              -> n.to_string
+              _             -> n.to_string
     })
 }
 
 fn main() {
     env.args()
     |> Iter.get?(1)
-    |> Option.unwrap_or!("100")
+    |> Nullable.get_or!("100")
     |> uint.parse!
     |> fizzbuzz
     |> Iter.each(&println)
