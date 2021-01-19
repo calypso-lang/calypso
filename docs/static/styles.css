@@ -1,4 +1,8 @@
-/* This is a stripped down version of the styles doc.rust-lang.org */
+/*
+ * This is a stripped down version of the styles from doc.rust-lang.org
+ * (at https://github.com/rust-lang/rust/blob/master/src/doc/rust.css,
+ * which is licensed under MIT).
+ */
 
 *:not(body) {
   -webkit-box-sizing: border-box;
