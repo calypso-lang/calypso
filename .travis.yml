@@ -13,22 +13,20 @@ before_install:
 
 jobs:
   include:
-    - name: The Calypso Book
+    - name: Calypso Books
       before_script:
         - (test -x $HOME/.cargo/bin/cargo-install-update || cargo install cargo-update)
         - (test -x $HOME/.cargo/bin/mdbook || cargo install --vers "^0.4" mdbook)
         - cargo install-update -a
         - rustup toolchain install nightly # This will install/update the nightly toolchain
       script:
-        - cd docs && rm -rf book
-        - export MDBOOK_OUTPUT__HTML__site_url="/Calypso" && mdbook build . && mdbook test .
-        - cargo +nightly doc --workspace --no-deps
-        - mv -f ../target/doc ./book/rustdoc
+        - cd docs
+        - ./build-books.sh
       deploy:
         provider: pages
         cleanup: false
         deploy_key: "../dpl.key"
-        local_dir: ./book
+        local_dir: ./out
         keep_history: true
         edge: true
         target_branch: main

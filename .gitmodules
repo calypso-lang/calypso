@@ -1,0 +1,6 @@
+[submodule "docs/guide"]
+	path = docs/guide
+	url = https://github.com/calypso-lang/calypso-guide.git
+[submodule "docs/reference"]
+	path = docs/reference
+	url = https://github.com/calypso-lang/calypso-reference.git
