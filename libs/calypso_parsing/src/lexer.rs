@@ -216,25 +216,4 @@ impl<'lex> Lexer<'lex> {
             },
         )
     }
-
-    fn string(&mut self) -> Result<Token<'lex>, ()> {
-        while self.peek() != '"' && !self.is_at_end() {
-            if self.peek() == '\n' {
-                println!("Found a newline inside a string.");
-                return Err(());
-            }
-            if !self.escape_character()? {
-                self.advance();
-            };
-        }
-
-        if self.is_at_end() {
-            println!("Unterminated string.");
-            return Err(());
-        }
-
-        // Closing quote
-        self.advance();
-        Ok(self.new_token(TokenType::StringLiteral))
-    }
 */

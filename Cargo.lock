@@ -88,6 +88,7 @@ dependencies = [
  "calypso_parsing",
  "calypso_repl",
  "clap",
+ "odysseus",
 ]
 
 [[package]]
@@ -313,6 +314,10 @@ name = "object"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d3b63360ec3cb337817c2dbd47ab4a0f170d285d8e5a2064600f3def1402397"
+
+[[package]]
+name = "odysseus"
+version = "0.1.0"
 
 [[package]]
 name = "pratt"

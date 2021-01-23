@@ -1,0 +1,12 @@
+[package]
+name = "odysseus"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "A bytecode VM developed for Calypso"
+readme = "README.md"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/odysseus"
+repository = "https://github.com/calypso-lang/calypso/"
+license = "MIT"
+
+[dependencies]

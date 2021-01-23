@@ -54,6 +54,8 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## [crates.io][crates.io] statuses
 
+I'm currently holding various crates related to Calypso. These will actually be used but they are being held so that no one uses them for malicious purposes or confuses anyone.
+
 > Note: A version number of `0.0.0` indicates an unreleased crate.
 
 | Crate Name             | Version                                | [docs.rs][docs.rs] Status                  |
@@ -68,6 +70,10 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 | `calypso_util`         | [![calypso_util][bcio6]][lcio6]        | [![calypso_util][bdrs6]][ldrs6]            |
 
 Docs for the `main` branch can be found [here](https://calypso-lang.github.io/rustdoc/calypso/index.html).
+
+## Odysseus
+
+Odysseus is the VM I'm writing for Calypso. It's meant to be mostly standalone but at the moment there may be some connections or dependencies between it and Calypso. Odysseus's top-level crate can be found in `libs/odysseus` and some of it's subcrates will be found in `libs/` under the name `odysseus_*`. The `calypso_vm` crate will probably be a Calypso-specific interface to Odyssey.
 
 ## Logo Credits
 

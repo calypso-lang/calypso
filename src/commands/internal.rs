@@ -16,6 +16,7 @@ use crate::messages::{error, error_chained};
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::report::GlobalReportingCtxt;
 use calypso_parsing::lexer::{Lexer, TokenType};
+use calypso_parsing::pretty::Printer;
 use calypso_repl::Repl;
 
 #[allow(clippy::single_match)]
@@ -27,6 +28,7 @@ pub fn internal(matches: &ArgMatches) {
 }
 
 pub fn lexer(matches: &ArgMatches) {
+    let ignore_ws = matches.is_present("ignore_ws");
     let path = matches.value_of("INPUT").unwrap();
 
     if path == "-" {
@@ -54,6 +56,7 @@ pub fn lexer(matches: &ArgMatches) {
     let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
     let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
     let mut tokens = Vec::new();
+    let mut printer = Printer::new(source_id, &files);
     loop {
         let token = lexer.scan();
         if let Err(err) = token {
@@ -61,34 +64,36 @@ pub fn lexer(matches: &ArgMatches) {
             error_chained(err);
             break;
         } else if let Ok(token) = token {
-            if token.value().0 == TokenType::Eof {
+            let token_ty = token.value().0;
+            if !ignore_ws || token_ty != TokenType::Ws {
+                tokens.push(token);
+            }
+            if token_ty == TokenType::Eof {
                 break;
             }
-            let value = *token.value();
-            tokens.push((value.0, value.1, token.span()));
         }
     }
-    println!(
-        "{}",
-        tokens
-            .iter()
-            .map(|tok| {
-                format!(
-                    "{:?} @ {}..{}: `{:?}`",
-                    tok.0,
-                    tok.2.lo(),
-                    tok.2.hi(),
-                    tok.1,
-                )
-            })
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
+    grcx.borrow()
+        .errors()
+        .iter()
+        .for_each(|e| println!("{}", e));
+    let tokens = tokens
+        .iter()
+        .map(|v| printer.print_token(v))
+        .collect::<Result<Vec<String>, _>>();
+    match tokens {
+        Ok(tokens) => println!("{}", tokens.join("\n")),
+        Err(err) => {
+            error("while pretty-printing tokens:");
+            error_chained(err);
+        }
+    }
 }
 
 pub fn lexer_stdin(matches: &ArgMatches) {
+    let ignore_ws = matches.is_present("ignore_ws");
     if matches.is_present("repl") {
-        lexer_stdin_repl();
+        lexer_stdin_repl(ignore_ws);
         return;
     }
 
@@ -105,6 +110,7 @@ pub fn lexer_stdin(matches: &ArgMatches) {
     let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
     let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
     let mut tokens = Vec::new();
+    let mut printer = Printer::new(source_id, &files);
     loop {
         let token = lexer.scan();
         if let Err(err) = token {
@@ -112,33 +118,43 @@ pub fn lexer_stdin(matches: &ArgMatches) {
             error_chained(err);
             break;
         } else if let Ok(token) = token {
-            if token.value().0 == TokenType::Eof {
+            let token_ty = token.value().0;
+            if !ignore_ws || token_ty != TokenType::Ws {
+                tokens.push(token);
+            }
+            if token_ty == TokenType::Eof {
                 break;
             }
-            let value = *token.value();
-            tokens.push((value.0, value.1, token.span()));
         }
     }
-    println!(
-        "{}",
-        tokens
-            .iter()
-            .map(|tok| { format!("{:?} @ {}..{}: {:?}", tok.0, tok.2.lo(), tok.2.hi(), tok.1,) })
-            .collect::<Vec<String>>()
-            .join("\n")
-    );
+    grcx.borrow()
+        .errors()
+        .iter()
+        .for_each(|e| println!("{}", e));
+    let tokens = tokens
+        .iter()
+        .map(|v| printer.print_token(v))
+        .collect::<Result<Vec<String>, _>>();
+    match tokens {
+        Ok(tokens) => println!("{}", tokens.join("\n")),
+        Err(err) => {
+            error("while pretty-printing tokens:");
+            error_chained(err);
+        }
+    }
 }
 
-pub fn lexer_stdin_repl() {
+pub fn lexer_stdin_repl(ignore_ws: bool) {
     struct ReplCtx {};
 
     let mut repl = Repl::new(
-        Box::new(|_ctx, contents| {
+        Box::new(move |_ctx, contents| {
             let mut files = FileMgr::new();
             let source_id = files.add("<anon>".to_string(), contents.clone());
             let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
             let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
             let mut tokens = Vec::new();
+            let mut printer = Printer::new(source_id, &files);
             loop {
                 let token = lexer.scan();
                 if let Err(err) = token {
@@ -146,22 +162,31 @@ pub fn lexer_stdin_repl() {
                     error_chained(err);
                     break;
                 } else if let Ok(token) = token {
-                    if token.value().0 == TokenType::Eof {
+                    let token_ty = token.value().0;
+                    if !ignore_ws || token_ty != TokenType::Ws {
+                        tokens.push(token);
+                    }
+                    if token_ty == TokenType::Eof {
                         break;
                     }
-                    let value = *token.value();
-                    tokens.push((value.0, value.1, token.span()));
                 }
             }
-            Some(
-                tokens
-                    .iter()
-                    .map(
-                        |tok| format!("{:?} @ {}..{}: {:?}", tok.0, tok.2.lo(), tok.2.hi(), tok.1,),
-                    )
-                    .collect::<Vec<String>>()
-                    .join("\n"),
-            )
+            grcx.borrow()
+                .errors()
+                .iter()
+                .for_each(|e| println!("{}", e));
+            let tokens = tokens
+                .iter()
+                .map(|v| printer.print_token(v))
+                .collect::<Result<Vec<String>, _>>();
+            match tokens {
+                Ok(tokens) => Some(tokens.join("\n")),
+                Err(err) => {
+                    error("while pretty-printing tokens:");
+                    error_chained(err);
+                    None
+                }
+            }
         }),
         ReplCtx {},
     );

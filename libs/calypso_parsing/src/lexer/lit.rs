@@ -246,17 +246,19 @@ impl<'lex> Lexer<'lex> {
                 self.next();
                 chs_found += 1;
             } else {
-                gen_error!(Err(self => {
+                let ch = self.next().unwrap().value_owned();
+                gen_error!(sync self.grcx.borrow_mut(), self => {
                     E0020;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());
                             format!(
                                 "this character ({:?}) is invalid here; it must be escaped",
-                                self.peek().unwrap().value_owned()
+                                ch
                             )
                     ]
-                }) as ())?
+                });
+                chs_found += 1;
             }
             if chs_found == 1 {
                 expected_quote_here = self.current();
@@ -265,35 +267,35 @@ impl<'lex> Lexer<'lex> {
 
         if chs_found > 1 {
             self.set_start(expected_quote_here);
-            gen_error!(Err(self => {
+            gen_error!(sync self.grcx.borrow_mut(), self => {
                 E0021;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected a `'` here"
                 ]
-            }) as ())?
+            });
         } else if chs_found == 0 {
-            gen_error!(Err(self => {
+            gen_error!(sync self.grcx.borrow_mut(), self => {
                 E0022;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected one character here"
                 ]
-            }) as ())?
+            });
         }
 
         if self.is_at_end() {
             self.current_to_start();
-            gen_error!(Err(self => {
+            gen_error!(sync self.grcx.borrow_mut(), self => {
                 E0023;
                 labels: [
                     LabelStyle::Primary =>
                         (self.source_id, self.new_span());
                         "expected a `'` here"
                 ]
-            }) as ())?
+            });
         }
         self.next();
 
@@ -307,15 +309,15 @@ impl<'lex> Lexer<'lex> {
             if self.handle_escape_character()? {
                 self.next();
             } else if sp == '\n' || sp == '\r' {
-                self.current_to_start();
-                gen_error!(Err(self => {
+                gen_error!(sync self.grcx.borrow_mut(), self => {
                     E0025;
                     labels: [
                         LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
+                            (self.source_id, self.current());
                             "newlines or carriage returns are not valid in string literals"
                     ]
-                }) as ())?
+                });
+                self.next();
             } else {
                 self.next();
             }

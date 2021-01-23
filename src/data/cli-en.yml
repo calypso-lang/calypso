@@ -29,6 +29,10 @@ subcommands:
                         short: r
                         long: repl
                         help: Use a REPL-like interface when using standard input. Does not affect behaviour when using file input.
+                    - ignore_ws:
+                        short: i
+                        long: ignore-ws
+                        help: Ignore whitespace tokens. This is helpful for large files.
                     - INPUT:
                         help: The input file to lex. Use `-` to lex from standard input.
                         required: true

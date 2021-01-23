@@ -11,6 +11,7 @@ impl<'lex> Lexer<'lex> {
     /// The errors returned by this function are of type [`CalError`].
     /// When the error is of type [`CalErrorKind::Diagnostic`], it's
     /// an error that was impossible to recover from.
+    #[allow(clippy::too_many_lines)]
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
         if let Some(wstok) = self.handle_whitespace()? {
             return Ok(wstok);
