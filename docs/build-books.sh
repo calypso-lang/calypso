@@ -28,7 +28,7 @@ popd
 
 echo "Building rustdocs"
 
-cargo +nightly doc --workspace --document-private-items || exit 1
+cargo +nightly doc --workspace --no-deps --document-private-items || exit 1
 
 echo "Moving files to the out directory"
 
