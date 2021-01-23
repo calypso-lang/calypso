@@ -47,8 +47,6 @@ pub enum TokenType {
     DotDot,
     /// `..=`
     DotDotEq,
-    /// `<>`
-    LtGt,
     /// `<<`
     LtLt,
     /// `<<=`
@@ -71,6 +69,8 @@ pub enum TokenType {
     CaretEq,
     /// `~`
     Tilde,
+    /// `~=`
+    TildeEq,
     /// `=`
     Eq,
     /// Keywords

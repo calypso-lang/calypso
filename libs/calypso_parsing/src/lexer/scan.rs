@@ -37,7 +37,6 @@ impl<'lex> Lexer<'lex> {
         }
 
         let token_type = match ch {
-            '<' if self.next_if_eq(&'>').is_some() => TokenType::LtGt,
             '<' if self.next_if_eq(&'<').is_some() => {
                 if self.next_if_eq(&'=').is_some() {
                     TokenType::LtLtEq
@@ -99,6 +98,7 @@ impl<'lex> Lexer<'lex> {
             '^' if self.next_if_eq(&'=').is_some() => TokenType::CaretEq,
             '^' => TokenType::Caret,
 
+            '~' if self.next_if_eq(&'=').is_some() => TokenType::TildeEq,
             '~' => TokenType::Tilde,
 
             '(' => TokenType::LParen,
