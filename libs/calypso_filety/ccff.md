@@ -6,7 +6,7 @@ All multi-byte fields in any CCFF structure (excluding the magic bytes) are assu
 
 ### File Header (`CCFF`)
 
-Offsets are from the start of the container file, minus the 3 magic bytes.
+Offsets are from the start of the `CCFF`.
 
 | Offset (bytes) |    Size (bytes)     |     Name     |         Type          | Description                                                  |
 | :------------: | :-----------------: | :----------: | :-------------------: | :----------------------------------------------------------- |
