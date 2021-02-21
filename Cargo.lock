@@ -106,9 +106,11 @@ dependencies = [
 
 [[package]]
 name = "calypso_filety"
-version = "1.0.2"
+version = "1.1.0"
 dependencies = [
+ "anyhow",
  "bincode",
+ "calypso_error",
  "pretty-hex",
  "serde",
 ]

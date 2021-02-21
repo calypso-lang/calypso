@@ -1,10 +1,12 @@
 use std::convert::TryInto;
 use std::io::prelude::*;
 use std::io::SeekFrom;
-use std::io::{Error as IOError, ErrorKind as IOErrorKind, Result as IOResult};
+use std::io::{Error as IOError, ErrorKind as IOErrorKind};
 
-use bincode::ErrorKind;
+use anyhow::{anyhow, Error};
 use serde::{Deserialize, Serialize};
+
+use calypso_error::{CalError, CalResult};
 
 /// The header for a CCFF file
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -15,14 +17,17 @@ pub struct CcffHeader {
     pub abi: u64,
     /// A user-defined file type.
     pub filety: u64,
-    /// The CCFF section headers
+    /// The CCFF section headers, encoded as a length-array (i.e. a
+    /// `(u64, [CcffSectionHeader])`, where the `u64` is the length of the
+    /// contiguous, unpadded array)
     pub sections: Vec<CcffSectionHeader>,
 }
 
 /// The header for a CCFF section. This does not include the associated data.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CcffSectionHeader {
-    /// The section name as a length-string (i.e. a `(u64, str)` where the `u64` is the length of the `str`)
+    /// The section name, encoded as a length-string (i.e. a `(u64, str)` where
+    /// the `u64` is the length of the `str`)
     pub name: String,
     /// A user-defined section type.
     pub section_type: u64,
@@ -41,14 +46,12 @@ impl CcffHeader {
     ///
     /// This function will return an error if the data could not be read,
     /// could not be deserialized, or if the magic bytes are invalid.
-    pub fn read<I: Read>(input: &mut I) -> bincode::Result<Self> {
-        let header: Self = bincode::deserialize_from(input)?;
+    pub fn read<I: Read>(input: &mut I) -> CalResult<Self> {
+        let header: Self = bincode::deserialize_from(input).map_err(Error::from)?;
         if &header.magic == b"\xCC\xFF" {
             Ok(header)
         } else {
-            Err(Box::new(ErrorKind::Custom(String::from(
-                "invalid magic bytes",
-            ))))
+            Err(anyhow!("invalid magic bytes `{:x?}`", &header.magic).into())
         }
     }
 
@@ -58,13 +61,13 @@ impl CcffHeader {
     ///
     /// This function will return an error if the data could not be serialized,
     /// could not be written, or if the magic bytes were invalid.
-    pub fn write<O: Write>(&self, input: &mut O) -> bincode::Result<()> {
+    pub fn write<O: Write>(&self, input: &mut O) -> CalResult<()> {
         if &self.magic == b"\xCC\xFF" {
             bincode::serialize_into(input, self)
+                .map_err(Error::from)
+                .map_err(CalError::from)
         } else {
-            Err(Box::new(ErrorKind::Custom(String::from(
-                "invalid magic bytes",
-            ))))
+            Err(anyhow!("invalid magic bytes `{:x?}`", &self.magic).into())
         }
     }
 
@@ -91,7 +94,7 @@ impl CcffSectionHeader {
     ///
     /// This function will return an error if the section data had a malformed
     /// size.
-    pub fn seek_to_data<I: Seek>(&self, input: &mut I) -> IOResult<()> {
+    pub fn seek_to_data<I: Seek>(&self, input: &mut I) -> CalResult<()> {
         input
             .seek(SeekFrom::Start(self.offset.try_into().map_err(|_| {
                 IOError::new(
@@ -118,7 +121,7 @@ impl CcffSectionHeader {
     /// This function will return an error if the data could not be read, if
     /// the section data was too large to read, or if the section header had a
     /// malformed size.
-    pub fn read_data<I: Read + Seek>(&self, input: &mut I) -> IOResult<Vec<u8>> {
+    pub fn read_data<I: Read + Seek>(&self, input: &mut I) -> CalResult<Vec<u8>> {
         let mut buf = Vec::with_capacity(self.size.try_into().map_err(|_| {
             IOError::new(
                 IOErrorKind::InvalidData,

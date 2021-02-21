@@ -1,9 +1,10 @@
 use std::convert::TryInto;
 use std::io::prelude::*;
 use std::io::SeekFrom;
-use std::io::{Error as IOError, ErrorKind as IOErrorKind, Result as IOResult};
+use std::io::{Error as IOError, ErrorKind as IOErrorKind};
 
 use super::ll::{CcffHeader, CcffSectionHeader};
+use calypso_error::CalResult;
 
 #[derive(Debug, Clone, Default)]
 pub struct ContainerFile {
@@ -137,7 +138,7 @@ impl ContainerFile {
     /// the section data was too large to read, if the section header had a
     /// malformed size, or if the size was not provided (this will not happen
     /// if you load from a file).
-    pub fn read_all<I: Read + Seek>(&mut self, input: &mut I) -> IOResult<()> {
+    pub fn read_all<I: Read + Seek>(&mut self, input: &mut I) -> CalResult<()> {
         for section in &mut self.sections {
             section.read_data(input)?;
         }
@@ -226,7 +227,7 @@ impl Section {
     /// This function will return an error if the section data had a malformed
     /// size, or if the offset was not set (this will not happen if you load
     /// from a file).
-    pub fn seek_to_data<I: Seek>(&self, input: &mut I) -> IOResult<()> {
+    pub fn seek_to_data<I: Seek>(&self, input: &mut I) -> CalResult<()> {
         input
             .seek(SeekFrom::Start(
                 self.offset
@@ -260,7 +261,7 @@ impl Section {
     /// the section data was too large to read, if the section header had a
     /// malformed size, or if the size was not provided (this will not happen
     /// if you load from a file).
-    pub fn read_data<I: Read + Seek>(&mut self, input: &mut I) -> IOResult<()> {
+    pub fn read_data<I: Read + Seek>(&mut self, input: &mut I) -> CalResult<()> {
         self.seek_to_data(input)?;
         let size: usize = self
             .size
@@ -275,10 +276,7 @@ impl Section {
         let mut buf = Vec::with_capacity(size);
         let n_read = input.take(size as u64).read_to_end(&mut buf)?;
         if n_read < size {
-            return Err(IOError::new(
-                IOErrorKind::WriteZero,
-                "could not read section data",
-            ));
+            return Err(IOError::new(IOErrorKind::WriteZero, "could not read section data").into());
         }
         self.data = Some(buf);
         Ok(())
