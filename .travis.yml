@@ -6,8 +6,8 @@ cache:
   - cargo
 
 rust:
-  - 1.48.0
   - stable
+  - 1.48.0
 
 before_install:
   - openssl aes-256-cbc -K $encrypted_a11d45963b96_key -iv $encrypted_a11d45963b96_iv -in dpl.key.enc -out dpl.key -d
