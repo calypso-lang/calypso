@@ -1,301 +1,313 @@
-use std::collections::HashMap;
-use std::mem;
-use std::slice::Iter;
+use std::convert::TryInto;
+use std::io::prelude::*;
+use std::io::SeekFrom;
+use std::io::{Error as IOError, ErrorKind as IOErrorKind, Result as IOResult};
 
-use bincode::ErrorKind;
+use super::ll::{CcffHeader, CcffSectionHeader};
 
-use super::ll::{Cc, CcHdr, CcSectionHdr};
-use super::Compression;
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ContainerFile {
-    header: ContainerHeader,
-    sections: Vec<(String, Section)>,
-    compressed: Option<bool>,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct ContainerHeader {
     abi: u64,
     filety: u64,
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum SectionType {
-    // Section header string table (`1`)
-    ShStrTab,
-    Other(u64),
-}
-
-impl From<SectionType> for u64 {
-    fn from(r#type: SectionType) -> Self {
-        match r#type {
-            SectionType::ShStrTab => 1,
-            SectionType::Other(r#type) => {
-                assert!(
-                    r#type != 0 && r#type != 1,
-                    "SectionType::Other cannot have a section type of ShStrTab (1)"
-                );
-                r#type
-            }
-        }
-    }
-}
-
-impl From<u64> for SectionType {
-    fn from(r#type: u64) -> SectionType {
-        match r#type {
-            1 => SectionType::ShStrTab,
-            other => SectionType::Other(other),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Section {
-    name_offset: Option<u64>,
-    r#type: SectionType,
-    flags: u64,
-    offset: Option<u64>,
-    data: Vec<u8>,
+    sections: Vec<Section>,
 }
 
 impl ContainerFile {
-    pub fn new(header: ContainerHeader) -> Self {
-        Self {
-            header,
-            sections: Vec::new(),
-            compressed: None,
-        }
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    pub fn add_section(&mut self, name: String, section: Section) -> &mut Self {
-        self.sections.push((name, section));
-        self
-    }
-
-    /// Remove a section from the file. Returns true if it was removed,
-    /// otherwise false.
-    pub fn remove_section(&mut self, name: &str) -> bool {
-        let item = self
-            .sections
-            .iter()
-            .enumerate()
-            .find(|elem| elem.1 .0 == name)
-            .map(|elem| elem.0);
-        if let Some(idx) = item {
-            self.sections.remove(idx);
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn get_section(&self, name: &str) -> Option<&Section> {
-        self.sections
-            .iter()
-            .find(|&elem| elem.0 == name)
-            .map(|elem| &elem.1)
-    }
-
-    pub fn get_section_mut(&mut self, name: &str) -> Option<&mut Section> {
-        self.sections
-            .iter_mut()
-            .find(|elem| elem.0 == name)
-            .map(|elem| &mut elem.1)
-    }
-
-    pub fn get_header(&self) -> &ContainerHeader {
-        &self.header
-    }
-
-    pub fn get_header_mut(&mut self) -> &mut ContainerHeader {
-        &mut self.header
-    }
-
-    pub fn sections_iter(&self) -> Iter<'_, (String, Section)> {
-        self.sections.iter()
-    }
-
-    pub fn into_ll(self) -> bincode::Result<(Cc, Vec<u8>)> {
-        let mut strtab = Vec::new();
-        let mut strtab_indices = HashMap::new();
-        strtab_indices.insert(".shstrtab", 0);
-        strtab.extend(bincode::serialize(".shstrtab")?);
-        for (name, _) in self.sections.iter() {
-            strtab_indices.insert(name, strtab.len());
-            strtab.extend(bincode::serialize(name)?);
-        }
-        let shstrtab = Section::new(SectionType::ShStrTab, 0, strtab);
-
-        let mut data = Vec::new();
-        let mut data_indices = HashMap::new();
-        data_indices.insert(".shstrtab", 0);
-        data.extend(shstrtab.get_data());
-        for (name, section) in self.sections.iter() {
-            data_indices.insert(name, data.len());
-            data.extend(section.get_data());
-        }
-
-        let num_sections = self.sections.len() + 1;
-        let section_hdr_size = mem::size_of::<CcSectionHdr>();
-        let hdr_size = mem::size_of::<CcHdr>();
-        let data_offset = (section_hdr_size * num_sections) + hdr_size + mem::size_of::<u64>();
-
-        let mut sections = Vec::new();
-        sections.push(CcSectionHdr {
-            name: *strtab_indices.get(".shstrtab").unwrap() as u64,
-            section_type: shstrtab.r#type.into(),
-            flags: shstrtab.flags,
-            offset: (*data_indices.get(".shstrtab").unwrap() + data_offset) as u64,
-            size: shstrtab.get_data().len() as u64,
-        });
-        for (name, section) in self.sections.iter() {
-            if section.r#type == SectionType::ShStrTab {
-                // Don't include the .shstrtab section if present as we calculate that anyway
-                continue;
-            }
-            let data_index = *data_indices.get(&&**name).unwrap() + data_offset;
-            let strtab_index = *strtab_indices.get(&&**name).unwrap();
-            sections.push(CcSectionHdr {
-                name: strtab_index as u64,
-                section_type: section.r#type.into(),
-                flags: section.flags,
-                offset: data_index as u64,
-                size: section.get_data().len() as u64,
-            });
-        }
-
-        let hdr = CcHdr {
-            abi: self.header.abi,
-            filety: self.header.filety,
-        };
-
-        let ll = Cc {
-            header: hdr,
-            sections,
-        };
-
-        Ok((ll, data))
-    }
-
-    pub fn into_bytes(self, compression: Compression) -> bincode::Result<Vec<u8>> {
-        let (ll, data) = self.into_ll()?;
-        let bytes = ll.write(compression, &data)?;
-
-        Ok(bytes)
-    }
-
-    pub fn from_ll(ll: Cc, data: Vec<u8>) -> bincode::Result<Self> {
-        let header = ContainerHeader {
-            abi: ll.header.abi,
-            filety: ll.header.filety,
-        };
-        let mut container = Self::new(header);
-        let section_type = ll
-            .sections
-            .first()
-            .ok_or_else(|| {
-                Box::new(ErrorKind::Custom(
-                    "the section header string table must be present".to_string(),
-                ))
-            })?
-            .section_type;
-        if section_type != 1 {
-            return Err(Box::new(ErrorKind::Custom(
-                "the section header string table must be first".to_string(),
-            )));
-        }
-        for section in &ll.sections {
-            let name_offset = section.name;
-            let name: String = bincode::deserialize(&data[name_offset as usize..])?;
-            let offset = section.offset as usize - ll.size();
-            let end = offset + section.size as usize;
-            let data = data[offset..end].to_vec();
-            let mut section = Section::new(section.section_type.into(), section.flags, data);
-            section.offset = Some(offset as u64 + ll.size() as u64);
-            section.name_offset = Some(name_offset);
-            container.add_section(name, section);
-        }
-        Ok(container)
-    }
-
-    pub fn from_bytes(buf: Vec<u8>) -> bincode::Result<Self> {
-        let (ll, data) = Cc::load(buf)?;
-        Self::from_ll(ll, data)
-    }
-
-    pub fn is_compressed(buf: &[u8]) -> bincode::Result<bool> {
-        Cc::is_compressed(buf)
-    }
-}
-
-impl ContainerHeader {
-    pub fn new(abi: u64, filety: u64) -> Self {
-        Self { abi, filety }
-    }
-
-    pub fn get_abi(&self) -> u64 {
-        self.abi
-    }
-
-    pub fn set_abi(&mut self, abi: u64) -> &mut Self {
+    /// Set the ABI of the container file. This can be any arbitrary value you
+    /// choose.
+    #[must_use]
+    pub fn abi(mut self, abi: u64) -> Self {
         self.abi = abi;
         self
     }
 
+    /// Set the file type of the container file. This can be any arbitrary
+    /// value you choose.
+    #[must_use]
+    pub fn filety(mut self, filety: u64) -> Self {
+        self.filety = filety;
+        self
+    }
+
+    /// Get the ABI of the container file.
+    #[must_use]
+    pub fn get_abi(&self) -> u64 {
+        self.abi
+    }
+
+    /// Get the file type of the container file.
+    #[must_use]
     pub fn get_filety(&self) -> u64 {
         self.filety
     }
 
-    pub fn set_filety(&mut self, filety: u64) -> &mut Self {
-        self.filety = filety;
+    /// Add a section to the container file.
+    #[must_use]
+    pub fn add_section(mut self, section: Section) -> Self {
+        self.sections.push(section);
         self
     }
-}
 
-impl Section {
-    pub fn new(r#type: SectionType, flags: u64, data: Vec<u8>) -> Self {
+    /// Remove a section from the container file. Does nothing if the section
+    /// does not exist.
+    #[must_use]
+    pub fn remove_section(mut self, name: &str) -> Self {
+        let idx = self.sections.iter().position(|s| s.name == name);
+        if let Some(idx) = idx {
+            self.sections.remove(idx);
+        }
+        self
+    }
+
+    /// Get a reference to a section in the container file.
+    #[must_use]
+    pub fn get_section(&self, name: &str) -> Option<&Section> {
+        self.sections.iter().find(|&s| s.name == name)
+    }
+
+    /// Get a mutable reference to a section in the container file.
+    #[must_use]
+    pub fn get_section_mut(&mut self, name: &str) -> Option<&mut Section> {
+        self.sections.iter_mut().find(|s| s.name == name)
+    }
+
+    /// Iterate over the sections in the container file.
+    pub fn sections(&self) -> impl Iterator<Item = &Section> {
+        self.sections.iter()
+    }
+
+    /// Encode the container file as its low-level counterpart. This function
+    /// returns a tuple of the encoded header and the section data.
+    #[must_use]
+    pub fn encode(self) -> (CcffHeader, Vec<u8>) {
+        let (sections, data): (Vec<_>, Vec<Vec<_>>) =
+            self.sections.into_iter().map(Section::encode).unzip();
+        let data = data.into_iter().flatten().collect();
+
+        let mut header = CcffHeader {
+            abi: self.abi,
+            filety: self.filety,
+            magic: *b"\xCC\xFF",
+            sections,
+        };
+
+        let mut offset = header.size() as u64;
+        for section in &mut header.sections {
+            section.offset = offset;
+            offset += section.size;
+        }
+
+        (header, data)
+    }
+
+    /// Decode the container file from its low-level counterpart.
+    #[must_use]
+    pub fn decode(header: CcffHeader) -> Self {
         Self {
-            name_offset: None,
-            offset: None,
-            r#type,
-            flags,
-            data,
+            sections: header
+                .sections
+                .into_iter()
+                .map(|s| Section {
+                    data: None,
+                    flags: s.flags,
+                    stype: s.section_type,
+                    name: s.name,
+                    offset: Some(s.offset),
+                    size: Some(s.size),
+                })
+                .collect::<Vec<_>>(),
+            abi: header.abi,
+            filety: header.filety,
         }
     }
 
-    pub fn get_type(&self) -> SectionType {
-        self.r#type
+    /// Read the entirety of the container file's section data. This function
+    /// assumes that you are already seeked to the beginning of the data. It is
+    /// not recommended to use this unless you know you're using a small file
+    /// as it could potentially use more memory than reading piece by piece.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the data could not be read, if
+    /// the section data was too large to read, if the section header had a
+    /// malformed size, or if the size was not provided (this will not happen
+    /// if you load from a file).
+    pub fn read_all<I: Read + Seek>(&mut self, input: &mut I) -> IOResult<()> {
+        for section in &mut self.sections {
+            section.read_data(input)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Section {
+    name: String,
+    stype: u64,
+    flags: u64,
+    data: Option<Vec<u8>>,
+    offset: Option<u64>,
+    size: Option<u64>,
+}
+
+impl Section {
+    #[must_use]
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            data: Some(Vec::new()),
+            ..Self::default()
+        }
     }
 
-    pub fn set_type(&mut self, r#type: SectionType) -> &mut Self {
-        self.r#type = r#type;
+    /// Get the name of the section.
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    /// Set the type of the section. This can be any arbitrary value you
+    /// choose.
+    pub fn stype(mut self, stype: u64) -> Self {
+        self.stype = stype;
         self
     }
 
-    pub fn get_flags(&self) -> u64 {
-        self.flags
+    /// Get the type of the section.
+    #[must_use]
+    pub fn get_stype(&self) -> u64 {
+        self.stype
     }
 
-    pub fn set_flags(&mut self, flags: u64) -> &mut Self {
+    /// Set the flags of the section. This can be any arbitrary value you
+    /// choose.
+    pub fn flags(mut self, flags: u64) -> Self {
         self.flags = flags;
         self
     }
 
-    pub fn get_data(&self) -> &[u8] {
-        &self.data
+    /// Get the flags of the section.
+    #[must_use]
+    pub fn get_flags(&self) -> u64 {
+        self.flags
     }
 
-    pub fn get_data_mut(&mut self) -> &mut Vec<u8> {
-        &mut self.data
+    /// Set the data of the section. This can be any arbitrary data you choose.
+    pub fn data(mut self, data: Vec<u8>) -> Self {
+        self.data = Some(data);
+        self
     }
 
-    pub fn get_name_offset(&self) -> Option<u64> {
-        self.name_offset
+    /// Get a reference to the data of the section. This may not be present if
+    /// reading from a file in order to save memory for large files.
+    /// To get data from large files, use [`seek_to_data`] or [`read_data`].
+    #[must_use]
+    pub fn get_data(&self) -> Option<&[u8]> {
+        self.data.as_ref().map(|d| d.as_ref())
     }
 
+    /// Get a mutable reference to the data of the section. This may not be
+    /// present if reading from a file in order to save memory for large files.
+    /// To get data from large files, use [`seek_to_data`] or [`read_data`].
+    pub fn get_data_mut(&mut self) -> Option<&mut Vec<u8>> {
+        self.data.as_mut()
+    }
+
+    /// Seek to the location of the data in the reader.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the section data had a malformed
+    /// size, or if the offset was not set (this will not happen if you load
+    /// from a file).
+    pub fn seek_to_data<I: Seek>(&self, input: &mut I) -> IOResult<()> {
+        input
+            .seek(SeekFrom::Start(
+                self.offset
+                    .ok_or_else(|| {
+                        IOError::new(IOErrorKind::InvalidInput, "offset was not provided")
+                    })?
+                    .try_into()
+                    .map_err(|_| {
+                        IOError::new(
+                            IOErrorKind::InvalidData,
+                            "section data had a malformed size",
+                        )
+                    })?,
+            ))
+            .map_err(|_| {
+                IOError::new(
+                    IOErrorKind::InvalidData,
+                    "section data had a malformed size",
+                )
+            })?;
+        Ok(())
+    }
+
+    /// Read the entirety of the section's data. It is not recommended to use
+    /// this unless you know you're using a small file as it could potentially
+    /// use more memory than reading piece by piece.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the data could not be read, if
+    /// the section data was too large to read, if the section header had a
+    /// malformed size, or if the size was not provided (this will not happen
+    /// if you load from a file).
+    pub fn read_data<I: Read + Seek>(&mut self, input: &mut I) -> IOResult<()> {
+        self.seek_to_data(input)?;
+        let size: usize = self
+            .size
+            .ok_or_else(|| IOError::new(IOErrorKind::InvalidInput, "size was not provided"))?
+            .try_into()
+            .map_err(|_| {
+                IOError::new(
+                    IOErrorKind::InvalidData,
+                    "section data was too large to read or had a malformed size",
+                )
+            })?;
+        let mut buf = Vec::with_capacity(size);
+        let n_read = input.take(size as u64).read_to_end(&mut buf)?;
+        if n_read < size {
+            return Err(IOError::new(
+                IOErrorKind::WriteZero,
+                "could not read section data",
+            ));
+        }
+        self.data = Some(buf);
+        Ok(())
+    }
+
+    /// Get the offset of the data. This is only present if loading from a file
+    /// and cannot be manually set to prevent errors.
     pub fn get_offset(&self) -> Option<u64> {
         self.offset
+    }
+
+    /// Encode the section as its low-level counterpart. This function returns
+    /// a tuple of the encoded section header and the section data. Note that
+    /// this does not set the offset as that requires knowing all of the
+    /// sections. To do so, encode an entire container file with
+    /// [`ContainerFile::encode`].
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the data was not present. This will only
+    /// happen if you are loading from a file.
+    #[must_use]
+    pub fn encode(self) -> (CcffSectionHeader, Vec<u8>) {
+        let data = self.data.unwrap();
+        let hdr = CcffSectionHeader {
+            name: self.name,
+            section_type: self.stype,
+            flags: self.flags,
+            size: data.len() as u64,
+            offset: 0,
+        };
+        (hdr, data)
     }
 }

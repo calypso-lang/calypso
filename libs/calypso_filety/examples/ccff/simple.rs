@@ -1,13 +1,20 @@
-use calypso_filety::{ccff::hl::*, ccff::*};
+use std::{fs::File, io::Write};
+
+use calypso_filety::ccff::hl::*;
 fn main() {
-    let hdr = ContainerHeader::new(1, 1);
-    let mut container = ContainerFile::new(hdr);
-    let code_section = Section::new(
-        SectionType::Other(2),
-        0,
-        "some bytecode data here i guess".as_bytes().to_vec(),
+    let mut file = File::create("simple.ccff").expect("Failed to open CCFF file");
+
+    let container = ContainerFile::new().abi(1).filety(1).add_section(
+        Section::new(".code".to_string())
+            .stype(1)
+            .flags(0)
+            .data("some bytecode data here i guess".as_bytes().to_vec()),
     );
-    container.add_section(".code".to_string(), code_section);
-    let bytes = container.into_bytes(Compression::Uncompressed).unwrap();
-    println!("{:02x?}", bytes);
+
+    let (hdr, data) = container.encode();
+
+    hdr.write(&mut file)
+        .expect("Failed to write CCFF header to file");
+
+    file.write_all(&data).expect("Failed to write data to file");
 }

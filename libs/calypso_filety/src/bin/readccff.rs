@@ -1,35 +1,36 @@
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
+use std::io::SeekFrom;
 
 use pretty_hex::{config_hex, HexConfig};
 
 use calypso_filety::ccff;
-use ccff::hl::*;
+use ccff::{hl::*, ll::CcffHeader};
 
 fn main() {
     let mut args = env::args();
     if let Some(file) = args.nth(1) {
         let mut file = File::open(file).expect("Failed to open file");
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf).expect("Failed to read file");
-        let compressed =
-            ContainerFile::is_compressed(&buf).expect("Failed to check if CCFF file is compressed");
-        let container = ContainerFile::from_bytes(buf).expect("Failed to load CCFF file");
-        dump_cc(container, compressed);
+        let mut container =
+            ContainerFile::decode(CcffHeader::read(&mut file).expect("Failed to load CCFF file"));
+        file.seek(SeekFrom::Start(0)).expect("Failed to seek file");
+        container
+            .read_all(&mut file)
+            .expect("Failed to read CCFF section data");
+        dump_cc(container);
     } else {
         eprintln!("usage: readccff <FILE>");
         return;
     }
 }
 
-fn dump_cc(container: ContainerFile, compressed: bool) {
+fn dump_cc(container: ContainerFile) {
     println!("=== metadata ===");
-    println!("=> compressed:  {}", if compressed { "yes" } else { "no" });
-    println!("=> ABI version: {}", container.get_header().get_abi());
-    println!("=> File type:   {}", container.get_header().get_filety());
+    println!("=> ABI version: {}", container.get_abi());
+    println!("=> File type:   {}", container.get_filety());
     println!("=== sections ===");
-    for (idx, (name, section)) in container.sections_iter().enumerate() {
+    for (idx, section) in container.sections().enumerate() {
         let config = HexConfig {
             title: false,
             ascii: true,
@@ -38,15 +39,17 @@ fn dump_cc(container: ContainerFile, compressed: bool) {
             ..HexConfig::simple()
         };
         println!(":: idx {}", idx);
+        println!("  => name:         {}", section.get_name());
+        println!("  => type:         0x{:x}", section.get_stype());
+        println!("  => flags:        0x{:x}", section.get_flags());
+        println!("  => offset:       0x{:x}", section.get_offset().unwrap());
         println!(
-            "  => name:         {} @ .shstrtab<+{:x}>",
-            name,
-            section.get_name_offset().unwrap()
+            "  => size:         0x{:x}",
+            section.get_data().unwrap().len()
         );
-        println!("  => type:         {:x}", u64::from(section.get_type()));
-        println!("  => flags:        {:x}", section.get_flags());
-        println!("  => offset:       {:x}", section.get_offset().unwrap());
-        println!("  => size:         {:x}", section.get_data().len());
-        println!("  => hexdump:\n{}", config_hex(&section.get_data(), config));
+        println!(
+            "  => hexdump:\n{}",
+            config_hex(&section.get_data().unwrap(), config)
+        );
     }
 }

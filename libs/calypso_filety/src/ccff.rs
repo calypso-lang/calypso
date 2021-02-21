@@ -1,5 +1,3 @@
-pub use flate2::Compression as CompressionLevel;
-
 /// A high-level interface for CCFF files
 pub mod hl;
 /// Low-level (binary representation with bincode) for CCFF files.
@@ -7,9 +5,3 @@ pub mod hl;
 /// CCFF file if used wrong. It's recommended to use the high-level
 /// interface as it should never generate an invalid file.
 pub mod ll;
-
-#[derive(Debug, Copy, Clone)]
-pub enum Compression {
-    Compressed(CompressionLevel),
-    Uncompressed,
-}
