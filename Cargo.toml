@@ -21,3 +21,4 @@ odysseus = { path = "libs/odysseus", version = "0.1.0" }
 
 [workspace]
 exclude = ["libs/sublib_skeleton"]
+members = ["libs/*"]
