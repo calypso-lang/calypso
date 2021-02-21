@@ -15,8 +15,14 @@ impl Printer<'_> {
         let span = tok.span();
         let lo = span.lo();
         let hi = span.hi();
-        let lo_loc = self.fmgr.location(self.file_id, lo)?;
-        let hi_loc = self.fmgr.location(self.file_id, hi)?;
+        let lo_loc = self
+            .fmgr
+            .location(self.file_id, lo)
+            .map_err(DiagnosticError::from)?;
+        let hi_loc = self
+            .fmgr
+            .location(self.file_id, hi)
+            .map_err(DiagnosticError::from)?;
         Ok(format!(
             "text: {} @ {}..{} (a.k.a. {}:{}..{}:{}), type: {:?}",
             match value.0 {

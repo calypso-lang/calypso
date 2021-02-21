@@ -1,6 +1,8 @@
-use super::error::Result as CalResult;
+use crate::prelude::DiagnosticError;
+
 use super::{reporting, FileMgr};
 use calypso_base::span::Span;
+use calypso_error::CalResult;
 use reporting::diagnostic::{Diagnostic as CodespanDiag, Label};
 use reporting::term::{self, termcolor::Buffer};
 
@@ -78,7 +80,7 @@ impl<'a> Builder<'a> {
         let mut buf = Buffer::ansi();
         let config = term::Config::default();
 
-        term::emit(&mut buf, &config, self.files, &diagnostic)?;
+        term::emit(&mut buf, &config, self.files, &diagnostic).map_err(DiagnosticError::from)?;
         let buf = buf.into_inner();
         let rendered = String::from_utf8(buf)?;
         Ok(Diagnostic(diagnostic, rendered))
@@ -105,11 +107,5 @@ impl Diagnostic {
 impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.1)
-    }
-}
-
-impl From<Diagnostic> for super::error::Error {
-    fn from(diagnostic: Diagnostic) -> Self {
-        super::error::ErrorKind::Diagnostic(diagnostic).into()
     }
 }

@@ -9,8 +9,12 @@ impl<'lex> Lexer<'lex> {
     ///
     /// # Errors
     /// The errors returned by this function are of type [`CalError`].
-    /// When the error is of type [`CalErrorKind::Diagnostic`], it's
+    /// When the error is of type [`DiagnosticError::Diagnostic`], it's
     /// an error that was impossible to recover from.
+    ///
+    /// # Panics
+    ///
+    /// This function should not panic.
     #[allow(clippy::too_many_lines)]
     pub fn scan(&mut self) -> CalResult<Token<'lex>> {
         if let Some(wstok) = self.handle_whitespace()? {
@@ -29,7 +33,7 @@ impl<'lex> Lexer<'lex> {
 
         // Is valid character for identifier's first character
         if is_ident_start(&span) {
-            return self.handle_identifier();
+            return Ok(self.handle_identifier());
         } else if ch == '\'' {
             return self.handle_char_literal();
         } else if ch == '"' {

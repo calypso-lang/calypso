@@ -2,11 +2,9 @@
 #![warn(clippy::pedantic)]
 
 #[macro_use]
-extern crate error_chain;
-
-#[macro_use]
 extern crate lazy_static;
 
+pub extern crate calypso_error;
 pub extern crate codespan_reporting as reporting;
 pub extern crate strfmt;
 
@@ -44,7 +42,7 @@ pub type FileMgr = reporting::files::SimpleFiles<String, String>;
 #[macro_export]
 macro_rules! gen_error {
     (Err($($rest:tt)*) as $ty:ty) => {
-        $crate::error::Result::<$ty>::Err($crate::gen_error!(@i1 $($rest)*).into())
+        $crate::calypso_error::CalResult::<$ty>::Err($crate::error::DiagnosticError::from($crate::gen_error!(@i1 $($rest)*)).into())
     };
 
     (sync $grcx:expr, $($rest:tt)*) => {{
@@ -89,12 +87,9 @@ macro_rules! gen_error {
 }
 
 pub mod prelude {
+    pub use super::calypso_error::{CalError, CalResult};
     pub use super::diagnostic::LabelStyle;
-    pub use super::error::{
-        Error as CalError, ErrorKind as CalErrorKind, Result as CalResult,
-        ResultExt as CalResultExt,
-    };
+    pub use super::error::DiagnosticError;
     pub use super::gen_error;
     pub use super::FileMgr;
-    pub use error_chain::ChainedError;
 }

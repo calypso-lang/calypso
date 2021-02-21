@@ -5,7 +5,6 @@ use super::{Keyword, Lexer, Token, TokenType};
 
 use calypso_base::init_trie;
 use calypso_base::streams::Stream;
-use calypso_diagnostic::prelude::*;
 
 init_trie!(pub KEYWORD_TRIE: Keyword => {
     "is"     => Is,
@@ -46,12 +45,12 @@ init_trie!(pub KEYWORD_TRIE: Keyword => {
 });
 
 impl<'lex> Lexer<'lex> {
-    pub(super) fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
+    pub(super) fn handle_identifier(&mut self) -> Token<'lex> {
         let mut token_type = TokenType::Ident;
 
         // `_` is not an ident on its own, but all other [A-Za-z]{1} idents are.
         if self.prev().unwrap() == &'_' && self.peek_cond(is_ident_continue) != Some(true) {
-            return Ok(self.new_token(TokenType::Under));
+            return self.new_token(TokenType::Under);
         }
 
         // Gorge while the character is a valid identifier character (and not an ident_end character).
@@ -71,6 +70,6 @@ impl<'lex> Lexer<'lex> {
             token_type = TokenType::Keyword(keyword);
         }
 
-        Ok(self.new_token(token_type))
+        self.new_token(token_type)
     }
 }

@@ -1,0 +1,14 @@
+[package]
+name = "calypso_error"
+version = "1.0.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "Error-handling utilities for use within Calypso"
+readme = "README.md"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_error"
+repository = "https://github.com/calypso-lang/calypso/"
+license = "MIT"
+
+[dependencies]
+thiserror = "1.0.24"
+anyhow = "1.0.38"

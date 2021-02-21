@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 use clap::ArgMatches;
 
-use crate::messages::{error, error_chained};
+use crate::messages::error;
 
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::report::GlobalReportingCtxt;
@@ -46,7 +46,7 @@ pub fn lexer(matches: &ArgMatches) {
         Ok(v) => v,
         Err(err) => {
             error(format!("while reading file `{}`:", path.display()));
-            error_chained(err);
+            error(err);
             return;
         }
     };
@@ -61,7 +61,7 @@ pub fn lexer(matches: &ArgMatches) {
         let token = lexer.scan();
         if let Err(err) = token {
             error("while lexing input:");
-            error_chained(err);
+            error(err);
             break;
         } else if let Ok(token) = token {
             let token_ty = token.value().0;
@@ -85,7 +85,7 @@ pub fn lexer(matches: &ArgMatches) {
         Ok(tokens) => println!("{}", tokens.join("\n")),
         Err(err) => {
             error("while pretty-printing tokens:");
-            error_chained(err);
+            error(err);
         }
     }
 }
@@ -101,7 +101,7 @@ pub fn lexer_stdin(matches: &ArgMatches) {
     let mut contents = String::new();
     if let Err(err) = stdin.lock().read_to_string(&mut contents) {
         error("while reading from stdin:");
-        error_chained(err);
+        error(err);
         return;
     }
 
@@ -115,7 +115,7 @@ pub fn lexer_stdin(matches: &ArgMatches) {
         let token = lexer.scan();
         if let Err(err) = token {
             error("while lexing input:");
-            error_chained(err);
+            error(err);
             break;
         } else if let Ok(token) = token {
             let token_ty = token.value().0;
@@ -139,13 +139,13 @@ pub fn lexer_stdin(matches: &ArgMatches) {
         Ok(tokens) => println!("{}", tokens.join("\n")),
         Err(err) => {
             error("while pretty-printing tokens:");
-            error_chained(err);
+            error(err);
         }
     }
 }
 
 pub fn lexer_stdin_repl(ignore_ws: bool) {
-    struct ReplCtx {};
+    struct ReplCtx {}
 
     let mut repl = Repl::new(
         Box::new(move |_ctx, contents| {
@@ -159,7 +159,7 @@ pub fn lexer_stdin_repl(ignore_ws: bool) {
                 let token = lexer.scan();
                 if let Err(err) = token {
                     error("while lexing input:");
-                    error_chained(err);
+                    error(err);
                     break;
                 } else if let Ok(token) = token {
                     let token_ty = token.value().0;
@@ -183,7 +183,7 @@ pub fn lexer_stdin_repl(ignore_ws: bool) {
                 Ok(tokens) => Some(tokens.join("\n")),
                 Err(err) => {
                     error("while pretty-printing tokens:");
-                    error_chained(err);
+                    error(err);
                     None
                 }
             }

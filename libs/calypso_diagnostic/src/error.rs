@@ -1,20 +1,26 @@
+use crate::reporting::files::Error as DiagRenderError;
+use thiserror::Error;
+
 use super::diagnostic::Diagnostic;
+use calypso_error::CalError;
 
-error_chain! {
-    types {
-        Error, ErrorKind, ResultExt, Result;
+/// An extension of [`CalError`] used for diagnostics.
+#[derive(Error, Debug)]
+pub enum DiagnosticError {
+    #[error("failed to render diagnostic")]
+    Rendering(#[from] DiagRenderError),
+    #[error("{0}")]
+    Diagnostic(Diagnostic),
+}
+
+impl From<DiagnosticError> for CalError {
+    fn from(err: DiagnosticError) -> Self {
+        CalError::Other(err.into())
     }
+}
 
-    foreign_links {
-        Io(::std::io::Error);
-        FromUtf8(::std::string::FromUtf8Error);
-        DiagnosticRendering(::codespan_reporting::files::Error);
-    }
-
-    errors {
-        Diagnostic(diagnostic: Diagnostic) {
-            description(diagnostic.reason()),
-            display("{}", diagnostic),
-        }
+impl From<Diagnostic> for DiagnosticError {
+    fn from(diagnostic: Diagnostic) -> Self {
+        DiagnosticError::Diagnostic(diagnostic)
     }
 }
