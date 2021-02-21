@@ -7,7 +7,6 @@ cache:
 
 rust:
   - stable
-  - 1.48.0
 
 before_install:
   - openssl aes-256-cbc -K $encrypted_a11d45963b96_key -iv $encrypted_a11d45963b96_iv -in dpl.key.enc -out dpl.key -d
@@ -38,5 +37,10 @@ jobs:
           branch: main
     - name: "Calypso/x86_64-pc-linux-gnu"
       script:
-        - cargo build --workspace
-        - cargo test --workspace
+        - cargo build --workspace --all-features --all-targets
+        - cargo test --workspace --all-features --all-targets
+    - name: "Calypso/1.48.0-x86_64-pc-linux-gnu"
+      rust: 1.48.0
+      script:
+        - cargo build --workspace --all-features --all-targets
+        - cargo test --workspace --all-features --all-targets
