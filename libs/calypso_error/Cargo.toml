@@ -1,6 +1,6 @@
 [package]
 name = "calypso_error"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2018"
 description = "Error-handling utilities for use within Calypso"
