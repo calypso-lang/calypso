@@ -62,7 +62,7 @@ I'm currently holding various crates related to Calypso. These will actually be 
 |:----------------------:|:--------------------------------------:|:------------------------------------------:|
 | `calypso`              | [![calypso][bcio1]][lcio1]             | [![calypso][bdrs1]][ldrs1]                 |
 | `calypso_base`         | [![calypso_base][bcio2]][lcio2]        | [![calypso_base][bdrs2]][ldrs2]            |
-| `calypso_error`        | [![calypso_error][bci9]][lcio9]        | [![calypso_error][bdrs9]][ldrs9]           |
+| `calypso_error`        | [![calypso_error][bcio9]][lcio9]       | [![calypso_error][bdrs9]][ldrs9]           |
 | `calypso_diagnostic`   | [![calypso_diagnostic][bcio3]][lcio3]  | [![calypso_diagnostic][bdrs3]][ldrs3]      |
 | `calypso_filety`       | [![calypso_filety][bcio7]][lcio7]      | [![calypso_filety][bdrs7]][ldrs7]          |
 | `calypso_opt`          | [![calypso_opt][bcio8]][lcio8]         | [![calypso_opt][bdrs8]][ldrs8]             |
