@@ -12,17 +12,10 @@ Offsets are from the start of the container file, minus the 3 magic bytes.
 
 | Offset (bytes) |    Size (bytes)     |     Name     |       Type       | Description                                                  |
 | :------------: | :-----------------: | :----------: | :--------------: | :----------------------------------------------------------- |
-|     `0x0`      |       `0x10`        |   `header`   |    `CCFFHdr`     | File metadata                                                |
+|     `0x0`      |        `0x8`        |    `abi`     |      `u64`       | A user-defined ABI version                                   |
+|     `0x8`      |        `0x8`        |   `filety`   |      `u64`       | A user-defined file type                                     |
 |     `0x10`     |        `0x8`        | `n_sections` |      `u64`       | The number of sections in this container file                |
 |     `0x18`     | `0x20 * n_sections` |  `sections`  | `CCFFSectionHdr` | An array (consecutive memory with no padding) of section headers `n_sections` long |
-### File Metadata (`CCFFHdr`)
-
-Offsets are from the start of the `CCFFHdr`.
-
-| Offset (bytes) | Size (bytes) |   Name   | Type  | Description                |
-| :------------: | :----------: | :------: | :---: | :------------------------- |
-|     `0x0`      |    `0x8`     |  `abi`   | `u64` | A user-defined ABI version |
-|     `0x8`      |    `0x8`     | `filety` | `u64` | A user-defined file type   |
 
 ### Section Header (`CCFFSectionHdr`)The
 
