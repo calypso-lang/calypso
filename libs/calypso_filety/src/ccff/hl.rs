@@ -204,7 +204,8 @@ impl Section {
 
     /// Get a reference to the data of the section. This may not be present if
     /// reading from a file in order to save memory for large files.
-    /// To get data from large files, use [`seek_to_data`] or [`read_data`].
+    /// To get data from large files, use [`Section::seek_to_data`] or
+    /// [`Section::read_data`].
     #[must_use]
     pub fn get_data(&self) -> Option<&[u8]> {
         self.data.as_ref().map(|d| d.as_ref())
@@ -212,7 +213,8 @@ impl Section {
 
     /// Get a mutable reference to the data of the section. This may not be
     /// present if reading from a file in order to save memory for large files.
-    /// To get data from large files, use [`seek_to_data`] or [`read_data`].
+    /// To get data from large files, use [`Section::seek_to_data`] or
+    /// [`Section::read_data`].
     pub fn get_data_mut(&mut self) -> Option<&mut Vec<u8>> {
         self.data.as_mut()
     }
