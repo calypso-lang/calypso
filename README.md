@@ -140,10 +140,10 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 [bdrs8]: https://docs.rs/calypso_opt/badge.svg
 [ldrs8]: https://docs.rs/calypso_opt/*
 
-[bcio8]: https://img.shields.io/crates/v/calypso_error
-[lcio8]: https://crates.io/crates/calypso_error
-[bdrs8]: https://docs.rs/calypso_error/badge.svg
-[ldrs8]: https://docs.rs/calypso_error/*
+[bcio9]: https://img.shields.io/crates/v/calypso_error
+[lcio9]: https://crates.io/crates/calypso_error
+[bdrs9]: https://docs.rs/calypso_error/badge.svg
+[ldrs9]: https://docs.rs/calypso_error/*
 
 [l1]: https://discord.gg/jRaYGgeeJF
 [b1]: https://img.shields.io/badge/discord-%23calypso-informational
