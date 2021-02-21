@@ -6,6 +6,7 @@ cache:
   - cargo
 
 rust:
+  - 1.48.0
   - stable
 
 before_install:
