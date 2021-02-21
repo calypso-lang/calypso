@@ -12,5 +12,5 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_filety/index.html")]
 #![warn(clippy::pedantic)]
 
-//! Calypso Container File Format. See the [module-level docs](self) for more information.
+/// Calypso Container File Format. See the [module-level docs](self) for more information.
 pub mod ccff;
