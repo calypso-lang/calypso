@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use calypso_error::{CalError, CalResult};
 
 /// The header for a CCFF file
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct CcffHeader {
     /// The 2 magic bytes
     pub magic: [u8; 2],
@@ -24,7 +24,7 @@ pub struct CcffHeader {
 }
 
 /// The header for a CCFF section. This does not include the associated data.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct CcffSectionHeader {
     /// The section name, encoded as a length-string (i.e. a `(u64, str)` where
     /// the `u64` is the length of the `str`)
@@ -142,5 +142,93 @@ impl CcffSectionHeader {
         //      + size: u64
         //      + len(name): u64
         40 + self.name.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    static VALID_HEADER_WITHOUT_MAGIC: &[u8] = b"\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00.foo\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x46\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00";
+
+    #[test]
+    fn header_read_valid() {
+        let mut hdr = b"\xCC\xFF".to_vec();
+        hdr.extend(VALID_HEADER_WITHOUT_MAGIC);
+
+        let mut cursor = Cursor::new(&hdr);
+        let res = CcffHeader::read(&mut cursor).unwrap();
+        assert_eq!(
+            res,
+            CcffHeader {
+                magic: *b"\xCC\xFF",
+                abi: 1,
+                filety: 1,
+                sections: vec![CcffSectionHeader {
+                    name: String::from(".foo"),
+                    section_type: 1,
+                    flags: 0,
+                    offset: 70,
+                    size: 3
+                }]
+            }
+        );
+        assert_eq!(res.size(), hdr.len());
+    }
+
+    #[test]
+    fn header_read_invalid_magic() {
+        let mut hdr = b"\xCC\xFA".to_vec();
+        hdr.extend(VALID_HEADER_WITHOUT_MAGIC);
+        let mut cursor = Cursor::new(hdr);
+        let err = CcffHeader::read(&mut cursor).unwrap_err();
+        assert_eq!(
+            format!("{:?}", err),
+            "Other(invalid magic bytes `[cc, fa]`)"
+        )
+    }
+
+    #[test]
+    fn header_write() {
+        let hdr = CcffHeader {
+            magic: *b"\xCC\xFF",
+            abi: 1,
+            filety: 1,
+            sections: vec![CcffSectionHeader {
+                name: String::from(".foo"),
+                section_type: 1,
+                flags: 0,
+                offset: 70,
+                size: 3,
+            }],
+        };
+        let mut cursor: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        hdr.write(&mut cursor).unwrap();
+        let res = cursor.into_inner();
+        assert_eq!(&res[..2], b"\xCC\xFF");
+        assert_eq!(&res[2..], VALID_HEADER_WITHOUT_MAGIC);
+    }
+
+    #[test]
+    fn header_write_invalid_magic() {
+        let hdr = CcffHeader {
+            magic: *b"\xCC\xFA",
+            abi: 1,
+            filety: 1,
+            sections: vec![CcffSectionHeader {
+                name: String::from(".foo"),
+                section_type: 1,
+                flags: 0,
+                offset: 70,
+                size: 3,
+            }],
+        };
+        let mut cursor: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+        let err = hdr.write(&mut cursor).unwrap_err();
+        assert_eq!(
+            format!("{:?}", err),
+            "Other(invalid magic bytes `[cc, fa]`)"
+        )
     }
 }

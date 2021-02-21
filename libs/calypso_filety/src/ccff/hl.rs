@@ -7,7 +7,7 @@ use super::ll::{CcffHeader, CcffSectionHeader};
 use calypso_error::CalResult;
 
 /// A higher-level interface to a CCFF container file.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ContainerFile {
     abi: u64,
     filety: u64,
@@ -15,26 +15,29 @@ pub struct ContainerFile {
 }
 
 impl ContainerFile {
-    /// Create a new container file.
+    /// Create a new container file. The ABI and file type (`filety`) can be
+    /// any arbitrary value you choose.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(abi: u64, filety: u64) -> Self {
+        Self {
+            abi,
+            filety,
+            ..Self::default()
+        }
     }
 
     /// Set the ABI of the container file. This can be any arbitrary value you
     /// choose.
     #[must_use]
-    pub fn abi(mut self, abi: u64) -> Self {
+    pub fn abi(&mut self, abi: u64) {
         self.abi = abi;
-        self
     }
 
     /// Set the file type of the container file. This can be any arbitrary
     /// value you choose.
     #[must_use]
-    pub fn filety(mut self, filety: u64) -> Self {
+    pub fn filety(&mut self, filety: u64) {
         self.filety = filety;
-        self
     }
 
     /// Get the ABI of the container file.
@@ -50,21 +53,17 @@ impl ContainerFile {
     }
 
     /// Add a section to the container file.
-    #[must_use]
-    pub fn add_section(mut self, section: Section) -> Self {
+    pub fn add_section(&mut self, section: Section) {
         self.sections.push(section);
-        self
     }
 
     /// Remove a section from the container file. Does nothing if the section
     /// does not exist.
-    #[must_use]
-    pub fn remove_section(mut self, name: &str) -> Self {
+    pub fn remove_section(&mut self, name: &str) {
         let idx = self.sections.iter().position(|s| s.name == name);
         if let Some(idx) = idx {
             self.sections.remove(idx);
         }
-        self
     }
 
     /// Get a reference to a section in the container file.
@@ -82,6 +81,11 @@ impl ContainerFile {
     /// Iterate over the sections in the container file.
     pub fn sections(&self) -> impl Iterator<Item = &Section> {
         self.sections.iter()
+    }
+
+    /// Iterate mutably over the sections in the container file.
+    pub fn sections_mut(&mut self) -> impl Iterator<Item = &mut Section> {
+        self.sections.iter_mut()
     }
 
     /// Encode the container file as its low-level counterpart. This function
@@ -115,14 +119,7 @@ impl ContainerFile {
             sections: header
                 .sections
                 .into_iter()
-                .map(|s| Section {
-                    data: None,
-                    flags: s.flags,
-                    stype: s.section_type,
-                    name: s.name,
-                    offset: Some(s.offset),
-                    size: Some(s.size),
-                })
+                .map(Section::decode)
                 .collect::<Vec<_>>(),
             abi: header.abi,
             filety: header.filety,
@@ -149,7 +146,7 @@ impl ContainerFile {
 }
 
 /// A higher-level interface to a CCFF section.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Section {
     name: String,
     stype: u64,
@@ -160,11 +157,14 @@ pub struct Section {
 }
 
 impl Section {
-    /// Create a section.
+    /// Create a section. The section type (`stype`) or flags can be any
+    /// arbitrary value you choose
     #[must_use]
-    pub fn new(name: String) -> Self {
+    pub fn new(name: String, stype: u64, flags: u64) -> Self {
         Self {
             name,
+            stype,
+            flags,
             data: Some(Vec::new()),
             ..Self::default()
         }
@@ -177,9 +177,8 @@ impl Section {
 
     /// Set the type of the section. This can be any arbitrary value you
     /// choose.
-    pub fn stype(mut self, stype: u64) -> Self {
+    pub fn stype(&mut self, stype: u64) {
         self.stype = stype;
-        self
     }
 
     /// Get the type of the section.
@@ -190,9 +189,8 @@ impl Section {
 
     /// Set the flags of the section. This can be any arbitrary value you
     /// choose.
-    pub fn flags(mut self, flags: u64) -> Self {
+    pub fn flags(&mut self, flags: u64) {
         self.flags = flags;
-        self
     }
 
     /// Get the flags of the section.
@@ -313,5 +311,319 @@ impl Section {
             offset: 0,
         };
         (hdr, data)
+    }
+
+    /// Decode a section from its lower-level counterpart.
+    #[must_use]
+    pub fn decode(section: CcffSectionHeader) -> Self {
+        Section {
+            data: None,
+            flags: section.flags,
+            stype: section.section_type,
+            name: section.name,
+            offset: Some(section.offset),
+            size: Some(section.size),
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use std::io::Cursor;
+
+    use super::*;
+
+    static VALID_CONTAINER_FILE: &[u8] = b"\xcc\xff\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00\x00\x00\x00\x00\x2e\x63\x6f\x64\x65\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x47\x00\x00\x00\x00\x00\x00\x00\x1f\x00\x00\x00\x00\x00\x00\x00\x73\x6f\x6d\x65\x20\x62\x79\x74\x65\x63\x6f\x64\x65\x20\x64\x61\x74\x61\x20\x68\x65\x72\x65\x20\x69\x20\x67\x75\x65\x73\x73";
+
+    #[test]
+    fn container_create() {
+        let container = ContainerFile::new(1, 1);
+        assert_eq!(
+            container,
+            ContainerFile {
+                abi: 1,
+                filety: 1,
+                sections: vec![]
+            }
+        );
+        assert_eq!(container.get_abi(), container.abi);
+        assert_eq!(container.get_filety(), container.filety);
+    }
+
+    #[test]
+    fn container_section_add() {
+        let mut container = ContainerFile::new(1, 1);
+        container.add_section(Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec()));
+        assert_eq!(
+            container,
+            ContainerFile {
+                abi: 1,
+                filety: 1,
+                sections: vec![Section {
+                    name: ".foo".to_string(),
+                    stype: 1,
+                    flags: 0,
+                    data: Some(b"foo".to_vec()),
+                    offset: None,
+                    size: None
+                }]
+            }
+        );
+    }
+
+    #[test]
+    fn container_section_remove() {
+        let mut container = ContainerFile::new(1, 1);
+        container.add_section(Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec()));
+        container.remove_section(".foo");
+        assert_eq!(
+            container,
+            ContainerFile {
+                abi: 1,
+                filety: 1,
+                sections: vec![]
+            }
+        );
+    }
+
+    #[test]
+    fn container_section_get() {
+        let mut container = ContainerFile::new(1, 1);
+        container.add_section(Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec()));
+        assert_eq!(
+            container.get_section(".foo").unwrap(),
+            &Section {
+                name: ".foo".to_string(),
+                stype: 1,
+                flags: 0,
+                data: Some(b"foo".to_vec()),
+                offset: None,
+                size: None
+            }
+        );
+    }
+
+    #[test]
+    fn container_section_get_mut() {
+        let mut container = ContainerFile::new(1, 1);
+        container.add_section(Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec()));
+        assert_eq!(
+            container.get_section_mut(".foo").unwrap(),
+            &mut Section {
+                name: ".foo".to_string(),
+                stype: 1,
+                flags: 0,
+                data: Some(b"foo".to_vec()),
+                offset: None,
+                size: None
+            }
+        );
+    }
+
+    #[test]
+    fn container_sections_iter() {
+        let mut container = ContainerFile::new(1, 1);
+        container.add_section(Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec()));
+        assert_eq!(
+            container.sections().next().unwrap(),
+            &Section {
+                name: ".foo".to_string(),
+                stype: 1,
+                flags: 0,
+                data: Some(b"foo".to_vec()),
+                offset: None,
+                size: None
+            }
+        );
+    }
+
+    #[test]
+    fn container_sections_iter_mut() {
+        let mut container = ContainerFile::new(1, 1);
+        container.add_section(Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec()));
+        assert_eq!(
+            container.sections().next().unwrap(),
+            &mut Section {
+                name: ".foo".to_string(),
+                stype: 1,
+                flags: 0,
+                data: Some(b"foo".to_vec()),
+                offset: None,
+                size: None
+            }
+        );
+    }
+
+    #[test]
+    fn container_encode() {
+        let mut container = ContainerFile::new(1, 1);
+        container.add_section(Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec()));
+        let (hdr, data) = container.encode();
+        assert_eq!(
+            hdr,
+            CcffHeader {
+                magic: *b"\xCC\xFF",
+                abi: 1,
+                filety: 1,
+                sections: vec![CcffSectionHeader {
+                    name: ".foo".to_string(),
+                    section_type: 1,
+                    flags: 0,
+                    offset: 70,
+                    size: 3
+                }]
+            }
+        );
+        assert_eq!(&data, b"foo");
+    }
+
+    #[test]
+    fn container_decode() {
+        let hdr = CcffHeader {
+            magic: *b"\xCC\xFF",
+            abi: 1,
+            filety: 1,
+            sections: vec![CcffSectionHeader {
+                name: ".foo".to_string(),
+                section_type: 1,
+                flags: 0,
+                offset: 70,
+                size: 3,
+            }],
+        };
+
+        assert_eq!(
+            ContainerFile::decode(hdr),
+            ContainerFile {
+                abi: 1,
+                filety: 1,
+                sections: vec![Section {
+                    name: ".foo".to_string(),
+                    stype: 1,
+                    flags: 0,
+                    offset: Some(70),
+                    size: Some(3),
+                    data: None
+                }]
+            }
+        );
+    }
+
+    #[test]
+    fn container_read_all() {
+        let mut container = ContainerFile {
+            abi: 1,
+            filety: 1,
+            sections: vec![Section {
+                name: ".code".to_string(),
+                stype: 1,
+                flags: 0,
+                offset: Some(0x47),
+                size: Some(0x1f),
+                data: None,
+            }],
+        };
+        let mut cursor = Cursor::new(VALID_CONTAINER_FILE);
+        container.read_all(&mut cursor).unwrap();
+        assert_eq!(
+            container.get_section(".code").unwrap().get_data().unwrap(),
+            b"some bytecode data here i guess"
+        );
+    }
+
+    #[test]
+    fn section_create() {
+        let mut section = Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec());
+        assert_eq!(
+            section,
+            Section {
+                name: ".foo".to_string(),
+                stype: 1,
+                flags: 0,
+                data: Some(b"foo".to_vec()),
+                offset: None,
+                size: None,
+            }
+        );
+        assert_eq!(section.get_name(), &section.name);
+        assert_eq!(section.get_stype(), section.stype);
+        assert_eq!(section.get_flags(), section.flags);
+        assert_eq!(section.get_data().unwrap(), b"foo");
+        let mut tmp = b"foo".to_vec();
+        assert_eq!(section.get_data_mut().unwrap(), &mut tmp);
+        assert_eq!(section.get_offset(), None);
+    }
+
+    #[test]
+    fn section_encode() {
+        let section = Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec());
+        let (hdr, data) = section.encode();
+        assert_eq!(
+            hdr,
+            CcffSectionHeader {
+                name: ".foo".to_string(),
+                section_type: 1,
+                flags: 0,
+                offset: 0,
+                size: 3
+            }
+        );
+        assert_eq!(&data, b"foo");
+    }
+
+    #[test]
+    fn section_decode() {
+        let hdr = CcffSectionHeader {
+            name: ".foo".to_string(),
+            section_type: 1,
+            flags: 0,
+            offset: 70,
+            size: 3,
+        };
+        assert_eq!(
+            Section::decode(hdr),
+            Section {
+                name: ".foo".to_string(),
+                stype: 1,
+                flags: 0,
+                offset: Some(70),
+                size: Some(3),
+                data: None
+            }
+        );
+    }
+
+    #[test]
+    fn section_seek_to_data() {
+        let section = Section {
+            name: ".code".to_string(),
+            stype: 1,
+            flags: 0,
+            offset: Some(0x47),
+            size: Some(0x1f),
+            data: None,
+        };
+        let mut cursor = Cursor::new(VALID_CONTAINER_FILE);
+        section.seek_to_data(&mut cursor).unwrap();
+        let pos = cursor.seek(SeekFrom::Current(0)).unwrap();
+        assert_eq!(pos, 0x47);
+    }
+
+    #[test]
+    fn section_read_data() {
+        let mut section = Section {
+            name: ".code".to_string(),
+            stype: 1,
+            flags: 0,
+            offset: Some(0x47),
+            size: Some(0x1f),
+            data: None,
+        };
+        let mut cursor = Cursor::new(VALID_CONTAINER_FILE);
+        section.read_data(&mut cursor).unwrap();
+        assert_eq!(
+            section.get_data().unwrap(),
+            b"some bytecode data here i guess"
+        );
     }
 }

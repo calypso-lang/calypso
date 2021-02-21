@@ -4,10 +4,9 @@ use calypso_filety::ccff::hl::*;
 fn main() {
     let mut file = File::create("simple.ccff").expect("Failed to open CCFF file");
 
-    let container = ContainerFile::new().abi(1).filety(1).add_section(
-        Section::new(".code".to_string())
-            .stype(1)
-            .flags(0)
+    let mut container = ContainerFile::new(1, 1);
+    container.add_section(
+        Section::new(".code".to_string(), 1, 0)
             .data("some bytecode data here i guess".as_bytes().to_vec()),
     );
 
