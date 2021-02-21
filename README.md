@@ -18,7 +18,7 @@ The following example is an implementation of [FizzBuzz](https://en.wikipedia.or
 ```
 import atlas.process
 
-@spec main(process.Args) -> :ok | {:error, Error}
+@spec main(process.Args) -> :ok | (:error, Error)
 fn main(args) ->
     args[0]
     |> Nullable.get_or!("100")
