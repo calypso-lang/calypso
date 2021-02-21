@@ -44,9 +44,10 @@ jobs:
       script:
         - cargo build --workspace --all-features --all-targets
         - cargo test --workspace --all-features --all-targets
-  allow_failures:
     - name: "Calypso/nightly-x86_64-unknown-linux-gnu"
       rust: nightly
       script:
         - cargo build --workspace --all-features --all-targets
         - cargo test --workspace --all-features --all-targets
+  allow_failures:
+    - rust: nightly
