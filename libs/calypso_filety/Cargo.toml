@@ -1,6 +1,6 @@
 [package]
 name = "calypso_filety"
-version = "1.1.1"
+version = "1.1.2"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2018"
 description = "Binary file type descriptions, parsers, etc. for Calypso"
