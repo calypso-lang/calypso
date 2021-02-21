@@ -160,6 +160,7 @@ pub struct Section {
 }
 
 impl Section {
+    /// Create a section.
     #[must_use]
     pub fn new(name: String) -> Self {
         Self {
