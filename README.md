@@ -44,8 +44,15 @@ end
 
 The MSRV (Minimum Supported Rust Version) is currently Rust 1.48.0.
 
+Calypso is automatically tested on:
+- x86_64 linux, Rust 1.48.0
+- x86_64 linux, latest stable
+- x86_64 linux, latest nightly
+
+as well as manually tested on x86_64 linux with the latest stable build of Rust
+
 Calypso is developed and tested on these platforms:
-- Arch Linux
+- Arch Linux, latest stable
 - I'd hope there's more in the future...but I don't currently have the infra to test those :(
 
 ## License

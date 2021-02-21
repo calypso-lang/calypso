@@ -35,12 +35,18 @@ jobs:
         repo: calypso-lang/calypso-lang.github.io
         on:
           branch: main
-    - name: "Calypso/x86_64-pc-linux-gnu"
+    - name: "Calypso/x86_64-unknown-linux-gnu"
       script:
         - cargo build --workspace --all-features --all-targets
         - cargo test --workspace --all-features --all-targets
-    - name: "Calypso/1.48.0-x86_64-pc-linux-gnu"
+    - name: "Calypso/1.48.0-x86_64-unknown-linux-gnu"
       rust: 1.48.0
+      script:
+        - cargo build --workspace --all-features --all-targets
+        - cargo test --workspace --all-features --all-targets
+  allow_failures:
+    - name: "Calypso/nightly-x86_64-unknown-linux-gnu"
+      rust: nightly
       script:
         - cargo build --workspace --all-features --all-targets
         - cargo test --workspace --all-features --all-targets
