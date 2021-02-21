@@ -106,7 +106,7 @@ dependencies = [
 
 [[package]]
 name = "calypso_filety"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "anyhow",
  "bincode",

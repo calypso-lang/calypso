@@ -6,6 +6,7 @@ use std::io::{Error as IOError, ErrorKind as IOErrorKind};
 use super::ll::{CcffHeader, CcffSectionHeader};
 use calypso_error::CalResult;
 
+/// A higher-level interface to a CCFF container file.
 #[derive(Debug, Clone, Default)]
 pub struct ContainerFile {
     abi: u64,
@@ -14,6 +15,7 @@ pub struct ContainerFile {
 }
 
 impl ContainerFile {
+    /// Create a new container file.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -146,6 +148,7 @@ impl ContainerFile {
     }
 }
 
+/// A higher-level interface to a CCFF section.
 #[derive(Debug, Clone, Default)]
 pub struct Section {
     name: String,

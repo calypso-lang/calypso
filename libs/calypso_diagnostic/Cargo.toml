@@ -11,7 +11,7 @@ license = "MIT"
 
 [dependencies]
 calypso_base = { path = "../calypso_base", version = "0.1.0" }
-calypso_error = { path = "../calypso_error", version = "1.0.0" }
+calypso_error = { path = "../calypso_error", version = "1.0.1" }
 thiserror = "1.0.24"
 lazy_static = "1.4.0"
 codespan-reporting = "0.11.0"
