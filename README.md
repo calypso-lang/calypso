@@ -12,28 +12,32 @@ Calypso is a mostly imperative language with some functional influences that is 
 
 ## Example
 
-The following example is an implementation of [FizzBuzz](https://en.wikipedia.org/wiki/Fizz_buzz) that goes until a number specified in the CLI arguments of the program, or 100 if that is not present.
+The following example is an implementation of [FizzBuzz](https://en.wikipedia.org/wiki/Fizz_buzz) that goes until a number specified in the CLI arguments of the program, or 100 if that is not present. Note that this is currently psuedocode and may change.
+
 
 ```
-import atlas.env
+import atlas.process
 
-fn fizzbuzz(max) {
-    (1..=max).map(n -> {
-        case: 15.divides(n) -> "FizzBuzz",
-              3.divides(n)  -> "Fizz",
-              5.divides(n)  -> "Buzz",
-              _             -> n.to_string
-    })
-}
-
-fn main() {
-    env.args()
-    |> Iter.get?(1)
+@spec main(process.Args) -> :ok | {:error, Error}
+fn main(args) ->
+    args[0]
     |> Nullable.get_or!("100")
-    |> uint.parse!
+    |> u16.parse!
     |> fizzbuzz
-    |> Iter.each(&println)
-}
+    |> Iter.each(&println/1)
+end
+
+@spec fizzbuzz(u16) -> [string]
+fn fizzbuzz(max) ->
+  (1..=max).map(fn n -> 
+    case do
+      15.divides(n) -> "FizzBuzz",
+      3.divides(n)  -> "Fizz",
+      5.divides(n)  -> "Buzz",
+      _             -> n.to_string
+    end
+  end)
+end
 ```
 
 ## Compatibility
