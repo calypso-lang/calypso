@@ -12,7 +12,7 @@ impl<'lex> Lexer<'lex> {
         if self.next_if_eq(&'\\').is_some() {
             match self.peek().map(|v| v.value_owned()) {
                 Some('n') | Some('r') | Some('t') | Some('\\') | Some('0') | Some('\'')
-                | Some('"') => {
+                | Some('"') | Some('\r') | Some('\n') => {
                     self.next();
                 }
                 Some('x') => self.handle_hex_escape()?,
@@ -305,22 +305,8 @@ impl<'lex> Lexer<'lex> {
 
     pub(super) fn handle_string_literal(&mut self) -> CalResult<Token<'lex>> {
         while self.peek_eq(&'"') != Some(true) && !self.is_at_end() {
-            let sp = *self.peek().unwrap();
-            if self.handle_escape_character()? {
-                self.next();
-            } else if sp == '\n' || sp == '\r' {
-                gen_error!(sync self.grcx.borrow_mut(), self => {
-                    E0025;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.current());
-                            "newlines or carriage returns are not valid in string literals"
-                    ]
-                });
-                self.next();
-            } else {
-                self.next();
-            }
+            self.handle_escape_character()?;
+            self.next();
         }
 
         if self.peek_eq(&'"') != Some(true) {

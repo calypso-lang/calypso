@@ -73,5 +73,4 @@ register_diagnostics! {
     E0022: "Expected 1 character in character literal, found none.",
     E0023: "Expected a single quote at end of character literal, found EOF.",
     E0024: "Expected a double quote at end of string literal, found EOF.",
-    E0025: "Found a newline or carriage return in a string literal, which is not allowed."
 }

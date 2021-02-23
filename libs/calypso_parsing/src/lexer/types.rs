@@ -1,202 +1,186 @@
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 /// Types of Calypso tokens
 pub enum TokenType {
-    /// `<`
-    Lt,
-    /// `<=`
-    LtEq,
+    /// `&`
+    And,
+    /// `&&`
+    AndAnd,
+    /// `&=`
+    AndEq,
+    /// `->`
+    Arrow,
+    /// `@`
+    At,
+    /// `@!`
+    AtBang,
+    /// `!`
+    Bang,
     /// `!=`
     BangEq,
+    /// `^`
+    Caret,
+    /// `^=`
+    CaretEq,
+    /// `:`
+    Colon,
+    /// `,`
+    Comma,
+    /// `.`
+    Dot,
+    /// `..`
+    DotDot,
+    /// `..=`
+    DotDotEq,
+    /// `=`
+    Eq,
     /// `==`
     EqEq,
     /// `>`
     Gt,
     /// `>=`
     GtEq,
-    /// `||`
-    PipePipe,
-    /// `&&`
-    AndAnd,
-    /// `!`
-    Bang,
-    /// `+`
-    Plus,
-    /// `+=`
-    PlusEq,
-    /// `-`
-    Minus,
-    /// `-=`
-    MinusEq,
-    /// `*`
-    Star,
-    /// `*=`
-    StarEq,
-    /// `/`
-    Slash,
-    /// `/=`
-    SlashEq,
-    /// `**`
-    StarStar,
-    /// `**=`
-    StarStarEq,
-    /// `%`
-    Percent,
-    /// `%=`
-    PercentEq,
-    /// `..`
-    DotDot,
-    /// `..=`
-    DotDotEq,
-    /// `<<`
-    LtLt,
-    /// `<<=`
-    LtLtEq,
     /// `>>`
     GtGt,
     /// `>>=`
     GtGtEq,
+    /// `{`
+    LBrace,
+    /// `[`
+    LBracket,
+    /// `(`
+    LParen,
+    /// `<`
+    Lt,
+    /// `<=`
+    LtEq,
+    /// `<<`
+    LtLt,
+    /// `<<=`
+    LtLtEq,
+    /// `-`
+    Minus,
+    /// `-=`
+    MinusEq,
+    /// `%`
+    Percent,
+    /// `%=`
+    PercentEq,
     /// `|`
     Pipe,
     /// `|=`
     PipeEq,
-    /// `&`
-    And,
-    /// `&=`
-    AndEq,
-    /// `^`
-    Caret,
-    /// `^=`
-    CaretEq,
-    /// `~`
-    Tilde,
-    /// `~=`
-    TildeEq,
-    /// `=`
-    Eq,
-    /// Keywords
-    Keyword(Keyword),
-    /// End of file
-    Eof,
-    /// Whitespace, including newlines. This token just spans the whitespace
-    Ws,
-    /// Unexpected characters consumed by synchronization. These are invalid in regular code.
-    Unexpected,
-    /// `(`
-    LParen,
-    /// `)`
-    RParen,
-    /// `{`
-    LBrace,
-    /// `}`
-    RBrace,
-    /// `[`
-    LBracket,
-    /// `]`
-    RBracket,
-    /// `,`
-    Comma,
-    /// `;`
-    Semi,
-    /// `.`
-    Dot,
-    /// `_`
-    Under,
-    /// `:`
-    Colon,
-    /// `->`
-    Arrow,
     /// `|>`
     PipeGt,
-    /// `#`
-    Hash,
-    /// `#!`
-    HashBang,
-    /// Identifiers, excluding keywords.
+    /// `||`
+    PipePipe,
+    /// `+`
+    Plus,
+    /// `+=`
+    PlusEq,
+    /// `}`
+    RBrace,
+    /// `]`
+    RBracket,
+    /// `)`
+    RParen,
+    /// `/`
+    Slash,
+    /// `/=`
+    SlashEq,
+    /// `*`
+    Star,
+    /// `*=`
+    StarEq,
+    /// `**`
+    StarStar,
+    /// `**=`
+    StarStarEq,
+    /// `~`
+    Tilde,
+    /// `_`
+    Under,
+
+    /// End of file or input
+    Eof,
+    /// Unexpected characters, included for lexer synchronization
+    Unexpected,
+    /// Identifier
     Ident,
-    /// Signed integer literal
-    SintLiteral(Radix),
-    /// Unsigned integer literal
-    UintLiteral(Radix),
-    /// Float literal
-    FloatLiteral,
-    /// String literal
-    StringLiteral,
-    /// Character literal
-    CharLiteral,
+    /// Whitespace
+    Ws,
+    /// Comment
+    Comment {
+        doc: bool,
+        inner: bool,
+        multiline: bool,
+    },
+    /// Keyword
+    Keyword(Keyword),
+    // Literal(Literal)
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Keyword {
+    /// `as`
+    As,
+    /// `break`
+    Break,
+    /// `case`
+    Case,
+    /// `del`
+    Del,
+    /// `do`
+    Do,
+    /// `else`
+    Else,
+    /// `end`
+    End,
+    /// `extern`
+    Extern,
+    /// `false`
+    False,
+    /// `fn`
+    Fn,
+    /// `for`
+    For,
+    /// `if`
+    If,
+    /// `import`
+    Import,
+    /// `in`
+    In,
     /// `is`
     Is,
     /// `isa`
     Isa,
-    /// `bool`
-    BoolTy,
-    /// `sint`
-    SintTy,
-    /// `uint`
-    UintTy,
-    /// `float`
-    FloatTy,
-    /// `string`
-    StringTy,
-    /// `char`
-    CharTy,
-    /// `tuple`
-    TupleTy,
-    /// `array`
-    ArrayTy,
-    /// `false`
-    False,
-    /// `true`
-    True,
-    /// `if`
-    If,
-    /// `else`
-    Else,
-    /// `for`
-    For,
-    /// `in`
-    In,
-    /// `loop`
-    Loop,
-    /// `wile`
-    While,
-    /// `case`
-    Case,
-    /// `cond`
-    Cond,
-    /// `ret`
-    Ret,
-    /// `break`
-    Break,
-    /// `fn`
-    Fn,
-    /// `extern`
-    Extern,
-    /// `mod`
-    Mod,
-    /// `use`
-    Use,
-    /// `import`
-    Import,
-    /// `pub`
-    Pub,
     /// `let`
     Let,
+    /// `loop`
+    Loop,
+    /// `mod`
+    Mod,
     /// `mut`
     Mut,
-    /// `undef`
-    Undef,
     /// `null`
     Null,
-    /// `del`
-    Del,
-    /// `as`
-    As,
     /// `panic`
     Panic,
+    /// `pub`
+    Pub,
+    /// `ret`
+    Ret,
+    /// `root`
+    Root,
+    /// `self` (named `Zelf` because `Self` is reserved)
+    Zelf,
+    /// `super`
+    Super,
+    /// `true`
+    True,
+    /// `try`
+    Try,
+    /// `while`
+    While,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
