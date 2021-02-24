@@ -10,4 +10,3 @@ repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT"
 
 [dependencies]
-mimalloc = "0.1.24"

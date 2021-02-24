@@ -6,6 +6,13 @@ use clap::{load_yaml, App};
 mod commands;
 mod messages;
 
+#[cfg(feature = "enable_mimalloc")]
+use mimalloc::MiMalloc;
+
+#[cfg(feature = "enable_mimalloc")]
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 // use messages::{error, info, warn};
 
 fn main() {
