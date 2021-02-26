@@ -2,10 +2,10 @@ language: rust
 dist: xenial
 os: linux
 
+# Exclude wip-* branches which are expected to fail
 branches:
-  only:
-  - main
-  - dependabot/*
+  except:
+  - /wip-(.*)/
 
 cache:
   - cargo
