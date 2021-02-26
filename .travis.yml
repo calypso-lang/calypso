@@ -5,7 +5,7 @@ os: linux
 # Exclude wip-* branches which are expected to fail
 branches:
   except:
-  - /wip-(.*)/
+  - /^wip-.*$/
 
 cache:
   - cargo
