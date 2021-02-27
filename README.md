@@ -81,17 +81,7 @@ I'm currently holding various crates related to Calypso. These will actually be 
 | `calypso_repl`         | [![calypso_repl][bcio5]][lcio5]        | [![calypso_repl][bdrs5]][ldrs5]            |
 | `calypso_util`         | [![calypso_util][bcio6]][lcio6]        | [![calypso_util][bdrs6]][ldrs6]            |
 
-### Odysseus Crate(s)
-
-| Crate Name             | Version                                | [docs.rs][docs.rs] Status                  |
-|:----------------------:|:--------------------------------------:|:------------------------------------------:|
-| `odysseus`             | [![odysseus][ody_bc]][ody_lc]          | [![odysseus][ody_bd]][ody_ld]              |
-
-[ody_bc]: https://img.shields.io/crates/v/odysseus
-[ody_bd]: https://docs.rs/calypso/badge.svg
-[ody_lc]: https://crates.io/crates/odysseus
-[ody_ld]: https://docs.rs/odysseus/*
-
+For the status of Odysseus crates, see [its README](libs/odysseus/README.md).
 
 [bcio1]: https://img.shields.io/crates/v/calypso
 [lcio1]: https://crates.io/crates/calypso
@@ -143,6 +133,8 @@ Docs for the `main` branch can be found [here](https://calypso-lang.github.io/ru
 ## Odysseus
 
 Odysseus is the VM I'm writing for Calypso. It's meant to be mostly standalone but at the moment there may be some connections or dependencies between it and Calypso. Odysseus's top-level crate can be found in `libs/odysseus` and some of it's subcrates will be found in `libs/` under the name `odysseus_*`. The `calypso_vm` crate will probably be a Calypso-specific interface to Odyssey.
+
+For more information, see [its README](libs/odysseus/README.md).
 
 ## Logo Credits
 

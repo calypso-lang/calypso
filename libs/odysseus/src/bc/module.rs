@@ -1,5 +1,11 @@
+//! A bytecode [`Element`] corresponding to a single module, which in the case
+//! of bytecode is a single compilation unit. Submodules are considered
+//! separate compilation units.
+
+#![allow(clippy::clippy::module_name_repetitions)]
+
 use super::context::Context;
-use super::traits::{Container, Entry};
+use super::traits::{Element, Entry};
 
 #[derive(Debug, Clone)]
 pub struct Module {
@@ -7,12 +13,13 @@ pub struct Module {
 }
 
 impl Module {
-    pub fn new(name: String) -> Self {
+    #[must_use]
+    pub(crate) fn new(name: String) -> Self {
         Self { name }
     }
 }
 
-impl Container for Module {
+impl Element for Module {
     type Entry = ModuleEntry;
     type Builder = ModuleBuilder;
     type Id = usize;
@@ -25,15 +32,18 @@ pub struct ModuleEntry {
 
 impl Entry for ModuleEntry {
     type Parent = Context;
-    type Container = Module;
+    type Element = Module;
 
     fn id(&self) -> usize {
         self.id
     }
+
+    fn internal_build(&mut self, _ctx: &mut Context, _b: ModuleBuilder) {}
 }
 
 impl ModuleEntry {
-    pub fn new(id: usize) -> Self {
+    #[must_use]
+    pub(crate) fn new(id: usize) -> Self {
         Self { id }
     }
 }

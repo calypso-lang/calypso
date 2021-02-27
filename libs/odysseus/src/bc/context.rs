@@ -1,3 +1,5 @@
+//! The root [`Parent`] object for Odysseus bytecode.
+
 use super::module::{Module, ModuleBuilder, ModuleEntry};
 use super::traits::Parent;
 
@@ -12,7 +14,7 @@ impl Parent<Module> for Context {
     }
 
     fn is_finished(&self, id: usize) -> bool {
-        *self.modules.get(id).map(|(b, _)| b).unwrap_or(&false)
+        *self.modules.get(id).map_or(&false, |(b, _)| b)
     }
 
     fn finish(&mut self, id: usize) -> &Module {
@@ -44,12 +46,13 @@ impl Context {
                     }
                 },
             );
-        if let Some(pos) = pos {
-            ModuleEntry::new(pos)
-        } else {
-            self.modules.push((false, Module::new(name.to_string())));
-            ModuleEntry::new(self.modules.len() - 1)
-        }
+        pos.map_or_else(
+            || {
+                self.modules.push((false, Module::new(name.to_string())));
+                ModuleEntry::new(self.modules.len() - 1)
+            },
+            ModuleEntry::new,
+        )
     }
 }
 
