@@ -3,10 +3,10 @@
 # Calypso
 
 [![CI Status][b3]][l3] [![License][b4]][l4] [![Discord][b1]][l1] ![Lines of Code][b2] <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 > # :warning: WARNING :warning:
-> This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THISE CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY UNLESS OTHERWISE SPECIFIED!
+> This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THIS CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY UNLESS OTHERWISE SPECIFIED!
 
 Calypso is a mostly imperative language with some functional influences that is focused on flexibility and simplicity.
 
@@ -150,6 +150,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tr>
     <td align="center"><a href="https://thepuzzlemaker.info/"><img src="https://avatars3.githubusercontent.com/u/12666617?v=4?s=100" width="100px;" alt=""/><br /><sub><b>James [Undefined]</b></sub></a><br /><a href="https://github.com/calypso-lang/calypso/commits?author=ThePuzzlemaker" title="Code">💻</a> <a href="#design-ThePuzzlemaker" title="Design">🎨</a> <a href="https://github.com/calypso-lang/calypso/commits?author=ThePuzzlemaker" title="Documentation">📖</a> <a href="#example-ThePuzzlemaker" title="Examples">💡</a> <a href="#ideas-ThePuzzlemaker" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-ThePuzzlemaker" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-ThePuzzlemaker" title="Maintenance">🚧</a> <a href="#projectManagement-ThePuzzlemaker" title="Project Management">📆</a> <a href="https://github.com/calypso-lang/calypso/commits?author=ThePuzzlemaker" title="Tests">⚠️</a> <a href="#tool-ThePuzzlemaker" title="Tools">🔧</a> <a href="#tutorial-ThePuzzlemaker" title="Tutorials">✅</a></td>
+    <td align="center"><a href="https://github.com/HTG-YT"><img src="https://avatars.githubusercontent.com/u/39023054?v=4?s=100" width="100px;" alt=""/><br /><sub><b>HTG-YT</b></sub></a><br /><a href="https://github.com/calypso-lang/calypso/commits?author=HTG-YT" title="Documentation">📖</a> <a href="#tutorial-HTG-YT" title="Tutorials">✅</a></td>
   </tr>
 </table>
 

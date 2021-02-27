@@ -8,7 +8,7 @@ The crate `calypso_vm` is going to eventually be a more Calypso-specific interfa
 
 The same warning applies to these sources as the Calypso sources:
 > # :warning: WARNING :warning:
-> This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THISE CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY UNLESS OTHERWISE SPECIFIED!
+> This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THIS CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY UNLESS OTHERWISE SPECIFIED!
 
 ## Example - Bytecode Builder
 

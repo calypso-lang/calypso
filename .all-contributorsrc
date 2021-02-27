@@ -28,6 +28,16 @@
         "tool",
         "tutorial"
       ]
+    },
+    {
+      "login": "HTG-YT",
+      "name": "HTG-YT",
+      "avatar_url": "https://avatars.githubusercontent.com/u/39023054?v=4",
+      "profile": "https://github.com/HTG-YT",
+      "contributions": [
+        "doc",
+        "tutorial"
+      ]
     }
   ],
   "contributorsPerLine": 7
