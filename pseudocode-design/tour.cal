@@ -1,0 +1,725 @@
+//! # Calypso Grand Tour
+//!
+//! A basic overview of Calypso's features. This does not necessarily include
+//! the standard library, but it should show most of the syntax. Be aware that
+//! these details are subject to change.
+//!
+//! ## "Syllabus"
+//!
+//! 1. Variables, mutability, data types, basic control flow.
+//! 2. Functions and pattern matching
+//! 3. Organizing code with modules and visiblity
+//! 4. Error handling
+//! 5. Structures
+//! 6. Functional programming in Calypso, iteration, and closures
+//! 7. Traits and OO-like features
+
+/// 1. Variables, mutability, data types, basic control flow.
+fn pt1() ->
+    // #===== Variables and Mutability =====# //
+
+    // This is a variable binding. It sets the variable `x`, which can be used
+    // to store a value to `0`.
+    let x = 0
+    // We can't modify this variable, but we can use it. For example, if we
+    // wanted to print the value of `x` to the screen:
+    println(x)
+    // Trying to modify it will result in an error:
+    x = 7 // ERROR: Cannot modify an immutable variable
+
+    // If we wanted to modify a variable, we make it "mutable". This means
+    // that its value can be changed.
+    let mut y = 0
+    // This will print out `0` to the screen:
+    println(y)
+    // Now, we change it to a `7`:
+    y = 7
+    // This will now print out `7` to the screen:
+    println(y)
+
+    // We can "re-bind" variables which will "shadow" their values.
+    let a = 0
+    // The variable `a` is now `0`.
+    let a = 1
+    // The variable `a` is now `1`, and its previous value of `0` is forgotten.
+    // You can also rebind a variable based on its old value:
+    let a = 0
+    let a = a + 5
+    // This is possible but it's recommended to use a mutable variable as
+    // rebinding a variable only happens within the scope of where it is
+    // defined:
+    let a = 0
+    do ->
+        let a = 1
+    end // The value of `a` within this `do` block (`1`) is forgotten.
+    println(a) // Prints `0`
+
+    // #===== Data Types =====# //
+
+    // There are various types of data in Calypso. As computers can be used for
+    // math, you obviously have numbers:
+    
+    // - `uint`: Unsigned integers (non-negative whole
+    //   numbers). They can only be positive.
+    let positive = 591968 // This will be stored in a unsigned integer, because
+                          // it is a positive number.
+    
+    // - `sint`: Signed integers (whole numbers). They can be negative or
+    // positive.
+    let negative = -691 // This will be stored in a signed integer, because it
+                        // is a negative number.
+
+    // - `float`: Floating point numbers. These can be used to store decimal
+    // values but they do have some downfalls (such as rounding errors) as
+    // representing decimal values on computers is difficult.
+    let decimal = 7.5
+
+    // When typing out numbers, you can put an underscore (`_`) in the middle
+    // and it will be ignored. This is helpful for large numbers:
+    let large = 1_000_000
+    
+    // You can select the data type using a "suffix" at the end, for example:
+    let suffixed = -691s
+    // `s`: signed integer
+    // `u`: unsigned integer (cannot be used on negative numbers)
+    // `f`: float
+
+    // The standard operations on numbers apply:
+    println(1 + 1) // Prints `2`.
+    println(5 - 3) // Prints `2`.
+    println(2 * 2) // Prints `4`.
+    println(3 / 2) // Prints `1`. 
+    // Wait, what? Isn't 3 divided by 2 `1.5`? Well, this is because division
+    // automatically uses integers if both numbers are integers. If you want to
+    // use floats, use:
+    println(3.0 / 2.0) // Prints `1.5`.
+    // There's also the modulo operator, which takes a remainder:
+    println(5 % 2) // The remainder of `5/2` is `1`, so this prints `1`.
+    // There's also exponentiaton, e.g. 5 squared (5 to the power 2):
+    println(5 ** 2) // Prints `25`.
+
+    // There are also comparisons on values, including numbers:
+    println(5 == 2) // False, five is not equal to 2
+    println(5 != 2) // True, five is not equal to 2
+    println(5 > 2) // True, five is greater than 2
+    println(1 >= 1) // True, 1 is greater than or equal to 1
+    println(10 < 5) // False, 10 is not less than 5
+    println(6 <= 5) // False, 6 is not less than or equal to 1
+
+    // There are also bitwise operators which are more complex and will not be
+    // explained in this document. They use the same syntax as other languages
+    // so it should not be hard to compare with other languages.
+    println(5 & 9) // Prints `1`.
+    println(5 | 9) // Prints `13`.
+    println(5 ^ 9) // Prints `12`.
+    println(!5u)   // Prints `250`.
+    
+    // Then, you have types for combining data:
+    
+    // - `array`: A "list" of values
+    let mut list = [5, -3, 7]
+    
+    // If we want to get the first element, we get it by its index, e.g. `0`.
+    // Indexes for arrays traditionally start with `0`.
+    println(list[0]) // Prints `5`
+    println(list[1]) // Prints `-3`
+    println(list[2]) // Prints `7`
+    
+    // Let's add `9` to the end:
+    list.append(9)
+    println(list[3]) // Prints `9`
+    // Note that the list must be mutable to be able to append to it.
+    // Otherwise, you would get an error.
+    
+    // - `tuple`: A collection of values that cannot be extended in length.
+    let tup = (6, 7)
+    // Tuples are helpful for a collection of a known amount of data, for
+    // example, putting together an "x" and "y" coordinate into a single point:
+    let x_coord = 751, y_coord = 791
+    let point = (x_coord, y_coord)
+
+    // - `hash`: Associates "keys" of any data type with "values" of any other
+    //   data type. This is useful for making structures. If you're familiar
+    //   with JavaScript, this is equivalent to an object.
+    let mut h = {
+        some: "value",
+        0: "this is zero",
+        [{whaaaat: "an object as a key?"}]: "yep, it works!"
+    }
+
+    // If we want to get a value by a key that we know when we are writing the
+    // program, we use "dot notation".
+    println(h.some) // Prints "value"
+
+    // If we don't know the key (in this case, assume `key` contains the key),
+    // then we use bracket notation.
+    println(h[key]) // Prints "value" if the key is `some` and "this is zero" if the key is `0`.
+
+    // Note that if the key is not an number, string, or atom (which we will
+    // get to soon), you have to use bracket notation to get it, or set it
+    // during or after creation.
+    println(h[{whaaaat: "an object as a key?"}]) // This works.
+    println(h.{whaaaat: "an object as a key?"}) // This doesn't.
+
+    // We can modify values with dot notation or bracket notation, but only if
+    // the hash is mutable.
+    h.some = "thing"
+    h.0 = "this is really zero"
+    println(h.some) // Prints "thing"
+    println(h.0) // Prints "this is really zero"
+
+    // We also have a type that is very useful for computer programming: the boolean, or `bool`.
+    // Booleans are either `true` or `false` and can be used for determining
+    // "yes/no" states that are useful for control flow, which we will get to
+    // soon. Booleans can be used with operators like `&&` (AND), `||` (OR),
+    // and `!` (NOT) to create new booleans.
+    
+    // The AND (`&&`) operator will evaluate to `true` if and only if the two
+    // sides of the `&&` are true. Otherwise, it will evaluate to `false`. You
+    // can use variables or expressions instead of directly using `true` or
+    // `false` here, but this is just for example.
+    println(false && false) // Prints `false`
+    println(false && true)  // Prints `false`
+    println(true  && false) // Prints `false`
+    println(true  && true)  // Prints `true`
+
+    // The OR (`||`) operator will evaluate to true if at least one of the
+    // sides of the `||` is true. Otherwise, it will evaluate to false. Just
+    // like with `&&`, you can use variables or expressions instead of directly
+    // using `true` or `false`.
+    println(false || false) // Prints `false`
+    println(false || true)  // Prints `true`
+    println(true  || false) // Prints `true`
+    println(true  || true)  // Prints `true`
+
+    // The NOT (`!`) operator will "flip" the value it is used on. Thus,
+    // `false` will become `true` and `true` will become `false`.
+    println(!false) // Prints `true`
+    println(!true)  // Prints `false`
+
+    // The boolean type and these operators, along with combinations of them,
+    // form the basis of what is known as Boolean algebra. Don't worry, it's
+    // not as scary as the name sounds! Boolean algebra is one of the building
+    // blocks of not only computer programs, but computers themselves!
+
+    // Similarly to other programming languages, like JavaScript or Python,
+    // Calypso has a type that signifies nothing. This type is called `null`.
+    // It has pretty much no purpose other than just saying "there is nothing
+    // here".
+    let x = null
+    println(x) // Prints "null"
+    
+    // If you bind a variable without giving it a value, it will default to
+    // `null`.
+    let y
+    println(y) // Prints "null"
+
+    // We then have types for text: strings and characters.
+    
+    // A string is a list of characters stored internally as a thing called
+    // UTF-8. UTF-8 is complex but it allows for text to be smaller in size
+    // without making it impossible to use characters from non-Latin alphabets,
+    // e.g. Mandarin.
+    let str = "Hello!"
+    let str2 = "你好" // Hello in Mandarin Chinese
+    println(str)  // Prints "Hello!" (without the quotes)
+    println(str2) // Prints "你好"
+
+    // A character is a single unit of text. Note that this is a character in
+    // the sense of Unicode, not a character in the sense of "a single letter".
+    // This is because the notion of "letters" is vastly different in some
+    // places, so it's better to make code more compatible then make
+    // assumptions you should not and which could cause bugs.
+    let ch = 'H'
+    let ch2 = 'i'
+    println(ch + ch2) // Prints "Hi"
+
+    // We have one more type to cover: the atom. Atoms are somewhat complex at
+    // first, but they will make sense later on. The "simple" description of an
+    // atom is that it is a type whose value is itself.
+
+    // Atoms in Calypso are prefixed by `:` and can have `!`, `?`, or `!?` at
+    // the end.
+    println(:foo) // Prints ":foo"
+
+    // If you need more special characters in an atom, use a string like this:
+    println(:"Hello, world!") // prints `:"Hello, world!"`
+
+    // Atoms are useful as they can be used similarly to "enums" in other
+    // programming languages, which are basically telling between different
+    // values.
+    
+    // For example, say we wanted to make a variable that contained a color
+    // name. Instead of making an enumeration that has the values "red",
+    // "green", "blue", etc., we can just use `:red`, `:green`, and `:blue` as
+    // values.
+    let mut color = :red
+    // Eh, let's use green.
+    color = :green
+
+    // Hashes use atoms for keys, so this is equivalent:
+    let x = {
+        some: "thing"
+    }
+    let y = {
+        [:some]: "thing"
+    }
+    assert: x == y // Assertions will be described soon. Be patient!
+
+    // You can see what the type of something is by using the built-in
+    // function `type`. It will return the type name as a string.
+    println(type("test")) // Prints "string".
+    // You can also check if something is a specific type is with `isa` (or
+    // `isan`, both are entirely equivalent but are both included).
+    println("test" isa string) // Prints "true".
+    // In order to test for null or atoms, use the equality (`==`) operator.
+    println(x == :test)
+    println(x == null)
+
+    // And that's it for datatypes!
+
+    // #===== Control Flow =====# //
+    
+    // Control flow is used to, well, control the flow of the program. This
+    // includes "if statements", which are used to run one part of code if one
+    // thing is true, or another thing if another thing is true.
+    
+    // Let's say you are making a program that automatically checks if someone
+    // is allowed to enter a bar. At least in the US, the minimum age to drink
+    // is 18. We'll assume the age of the person is already in the variable
+    // `age`.
+    
+    // If the person is allowed to a bar, you would like the program to print
+    // out, "Would you like a drink?". Otherwise, you'd like it to print out
+    // "Sorry kid, you can't be in here."
+
+    // To do this, use an "if" statement like this:
+    if age < 18 {
+        println("Sorry kid, you can't be in here.")
+    } else {
+        println("Would you like a drink?")
+    }
+    // This is an if statement. If the age is less than 18, it will print
+    // "Sorry kid, you can't be in here." Otherwise, it will print "Would you
+    // like a drink?"
+
+    // You can also use "else if"s to make multiple conditions.
+    // Let's say the country that you're in makes it so that you can't drink if
+    // you're over 99 for some reason. You can update the code like so:
+
+    if age < 18 {
+        println("Sorry kid, you can't be in here.")
+    } else if age > 99 {
+        println("Sorry, you can't be in here.")
+    } else {
+        println("Would you like a drink?")
+    }
+
+    // This will do the same thing as the earlier code, but if the age is
+    // greater than 99, it will print "Sorry, you can't be in here."
+
+    // There are also ways to repeat code. For example, there is the `for`
+    // loop, the `while` loop, and the infinite loop.
+
+    // Here's an infinite loop:
+    loop ->
+        println("Hello!") // Prints "Hello!" over and over again
+    end
+
+    // If we want to exit a loop, we use `break`:
+    loop ->
+        break
+    end
+
+    // We usually do this after a condition, such as
+    // `if foo == bar -> break end`
+
+    // If you want to skip to the next part of the loop, use `continue`:
+    loop ->
+        if some_condition ->
+            continue // Skip past the println() later
+        end
+        println("Didn't skip")
+    end
+
+    // There's also the while loop which does something while the expression is
+    // true:
+
+    while some_condition ->
+        println("Do something")
+    end
+
+    // Then finally, there's the `for` loop, which we will cover further in the
+    // section on iteration.
+
+    // For loops can be used to get every value in an array:
+    for item in [1, 2, 3] ->
+        println(item)
+    end
+    // This prints:
+    // ```
+    // 1
+    // 2
+    // 3
+    // ```
+
+    // It can also be used with ranges, which are a special syntax that designates a range between two numbers.
+
+    // The range `a..b` will cover from and including `a`, up to but NOT
+    // including `b`. For example, the range from 1 to 10 can be represented
+    // as `1..11`. The range `a..=b` will cover from and including `a`, up to
+    // AND including `b`. Thus, `1..11` is equivalent to `1..=10`.
+
+    // For example, example this just prints the numbers 1 to 10:
+    for i in 1..=10 ->
+        println(i)
+    end
+    // This prints:
+    // ```
+    // 1
+    // 2
+    // 3
+    // 4
+    // 5
+    // 6
+    // 7
+    // 8
+    // 9
+    // 10
+    // ```
+
+    // For testing or making sure that invariants are considered, there are
+    // things called assertions.
+
+    // You can assert something like this:
+    assert 1 == 2
+    // As 1 is not equal to 2, this will always fail. If an assertion fails, it
+    // will throw an AssertionError. If you want to control the message, you
+    // can assert like this:
+    assert 1 == 2: "1 is not equal to 2"
+    // Now the message "1 is not equal to 2" will be the message of the
+    // AssertError.
+end
+
+/// 2. Functions and pattern matching
+mod pt2 ->
+
+    // #===== Functions =====# //
+    
+    // Once code gets to a certain point, you're going to want to reuse some of
+    // it. This is where functions come into play. Functions take some amount
+    // of data and return some amount of data. They may have "side effects",
+    // such as printing to the screen, or may cause errors (which we will
+    // discuss later).
+
+    // A function header looks like this:
+    fn function_name(arguments, arguments2) where some_guards() ->
+        something_here()
+
+        // The last expression in the function is returned.
+        return_this
+    end
+
+    // If you don't want to return anything, put a semicolon at the end of the
+    // last line of the function.
+    fn dont_return() ->
+        something_here();
+    end
+
+    // Functions must return a value, so in the case no other value is
+    // returned, the "unit type" is returned. In Calypso, this is simply the
+    // atom `:unit`.
+
+    // In this example, we will implement the factorial
+    // (a! = 1 * 2 * 3 ... * a) function in two different ways: one using
+    // one using imperative programming features (e.g. control flow), and one
+    // using functional programming features (e.g. recursion and pattern
+    // matching).
+
+    // Both of the implementations we'll make are equally valid, although one
+    // may be faster than the other.
+
+    /// Iterative (imperative programming)
+    fn fac_iter(n) ->
+        let res = 1
+        
+        // Return early with 1 if n is 0 or 1 (because 0! = 1 and 1! = 1)
+        if n == 0 || n == 1 ->
+            ret res
+        end
+
+        // Otherwise, loop through the numbers from 1 to n, and multiply `res`
+        // by them
+        for i in 1..=n ->
+            res *= n
+        end
+
+        // Now, return the result.
+        res
+    end
+
+    /// Recursive (functional programming)
+
+    // We can "pattern match" over function arguments.
+    // If two function headers return the same value, we can separate them by a
+    // semicolon (`;`) and use the same function body.
+    fn fac_rec(0);
+    fn fac_rec(1) ->
+        1
+    end
+
+    // We now introduce "guards", which are just expressions that determine if
+    // this function body should be called. If none match, an error is thrown.
+    fn fac_rec(n) where n > 1 ->
+        n * fac_rec(n - 1)
+    end
+
+    // #===== Pattern Matching =====# //
+
+    // Pattern matching is a useful ability in programming languages, and Calypso has it.
+    
+    fn pt2_2() ->
+        // To pattern match over a value (in this case, just using the placeholder `foo`), use:
+        case foo ->
+            // Inside the body, you can have various matchers.
+            (x, 1) ->
+                // This will match any tuple with two elements where the last
+                // element is 1, and will bind `x` to the value of the first
+                // element.
+                println(x)
+            end
+            (1, 2) | (2, 1) ->
+                // Match pattern A (`(1, 2)`) or pattern B (`(2, 1)`). Note
+                // that you cannot bind in an or-pattern unless all of the
+                // patterns have the same bound variable.
+            end
+            (a, 2) | (2, a) ->
+                // Match pattern A (`(a, 2)`) or pattern B (`(2, a)`). Note
+                // that you cannot bind in an or-pattern unless all of the
+                // patterns have the same bound variable.
+                println(a)
+            end
+            (x, y) = z ->
+                // This will match a tuple with two elements, bind the first to
+                // `x`, the second to `y`, and bind the entire tuple to `z`.
+                print(x, y, z)
+            end
+            {x, y} ->
+                // This will match a hash with at least the elements `x` and
+                // `y`, and will bind those elements to their respective names.
+                println(x, y)
+            end
+            {x: a, y: b} ->
+                // This will match a hash with at least the elements `x` and
+                // `y`, and will bind those elements to `a` and `b`
+                // respectively.
+                println(a, b)
+                println(x, y) // ERROR: not defined: x, y
+            end
+            x ->
+                // This will match anything and bind it to `x`.
+                println(x)
+            end
+            x where x > 1 ->
+                // This will match x when x > 1.
+                println(x, " is greater than 1! woohoo!")
+            end
+            x where has_side_effects() ->
+                // This will match x when has_side_effects() returns true.
+                println(x)
+            end
+            _ ->
+                // This will match anything but not bind it.
+                println("anything!")
+            end
+        end
+        // The first matching pattern (searched in the same order as the
+        // patterns in the source code) found will be executed. In `where`
+        // guards, side effects are allowed. If no match is found, an error is
+        // thrown.
+
+        // If you want to match over conditions, use:
+        case ->
+            2 < 1 ->
+                // Two is not less than one, never executed
+            end
+            1 == 5 ->
+                // One is not equal to five, never executed
+            end
+            5 == 5 ->
+                // Five is equal to five, executed.
+            end
+            _ ->
+                // Always true, but not executed because there was a previous
+                // match.
+            end
+        end
+        // Note that in the code at the top, `case ->`, there is no variable.
+        // This is important as otherwise it would not work.
+
+        // You can also pattern match in let bindings:
+        let (x, _) = (1, 2)
+        println(x) // Prints `1`
+
+        // As you can probably see, pattern matching is an important and
+        // helpful part of Calypso and many other functional or functional-
+        // inspired programming languages.
+    end
+
+end
+
+// 3. Organizing code with modules and visiblity
+mod pt3 ->
+    // For the purposes of this example, if there is a comment before a module
+    // like this, imagine that the module is inside that file:
+    // File: <NAME>.cal
+
+    // #===== Modules =====# //
+
+    // Functions are great, but at a point, you need to organize beyond
+    // functions. That's where modules come in. Modules are used to split code
+    // into various smaller pieces, not only to create organization, but to
+    // also define the interface of your library or program.
+
+    // An inline module is defined like this, and it may contain one or more
+    // "items" (e.g. other modules, functions, etc.)
+    mod foo ->
+
+    end
+
+    // A module put in a different file is defined like this:
+
+    // File: bar.cal
+    mod bar
+
+    // To import modules, use the import statement:
+    import bar.baz
+
+    // This will bring baz into the scope of this module.
+
+    // You can import multiple things at once like this:
+    // (imagining `bar` has `baz, qux, quux`)
+    import bar.{baz, qux, quux}
+
+    // You can also import everything in a module, which is useful for
+    // "prelude" imports of libraries.
+    import bar.*
+
+    // Multi-imports can be nested as well:
+    import bar.{
+        baz.{
+            baz1, baz2, self
+        },
+        qux, quux,
+        prelude.*
+    }
+    // This will import:
+    // - `bar.baz.baz1`
+    // - `bar.baz.baz2`
+    // - `bar.qux`
+    // - `bar.quux`
+    // - everything in `bar.prelude`
+    // As well as `bar.baz`, the module, itself due to the import of
+    // `bar.baz.self`.
+
+    // There are three special module names:
+    // - `self`: current module or import whole module in multi-import
+    // - `super`: the parent module of the current module
+    // - `root`: the root module of the current library/module
+
+    // #===== Visiblity =====# //
+
+    // Visiblity can be used to define which parts of your interface are
+    // allowed to be used by what parts of the code. This can be helpful in
+    // making sure that users don't run internal-only code that might break
+    // something.
+
+    // There are a few modes of visibility:
+    // - pub:              Public to all
+    //
+    // - pub(self):        Public to everything inside this module, recursively
+    //
+    // - pub(super):       Public to everything inside the parent module,
+    //                       recursively
+    //
+    // - pub(root):        Public to the root of the library/program,
+    //                       recursively, but not to other libraries/programs.
+    //
+    // - pub(in <module>): Public to everything inside the specified module,
+    //                       recursively
+    //
+    // - always:           Public to at least only the current module, non-
+    //                       recursively
+
+    // Here is an example of all of them:
+    
+    pub fn vis1() -> end
+    pub(self) fn vis2() -> end
+    pub(super) fn vis3() -> end
+    pub(root) fn vis4() -> end
+    pub(in foo) fn vis5() -> end
+    fn vis5() -> end
+end
+
+// 4. Error handling
+mod pt4 ->
+    // Any program that is more complex is bound to come into an error
+    // at some point. Perhaps the user put in invalid data or the network was
+    // temporarily down. In Calypso, there are two types of errors: "result
+    // types" and "exceptions".
+
+    // #===== Exceptions =====# //
+
+    // Exceptions are errors that "unwind" and that occur somewhat implicitly.
+    // This means that when an exception occurs, it will go back to the
+    // function that called the current function, and then back from that
+    // function, and so on, until a valid `try`-`catch` block is found.
+    // If no try-catch block is found, the program will exit with an error.
+
+    // What is a try-catch block? Well, a try-catch block is used to catch an
+    // exception. It looks like this:
+    fn pt4_1() ->
+        try ->
+            foo!()
+        catch -> e ->
+            println("An error occured! ", e)
+        end
+    end
+
+    // You can pattern match on exceptions, like this:
+    fn pt4_2() ->
+        try ->
+            foo!()
+        catch ->
+            network(e) ->
+                println("A network error occured: ", e)
+            end
+            io(e) ->
+                println("An I/O error occured: ", e)
+            end
+        end
+    end
+
+    // How do you cause an exception? Well, you throw it!
+    fn pt4_3!() ->
+        throw: some_error("Foo!")
+    end
+
+    // Functions that may throw errors are recommended to have an exclamation
+    // mark (`!`) at the end of their name. This way, it's easy to see if a
+    // function may cause an exception without having to look at its code.
+
+    // Don't worry, we'll get into how you create structures that represent
+    // errors soon.
+
+    // #===== Result Types =====# //
+
+    // There's also another way to handle errors that is more explicitly:
+    // result types.
+
+    // There are two result types in Calypso: Result, and a more implicit
+    // result type: Nullable.
+
+    // `Result`s are used to represent something that may be either a
+    // successful result or an error.
+end
