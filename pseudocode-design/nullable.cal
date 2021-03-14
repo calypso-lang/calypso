@@ -15,7 +15,7 @@ pub marker trait Nullable ->
 
     fn get_null!(null = self) -> null end
     fn get_null!(self) ->
-        throw: NullableError("Called `Nullable.get_null!()` on a `null` value"))
+        throw: NullableError("Called `Nullable.get_null!()` on a `null` value")
     end
 
     fn expect_null!(null = self, _) -> null end

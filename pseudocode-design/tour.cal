@@ -58,12 +58,12 @@ fn pt1() ->
 
     // There are various types of data in Calypso. As computers can be used for
     // math, you obviously have numbers:
-    
+
     // - `uint`: Unsigned integers (non-negative whole
     //   numbers). They can only be positive.
     let positive = 591968 // This will be stored in a unsigned integer, because
                           // it is a positive number.
-    
+
     // - `sint`: Signed integers (whole numbers). They can be negative or
     // positive.
     let negative = -691 // This will be stored in a signed integer, because it
@@ -77,7 +77,7 @@ fn pt1() ->
     // When typing out numbers, you can put an underscore (`_`) in the middle
     // and it will be ignored. This is helpful for large numbers:
     let large = 1_000_000
-    
+
     // You can select the data type using a "suffix" at the end, for example:
     let suffixed = -691s
     // `s`: signed integer
@@ -88,7 +88,7 @@ fn pt1() ->
     println(1 + 1) // Prints `2`.
     println(5 - 3) // Prints `2`.
     println(2 * 2) // Prints `4`.
-    println(3 / 2) // Prints `1`. 
+    println(3 / 2) // Prints `1`.
     // Wait, what? Isn't 3 divided by 2 `1.5`? Well, this is because division
     // automatically uses integers if both numbers are integers. If you want to
     // use floats, use:
@@ -113,24 +113,24 @@ fn pt1() ->
     println(5 | 9) // Prints `13`.
     println(5 ^ 9) // Prints `12`.
     println(!5u)   // Prints `250`.
-    
+
     // Then, you have types for combining data:
-    
+
     // - `array`: A "list" of values
     let mut list = [5, -3, 7]
-    
+
     // If we want to get the first element, we get it by its index, e.g. `0`.
     // Indexes for arrays traditionally start with `0`.
     println(list[0]) // Prints `5`
     println(list[1]) // Prints `-3`
     println(list[2]) // Prints `7`
-    
+
     // Let's add `9` to the end:
     list.append(9)
     println(list[3]) // Prints `9`
     // Note that the list must be mutable to be able to append to it.
     // Otherwise, you would get an error.
-    
+
     // - `tuple`: A collection of values that cannot be extended in length.
     let tup = (6, 7)
     // Tuples are helpful for a collection of a known amount of data, for
@@ -143,7 +143,7 @@ fn pt1() ->
     //   with JavaScript, this is equivalent to an object.
     let mut h = {
         some: "value",
-        0: "this is zero",
+        [0]: "this is zero",
         [{whaaaat: "an object as a key?"}]: "yep, it works!"
     }
 
@@ -151,29 +151,29 @@ fn pt1() ->
     // program, we use "dot notation".
     println(h.some) // Prints "value"
 
-    // If we don't know the key (in this case, assume `key` contains the key),
-    // then we use bracket notation.
+    // If the key is contained in a variable (in this case, assume `key`
+    // contains the key), we can use bracket notation to access the value.
     println(h[key]) // Prints "value" if the key is `some` and "this is zero" if the key is `0`.
 
-    // Note that if the key is not an number, string, or atom (which we will
-    // get to soon), you have to use bracket notation to get it, or set it
-    // during or after creation.
+    // Note that if the key is not an string or atom (which we will get to
+    // soon), you have to use bracket notation to get it, or set it during or
+    // after creation.
     println(h[{whaaaat: "an object as a key?"}]) // This works.
     println(h.{whaaaat: "an object as a key?"}) // This doesn't.
 
     // We can modify values with dot notation or bracket notation, but only if
     // the hash is mutable.
     h.some = "thing"
-    h.0 = "this is really zero"
+    h[0] = "this is really zero"
     println(h.some) // Prints "thing"
-    println(h.0) // Prints "this is really zero"
+    println(h[0]) // Prints "this is really zero"
 
     // We also have a type that is very useful for computer programming: the boolean, or `bool`.
     // Booleans are either `true` or `false` and can be used for determining
     // "yes/no" states that are useful for control flow, which we will get to
     // soon. Booleans can be used with operators like `&&` (AND), `||` (OR),
     // and `!` (NOT) to create new booleans.
-    
+
     // The AND (`&&`) operator will evaluate to `true` if and only if the two
     // sides of the `&&` are true. Otherwise, it will evaluate to `false`. You
     // can use variables or expressions instead of directly using `true` or
@@ -208,14 +208,14 @@ fn pt1() ->
     // here".
     let x = null
     println(x) // Prints "null"
-    
+
     // If you bind a variable without giving it a value, it will default to
     // `null`.
     let y
     println(y) // Prints "null"
 
     // We then have types for text: strings and characters.
-    
+
     // A string is a list of characters stored internally as a thing called
     // UTF-8. UTF-8 is complex but it allows for text to be smaller in size
     // without making it impossible to use characters from non-Latin alphabets,
@@ -248,7 +248,7 @@ fn pt1() ->
     // Atoms are useful as they can be used similarly to "enums" in other
     // programming languages, which are basically telling between different
     // values.
-    
+
     // For example, say we wanted to make a variable that contained a color
     // name. Instead of making an enumeration that has the values "red",
     // "green", "blue", etc., we can just use `:red`, `:green`, and `:blue` as
@@ -279,26 +279,26 @@ fn pt1() ->
     // And that's it for datatypes!
 
     // #===== Control Flow =====# //
-    
+
     // Control flow is used to, well, control the flow of the program. This
     // includes "if statements", which are used to run one part of code if one
     // thing is true, or another thing if another thing is true.
-    
+
     // Let's say you are making a program that automatically checks if someone
     // is allowed to enter a bar. At least in the US, the minimum age to drink
     // is 18. We'll assume the age of the person is already in the variable
     // `age`.
-    
+
     // If the person is allowed to a bar, you would like the program to print
     // out, "Would you like a drink?". Otherwise, you'd like it to print out
     // "Sorry kid, you can't be in here."
 
     // To do this, use an "if" statement like this:
-    if age < 18 {
+    if age < 18 ->
         println("Sorry kid, you can't be in here.")
-    } else {
+    else ->
         println("Would you like a drink?")
-    }
+    end
     // This is an if statement. If the age is less than 18, it will print
     // "Sorry kid, you can't be in here." Otherwise, it will print "Would you
     // like a drink?"
@@ -307,13 +307,13 @@ fn pt1() ->
     // Let's say the country that you're in makes it so that you can't drink if
     // you're over 99 for some reason. You can update the code like so:
 
-    if age < 18 {
+    if age < 18 ->
         println("Sorry kid, you can't be in here.")
-    } else if age > 99 {
+    else if age > 99 ->
         println("Sorry, you can't be in here.")
-    } else {
+    else ->
         println("Would you like a drink?")
-    }
+    end
 
     // This will do the same thing as the earlier code, but if the age is
     // greater than 99, it will print "Sorry, you can't be in here."
@@ -405,7 +405,7 @@ end
 mod pt2 ->
 
     // #===== Functions =====# //
-    
+
     // Once code gets to a certain point, you're going to want to reuse some of
     // it. This is where functions come into play. Functions take some amount
     // of data and return some amount of data. They may have "side effects",
@@ -441,8 +441,8 @@ mod pt2 ->
 
     /// Iterative (imperative programming)
     fn fac_iter(n) ->
-        let res = 1
-        
+        let mut res = 1
+
         // Return early with 1 if n is 0 or 1 (because 0! = 1 and 1! = 1)
         if n == 0 || n == 1 ->
             ret res
@@ -477,7 +477,7 @@ mod pt2 ->
     // #===== Pattern Matching =====# //
 
     // Pattern matching is a useful ability in programming languages, and Calypso has it.
-    
+
     fn pt2_2() ->
         // To pattern match over a value (in this case, just using the placeholder `foo`), use:
         case foo ->
@@ -652,7 +652,7 @@ mod pt3 ->
     //                       recursively
 
     // Here is an example of all of them:
-    
+
     pub fn vis1() -> end
     pub(self) fn vis2() -> end
     pub(super) fn vis3() -> end
