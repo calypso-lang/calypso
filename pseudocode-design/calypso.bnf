@@ -1,0 +1,114 @@
+(* EBNF grammar for Calypso. WIP but semi-normative. Subject to change at any
+   point. Assume terminal strings are parsed like Rust strings. *)
+
+(*
+Note: This file will also use a syntax extension to EBNF: `~` and `~~`.
+`~` and `~~` are similar to concatenation (`,`).
+
+`a ~ b` is the same as:
+a, { whitespace | block_comment }, b
+
+`a ~~ b` is the same as:
+a, { whitespace | block_comment | newline }, b
+*)
+
+(* =:= Basic definitions =:= *)
+
+alpha_upper = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K"
+            | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V"
+            | "W" | "X" | "Y" | "Z" ;
+alpha_lower = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k"
+            | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v"
+            | "w" | "x" | "y" | "z" ;
+alpha       = alpha_upper | alpha_lower ;
+
+digit         = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+digit_nonzero = digit - "0" ;
+
+hex_alpha    = "A" | "B" | "C" | "D" | "E" | "F" | "a" | "b" | "c" | "d" | "e"
+             | "f" ;
+hex_digit    = digit | hex_alpha ;
+octal_digit  = digit - ( "8" | "9" ) ;
+binary_digit = "0" | "1" ;
+
+newline    = "\n" | "\r\n" ;
+whitespace = "\t" | "\u{000B}" | "\u{000C}" | "\r" | " " | "\u{0085}"
+           | "\u{200E}" | "\u{200F}" | "\u{2028}" | "\u{2029}" ;
+
+anything = ? any valid unicode character ? ;
+eof      = ? end-of-file or end-of-input ? ;
+
+newline_or_eof = newline | eof ;
+
+(* =:= Comments =:= *)
+
+(* Documentation and inline doc comments are special cases of both of these. *)
+line_comment  = "//", { anything - newline }, newline_or_eof ;
+block_comment = "/*", { block_comment | ( anything - "*/" ) }, "*/" ;
+
+(* =:= Identifiers =:= *)
+
+ident_begin = alpha | "_" ;
+ident_cont  = ident_begin | digit ;
+ident_end   = [ "!" ], [ "?" ] ;
+
+ident = ident_begin, [ ident_cont ], [ ident_end ];
+
+(* =:= Literals =:= *)
+
+atom = ":", ident;
+bool = "true" | "false" ;
+null = "null" ;
+
+interpolated = "${", expression, "}" ;
+
+regular_escape  = "\\", ( "r" | "t" | "\\" | "0" | "'" | '"' ) ;
+hex_escape      = "\\x", 2 * hex_digit ;
+unicode_escape  = "\\u{", hex_digit, 5 * [ hex_digit ], "}" ;
+escape_sequence = regular_escape | hex_escape | unicode_escape ;
+
+(* A single character inside a string/character literal *)
+str_char = ( anything - newline ) | escape_sequence | interpolated ;
+
+string_lit = '"', { str_char }, '"' ;
+char_lit   = "'", str_char, "'" ;
+atom_str   = ':', string_lit ;
+
+integer_digits   = ( "0", { [ "_" ], "0" } )
+                 | ( "0d", { [ "_" ], digit } )
+                 | ( digit_nonzero, { [ "_" ], digit } )
+                 | ( "0x", hex_digit, { [ "_" ], hex_digit } )
+                 | ( "0o", octal_digit, { [ "_" ], octal_digit } )
+                 | ( "0b", binary_digit, { [ "_" ], binary_digit } ) ;
+unsigned_integer = generic_integer, [ "u" ] ;
+signed_integer   = [ "-" ], generic_integer, [ "s" ] ;
+generic_integer  = unsigned_integer | signed_integer ;
+
+float_exponent = ( "e" | "E" ), [ "-" | "+" ], digit_nonzero, { [ "_" ], digit } ;
+float_decimal  = ".", digit, { [ "_" ], digit } ;
+
+float = ( [ "-" ], digit, { [ "_" ], digit }, [ float_decimal ],
+          [ float_exponent ], [ "f" ] )
+      | "NaN"
+      | [ "-" ], "Inf" ;
+
+generic_number = unsigned_integer | signed_integer | float ;
+
+arr_tup_content = expression ~~ { "," ~~ expression } ~~ [ "," ] ;
+tuple = "(" ~~ arr_tup_content ~~ ")" ;
+array = "[" ~~ arr_tup_content ~~ "]" ;
+
+(* Idents are technically atoms in this case, but we use idents to prevent
+   having to use the syntax `:foo: "bar"` *)
+key_lit  = ident | string_lit | char_lit ;
+key_expr = "[" ~~ expression ~~ "]" ;
+key      = key_lit | key_expr ;
+
+kv_pair = key ~~ ":" ~~ expression ;
+
+hash = "{" ~~ { kv_pair } ~~ "}" ;
+
+literal = atom | bool | null | string_lit | char_lit | atom_str
+        | generic_number | tuple | array | hash ;
+
+expression = ? TODO ? ;
