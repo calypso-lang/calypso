@@ -88,9 +88,7 @@ float_exponent = ( "e" | "E" ), [ "-" | "+" ], digit_nonzero, { [ "_" ], digit }
 float_decimal  = ".", digit, { [ "_" ], digit } ;
 
 float = ( [ "-" ], digit, { [ "_" ], digit }, [ float_decimal ],
-          [ float_exponent ], [ "f" ] )
-      | "NaN"
-      | [ "-" ], "Inf" ;
+          [ float_exponent ], [ "f" ] ) ;
 
 generic_number = unsigned_integer | signed_integer | float ;
 

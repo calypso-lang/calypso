@@ -1,0 +1,42 @@
+// Factorial (recursive) and hello world
+// PSEUDOCODE -- Subject to change
+
+/*
+```cal
+fn factorial(0);
+fn factorial(1) ->
+    1
+end
+
+fn factorial(n) where n > 1 ->
+    n * factorial(n - 1)
+end
+
+fn hello() ->
+    println("Hello, world!")
+end
+```
+*/
+
+fn factorial/1 ->
+label @0:
+    register %n, const fnarg:0
+    select %n, @2, [(uint(1), @1), (uint(2), @1)]
+label @1:
+    ret uint(1)
+label @2:
+    test_guard is_gt, [%n, uint(1)]
+    $0 = call_ext_dispatch 1, &:"gaia.ops.Sub.sub", %n, [uint(1)]
+    $1 = call 1, &:"factorial", @0, [$0]
+    $2 = call_ext_dispatch 1, &:"gaia.ops.Mul.mul", %n, [$1]
+    ret $2
+end
+
+data ->
+    0: string("Hello, world!")
+end
+
+fn hello/0 ->
+label @0:
+    call_ext_tail 1, &:"atlas.io.println", [data:0]
+end
