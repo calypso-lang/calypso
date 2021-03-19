@@ -1,6 +1,6 @@
 # Odysseus
 
-[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord][b1]][l1] ![Lines of Code][b2]
+[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171)](https://discord.gg/26X6ChQQcG) ![Lines of Code][b2]
 
 Odysseus is a bytecode VM written entirely in Rust (although there may eventually be some small parts in C). It's meant to be fast and performant but flexible and idiomatic. It's meant to be standalone but as it's written specifically for [Calypso](https://github.com/calypso-lang/calypso), there may be some connections between the two projects, though they should not be anything significant. The top-level crate for Odysseus can be found in `/libs/odysseus` (where `/` is the Calypso repository root). Its subcrates, if any, will be found in `/libs/` under the name `odysseus_*`.
 
@@ -74,9 +74,6 @@ I'm currently holding various crates related to Odysseus. These will actually be
 ## Contributors
 
 The list of contributors made using the all-contributors specification can be found on the [main README for Calypso](/README.md).
-
-[l1]: https://discord.gg/jRaYGgeeJF
-[b1]: https://img.shields.io/badge/discord-%23calypso-informational
 
 [b2]: https://tokei.rs/b1/github/calypso-lang/calypso?category=lines
 
