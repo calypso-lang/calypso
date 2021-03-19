@@ -2,7 +2,7 @@
 
 # Calypso
 
-[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord][https://img.shields.io/discord/822290196057948171]][https://discord.gg/26X6ChQQcG] [![Discord (r/pl channel)][b1]][l1] ![Lines of Code][b2] <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171)](https://discord.gg/26X6ChQQcG) [![Discord (r/pl channel)][b1]][l1] ![Lines of Code][b2] <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 > # :warning: WARNING :warning:
