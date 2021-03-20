@@ -73,4 +73,17 @@ register_diagnostics! {
     E0022: "Expected 1 character in character literal, found none.",
     E0023: "Expected a single quote at end of character literal, found EOF.",
     E0024: "Expected a double quote at end of string literal, found EOF.",
+    E0025: "Found a leading zero in an integer literal.",
+    E0026: "Encountered an underscore at the end of a number literal.",
+    E0027: "Expected a valid decimal part of a float, found an invalid digit `{ch}`",
+    E0028: "Expected a valid decimal part of a float, found whitespace.",
+    E0029: "Expected a valid decimal part of a float, found EOF.",
+    E0030: "Expected a valid exponent of a float, found an invalid digit `{ch}`",
+    E0031: "Expected a valid exponent of a float, found whitespace.",
+    E0032: "Expected a valid exponent of a float, found EOF.",
+    E0033: "Expected a valid digit, found an invalid digit `{ch}`",
+    E0034: "Expected a valid digit, found whitespace.",
+    E0035: "Expected a valid digit, found EOF.",
+    E0036: "Cannot use a non-decimal base for a float",
+    E0037: "Invalid suffix for float."
 }

@@ -1,6 +1,8 @@
 use calypso_base::span::Spanned;
 use calypso_base::static_list as sl;
 
+use super::Radix;
+
 sl!(WHITESPACE: char = [
     '\t',       // Horizontal tab
     '\n',       // Line feed
@@ -33,15 +35,26 @@ pub(super) fn is_whitespace_ch(ch: char) -> bool {
 
 #[inline]
 pub(super) fn is_ident_start(elem: &Spanned<char>) -> bool {
-    elem.value_owned().is_ascii_alphabetic() || elem.value_owned() == '_'
+    elem.value().is_ascii_alphabetic() || elem.value() == &'_'
 }
 
 #[inline]
 pub(super) fn is_ident_continue(elem: &Spanned<char>) -> bool {
-    is_ident_start(elem) || elem.value_owned().is_ascii_digit()
+    is_ident_start(elem) || elem.value().is_ascii_digit()
 }
 
 #[inline]
 pub(super) fn is_ident_end(elem: &Spanned<char>) -> bool {
     elem == &'!' || elem == &'?'
+}
+
+#[inline]
+pub(super) fn is_valid_for(elem: &Spanned<char>, radix: Radix) -> bool {
+    let ch = elem.value_owned();
+    match radix {
+        Radix::Decimal => ch.is_ascii_digit(),
+        Radix::Hexadecimal => ch.is_ascii_hexdigit(),
+        Radix::Octal => ('0'..'8').contains(&ch),
+        Radix::Binary => ch == '0' || ch == '1',
+    }
 }

@@ -26,6 +26,13 @@ TYPE(@USER: CATEGORY): MESSAGE
   - `diag`: diagnostics
   - `filety`: binary file types
 
+You may also find "PRODUCTIVITY MARKER" comments which are basically just notes to myself that say:
+```
+// NOTE: PRODUCTIVITY MARKER: This is purposefully incomplete. I'll come back to it later.
+```
+
+Basically, they mark things that are work-in-progress and don't have to be complete now. Productivity!
+
 ## Import Order
 
 Imports should go in this order (in separate blocks):

@@ -193,7 +193,7 @@ impl<'lex> Lexer<'lex> {
                         "expected at least one hex digit here"
                 ],
                 notes: [
-                    "if you wanted a null byte, you can use `\\u{0}` or `\\0`"
+                    "help: if you wanted a null byte, you can use `\\u{0}` or `\\0`"
                 ]
             }) as ())?
         }
@@ -300,7 +300,7 @@ impl<'lex> Lexer<'lex> {
         self.next();
 
         self.set_start(saved_start);
-        Ok(self.new_token(TokenType::CharLiteral))
+        Ok(self.new_token(TokenType::Char))
     }
 
     pub(super) fn handle_string_literal(&mut self) -> CalResult<Token<'lex>> {
@@ -323,6 +323,6 @@ impl<'lex> Lexer<'lex> {
 
         self.next();
 
-        Ok(self.new_token(TokenType::StringLiteral))
+        Ok(self.new_token(TokenType::String))
     }
 }

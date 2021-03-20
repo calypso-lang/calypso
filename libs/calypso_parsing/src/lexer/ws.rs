@@ -5,6 +5,8 @@ use calypso_base::streams::Stream;
 use calypso_diagnostic::prelude::*;
 
 impl<'lex> Lexer<'lex> {
+    // todo(parse: @ThePuzzlemaker): Split whitespace and comments, use comment
+    //                               tokens
     pub(super) fn handle_whitespace(&mut self) -> CalResult<Option<Token<'lex>>> {
         self.current_to_start();
         self.handle_dangling_comment_ends()?;

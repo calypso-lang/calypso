@@ -18,6 +18,7 @@ pub mod types;
 mod helpers;
 mod ident_kw;
 mod lit;
+mod num;
 mod scan;
 mod ws;
 
@@ -85,7 +86,10 @@ impl<'lex> Lexer<'lex> {
     }
 
     fn new_token(&self, r#type: TokenType) -> Token<'lex> {
-        let span = self.new_span();
+        self.new_token_with_span(self.new_span(), r#type)
+    }
+
+    fn new_token_with_span(&self, span: Span, r#type: TokenType) -> Token<'lex> {
         Token::new(span, (r#type, self.slice(span)))
     }
 }

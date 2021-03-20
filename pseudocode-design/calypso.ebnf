@@ -74,8 +74,8 @@ string_lit = '"', { str_char }, '"' ;
 char_lit   = "'", str_char, "'" ;
 atom_str   = ':', string_lit ;
 
-integer_digits   = ( "0", { [ "_" ], "0" } )
-                 | ( "0d", { [ "_" ], digit } )
+integer_digits   = "0"
+                 | ( "0d", digit, { [ "_" ], digit } )
                  | ( digit_nonzero, { [ "_" ], digit } )
                  | ( "0x", hex_digit, { [ "_" ], hex_digit } )
                  | ( "0o", octal_digit, { [ "_" ], octal_digit } )

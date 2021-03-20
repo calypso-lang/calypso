@@ -137,6 +137,21 @@ impl Span {
     pub fn add_hi(self, amount: usize) -> Span {
         self.with_hi(self.hi() + amount)
     }
+
+    #[must_use]
+    pub fn sub_hi(self, amount: usize) -> Span {
+        self.with_hi(self.hi() - amount)
+    }
+
+    #[must_use]
+    pub fn add_lo(self, amount: usize) -> Span {
+        self.with_lo(self.lo() + amount)
+    }
+
+    #[must_use]
+    pub fn sub_lo(self, amount: usize) -> Span {
+        self.with_lo(self.lo() - amount)
+    }
 }
 
 impl Default for Span {

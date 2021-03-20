@@ -1,106 +1,10 @@
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 /// Types of Calypso tokens
 pub enum TokenType {
-    /// `&`
-    And,
-    /// `&&`
-    AndAnd,
-    /// `&=`
-    AndEq,
-    /// `->`
-    Arrow,
-    /// `@`
-    At,
-    /// `@!`
-    AtBang,
-    /// `!`
-    Bang,
-    /// `!=`
-    BangEq,
-    /// `^`
-    Caret,
-    /// `^=`
-    CaretEq,
-    /// `:`
-    Colon,
-    /// `,`
-    Comma,
-    /// `.`
-    Dot,
-    /// `..`
-    DotDot,
-    /// `..=`
-    DotDotEq,
-    /// `=`
-    Eq,
-    /// `==`
-    EqEq,
-    /// `>`
-    Gt,
-    /// `>=`
-    GtEq,
-    /// `>>`
-    GtGt,
-    /// `>>=`
-    GtGtEq,
-    /// `{`
-    LBrace,
-    /// `[`
-    LBracket,
-    /// `(`
-    LParen,
-    /// `<`
-    Lt,
-    /// `<=`
-    LtEq,
-    /// `<<`
-    LtLt,
-    /// `<<=`
-    LtLtEq,
-    /// `-`
-    Minus,
-    /// `-=`
-    MinusEq,
-    /// `%`
-    Percent,
-    /// `%=`
-    PercentEq,
-    /// `|`
-    Pipe,
-    /// `|=`
-    PipeEq,
-    /// `|>`
-    PipeGt,
-    /// `||`
-    PipePipe,
-    /// `+`
-    Plus,
-    /// `+=`
-    PlusEq,
-    /// `}`
-    RBrace,
-    /// `]`
-    RBracket,
-    /// `)`
-    RParen,
-    /// `/`
-    Slash,
-    /// `/=`
-    SlashEq,
-    /// `*`
-    Star,
-    /// `*=`
-    StarEq,
-    /// `**`
-    StarStar,
-    /// `**=`
-    StarStarEq,
-    /// `~`
-    Tilde,
     /// `_`
     Under,
 
-    /// End of file or input
+    /// End-of-file / end-of-input
     Eof,
     /// Unexpected characters, included for lexer synchronization
     Unexpected,
@@ -108,85 +12,56 @@ pub enum TokenType {
     Ident,
     /// Whitespace
     Ws,
-    /// Comment
-    Comment {
+    /// Line comments
+    LineComment {
+        /// Is this a documentation comment?
         doc: bool,
+        /// Is this an inner doc comment?
         inner: bool,
-        multiline: bool,
     },
+    /// Comment
+    BlockComment {
+        /// Is this a documentation comment?
+        doc: bool,
+        /// Is this an inner doc comment?
+        inner: bool,
+        /// How deeply nested this comment is
+        nest_level: usize,
+    },
+
     /// Keyword
     Keyword(Keyword),
-    // Literal(Literal)
+    /// String literal
+    String,
+    /// Character literal
+    Char,
+    /// Integer literal (not split into sint/uint cause of constraints)
+    Int {
+        /// The integer suffix, if present
+        suffix: Option<Suffix>,
+        /// The integer radix, or [`Radix::Decimal`] if not present
+        radix: Radix,
+    },
+    /// Float literal
+    Float,
+    // NOTE: PRODUCTIVITY MARKER: This is purposefully incomplete. I'll come back to it later.
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Keyword {
-    /// `as`
-    As,
-    /// `break`
-    Break,
-    /// `case`
-    Case,
-    /// `del`
-    Del,
-    /// `do`
-    Do,
-    /// `else`
-    Else,
-    /// `end`
-    End,
-    /// `extern`
-    Extern,
     /// `false`
     False,
-    /// `fn`
-    Fn,
-    /// `for`
-    For,
-    /// `if`
-    If,
-    /// `import`
-    Import,
-    /// `in`
-    In,
-    /// `is`
-    Is,
-    /// `isa`
-    Isa,
-    /// `let`
-    Let,
-    /// `loop`
-    Loop,
-    /// `mod`
-    Mod,
-    /// `mut`
-    Mut,
     /// `null`
     Null,
-    /// `panic`
-    Panic,
-    /// `pub`
-    Pub,
-    /// `ret`
-    Ret,
-    /// `root`
-    Root,
-    /// `self` (named `Zelf` because `Self` is reserved)
-    Zelf,
-    /// `super`
-    Super,
     /// `true`
     True,
-    /// `try`
-    Try,
-    /// `while`
-    While,
+    // NOTE: PRODUCTIVITY MARKER: This is purposefully incomplete. I'll come back to it later.
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 /// Number radixes.
 pub enum Radix {
-    /// No prefix
+    /// No prefix or `0d`
     Decimal,
     /// `0b`
     Binary,
@@ -194,4 +69,17 @@ pub enum Radix {
     Octal,
     /// `0x`
     Hexadecimal,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+/// Number suffixes.
+pub enum Suffix {
+    /// `u`
+    Uint,
+    /// `s`
+    Sint,
+    /// `f`
+    Float,
+    /// Invalid suffix
+    Invalid,
 }

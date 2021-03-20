@@ -1,4 +1,4 @@
-use super::helpers::is_ident_start;
+use super::{helpers::is_ident_start, Radix};
 use super::{Lexer, Token, TokenType};
 
 use calypso_base::streams::Stream;
@@ -40,95 +40,107 @@ impl<'lex> Lexer<'lex> {
             return self.handle_string_literal();
         }
 
+        if ch == '0' {
+            if self.is_at_end() {
+                return Ok(self.new_token(TokenType::Int {
+                    suffix: None,
+                    radix: Radix::Decimal,
+                }));
+            }
+            return self.handle_int_leading_zero();
+        } else if ch.is_ascii_digit() {
+            return self.handle_number();
+        }
+
         let token_type = match ch {
-            '<' if self.next_if_eq(&'<').is_some() => {
-                if self.next_if_eq(&'=').is_some() {
-                    TokenType::LtLtEq
-                } else {
-                    TokenType::Lt
-                }
-            }
-            '<' if self.next_if_eq(&'=').is_some() => TokenType::LtEq,
-            '<' => TokenType::Lt,
+            // '<' if self.next_if_eq(&'<').is_some() => {
+            //     if self.next_if_eq(&'=').is_some() {
+            //         TokenType::LtLtEq
+            //     } else {
+            //         TokenType::Lt
+            //     }
+            // }
+            // '<' if self.next_if_eq(&'=').is_some() => TokenType::LtEq,
+            // '<' => TokenType::Lt,
 
-            '>' if self.next_if_eq(&'>').is_some() => {
-                if self.next_if_eq(&'=').is_some() {
-                    TokenType::GtGtEq
-                } else {
-                    TokenType::GtGt
-                }
-            }
-            '>' if self.next_if_eq(&'=').is_some() => TokenType::GtEq,
-            '>' => TokenType::Gt,
+            // '>' if self.next_if_eq(&'>').is_some() => {
+            //     if self.next_if_eq(&'=').is_some() {
+            //         TokenType::GtGtEq
+            //     } else {
+            //         TokenType::GtGt
+            //     }
+            // }
+            // '>' if self.next_if_eq(&'=').is_some() => TokenType::GtEq,
+            // '>' => TokenType::Gt,
 
-            '=' if self.next_if_eq(&'=').is_some() => TokenType::EqEq,
-            '=' => TokenType::Eq,
+            // '=' if self.next_if_eq(&'=').is_some() => TokenType::EqEq,
+            // '=' => TokenType::Eq,
 
-            '!' if self.next_if_eq(&'=').is_some() => TokenType::BangEq,
-            '!' => TokenType::Bang,
+            // '!' if self.next_if_eq(&'=').is_some() => TokenType::BangEq,
+            // '!' => TokenType::Bang,
 
-            '|' if self.next_if_eq(&'>').is_some() => TokenType::PipeGt,
-            '|' if self.next_if_eq(&'|').is_some() => TokenType::PipePipe,
-            '|' if self.next_if_eq(&'=').is_some() => TokenType::PipeEq,
-            '|' => TokenType::Pipe,
+            // '|' if self.next_if_eq(&'>').is_some() => TokenType::PipeGt,
+            // '|' if self.next_if_eq(&'|').is_some() => TokenType::PipePipe,
+            // '|' if self.next_if_eq(&'=').is_some() => TokenType::PipeEq,
+            // '|' => TokenType::Pipe,
 
-            '&' if self.next_if_eq(&'&').is_some() => TokenType::AndAnd,
-            '&' if self.next_if_eq(&'=').is_some() => TokenType::AndEq,
-            '&' => TokenType::And,
+            // '&' if self.next_if_eq(&'&').is_some() => TokenType::AndAnd,
+            // '&' if self.next_if_eq(&'=').is_some() => TokenType::AndEq,
+            // '&' => TokenType::And,
 
-            '+' if self.next_if_eq(&'=').is_some() => TokenType::PlusEq,
-            '+' => TokenType::Plus,
+            // '+' if self.next_if_eq(&'=').is_some() => TokenType::PlusEq,
+            // '+' => TokenType::Plus,
 
-            '-' if self.next_if_eq(&'=').is_some() => TokenType::MinusEq,
-            '-' if self.next_if_eq(&'>').is_some() => TokenType::Arrow,
-            '-' => TokenType::Minus,
+            // '-' if self.next_if_eq(&'=').is_some() => TokenType::MinusEq,
+            // '-' if self.next_if_eq(&'>').is_some() => TokenType::Arrow,
+            // '-' => TokenType::Minus,
 
-            '*' if self.next_if_eq(&'*').is_some() => {
-                if self.next_if_eq(&'=').is_some() {
-                    TokenType::StarStarEq
-                } else {
-                    TokenType::StarStar
-                }
-            }
-            '*' if self.next_if_eq(&'=').is_some() => TokenType::StarEq,
-            '*' => TokenType::Star,
+            // '*' if self.next_if_eq(&'*').is_some() => {
+            //     if self.next_if_eq(&'=').is_some() {
+            //         TokenType::StarStarEq
+            //     } else {
+            //         TokenType::StarStar
+            //     }
+            // }
+            // '*' if self.next_if_eq(&'=').is_some() => TokenType::StarEq,
+            // '*' => TokenType::Star,
 
-            '/' if self.next_if_eq(&'=').is_some() => TokenType::SlashEq,
-            '/' => TokenType::Slash,
+            // '/' if self.next_if_eq(&'=').is_some() => TokenType::SlashEq,
+            // '/' => TokenType::Slash,
 
-            '%' if self.next_if_eq(&'=').is_some() => TokenType::PercentEq,
-            '%' => TokenType::Percent,
+            // '%' if self.next_if_eq(&'=').is_some() => TokenType::PercentEq,
+            // '%' => TokenType::Percent,
 
-            '^' if self.next_if_eq(&'=').is_some() => TokenType::CaretEq,
-            '^' => TokenType::Caret,
+            // '^' if self.next_if_eq(&'=').is_some() => TokenType::CaretEq,
+            // '^' => TokenType::Caret,
 
-            '~' if self.next_if_eq(&'=').is_some() => TokenType::TildeEq,
-            '~' => TokenType::Tilde,
+            // '~' if self.next_if_eq(&'=').is_some() => TokenType::TildeEq,
+            // '~' => TokenType::Tilde,
 
-            '(' => TokenType::LParen,
-            ')' => TokenType::RParen,
+            // '(' => TokenType::LParen,
+            // ')' => TokenType::RParen,
 
-            '{' => TokenType::LBrace,
-            '}' => TokenType::RBrace,
+            // '{' => TokenType::LBrace,
+            // '}' => TokenType::RBrace,
 
-            '[' => TokenType::LBracket,
-            ']' => TokenType::RBracket,
+            // '[' => TokenType::LBracket,
+            // ']' => TokenType::RBracket,
 
-            ',' => TokenType::Comma,
-            ';' => TokenType::Semi,
+            // ',' => TokenType::Comma,
+            // ';' => TokenType::Semi,
 
-            '.' if self.next_if_eq(&'.').is_some() => {
-                if self.next_if_eq(&'=').is_some() {
-                    TokenType::DotDotEq
-                } else {
-                    TokenType::DotDot
-                }
-            }
-            '.' => TokenType::Dot,
+            // '.' if self.next_if_eq(&'.').is_some() => {
+            //     if self.next_if_eq(&'=').is_some() {
+            //         TokenType::DotDotEq
+            //     } else {
+            //         TokenType::DotDot
+            //     }
+            // }
+            // '.' => TokenType::Dot,
 
-            // `'_' => Under` is already taken care of by idents
-            '#' if self.next_if_eq(&'!').is_some() => TokenType::HashBang,
-            '#' => TokenType::Hash,
+            // // `'_' => Under` is already taken care of by idents
+            // '#' if self.next_if_eq(&'!').is_some() => TokenType::HashBang,
+            // '#' => TokenType::Hash,
 
             // Unexpected character
             ch => {

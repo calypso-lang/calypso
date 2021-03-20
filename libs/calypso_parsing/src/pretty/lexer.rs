@@ -32,10 +32,10 @@ impl Printer<'_> {
             },
             lo,
             hi,
-            lo_loc.line_number + 1,
-            lo_loc.column_number + 1,
-            hi_loc.line_number + 1,
-            hi_loc.column_number + 1,
+            lo_loc.line_number,
+            lo_loc.column_number,
+            hi_loc.line_number,
+            hi_loc.column_number,
             value.0,
         ))
     }

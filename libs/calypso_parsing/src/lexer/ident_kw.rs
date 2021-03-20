@@ -7,36 +7,9 @@ use calypso_base::init_trie;
 use calypso_base::streams::Stream;
 
 init_trie!(pub KEYWORD_TRIE: Keyword => {
-    "as"     => As,
-    "break"  => Break,
-    "case"   => Case,
-    "del"    => Del,
-    "do"     => Do,
-    "else"   => Else,
-    "end"    => End,
-    "extern" => Extern,
-    "false"  => False,
-    "fn"     => Fn,
-    "for"    => For,
-    "if"     => If,
-    "import" => Import,
-    "in"     => In,
-    "is"     => Is,
-    "isa"    => Isa,
-    "let"    => Let,
-    "loop"   => Loop,
-    "mod"    => Mod,
-    "mut"    => Mut,
-    "null"   => Null,
-    "panic"  => Panic,
-    "pub"    => Pub,
-    "ret"    => Ret,
-    "root"   => Root,
-    "self"   => Zelf,
-    "super"  => Super,
-    "true"   => True,
-    "try"    => Try,
-    "while"  => While
+    "false" => False,
+    "null"  => Null,
+    "true"  => True
 });
 
 impl<'lex> Lexer<'lex> {

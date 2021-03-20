@@ -50,30 +50,38 @@ pub trait Stream: Iterator {
         }
     }
 
-    /// Keep consuming elements while the condition is true
-    /// and there are remaining elements.
+    /// Keep consuming elements while the condition is true and there are
+    /// remaining elements. Returns the number of elements consumed.
     ///
     /// If `func` returns true for the element, consume it.
     /// Repeat until `func` returns false for an element.
     ///
-    /// `func` takes in the element first, then the number of
-    /// elements consumed so far.
-    fn gorge_while(&mut self, mut func: impl FnMut(&<Self as Iterator>::Item, usize) -> bool) {
+    /// `func` takes in the element first, then the number of elements consumed
+    /// so far.
+    fn gorge_while(
+        &mut self,
+        mut func: impl FnMut(&<Self as Iterator>::Item, usize) -> bool,
+    ) -> usize {
         let mut count = 0;
         while self.peek().is_some() && func(self.peek().unwrap(), count) {
             self.next();
             count += 1;
         }
+        count
     }
 
-    /// Keep consuming elements while the element is equal to `expected`
-    /// and there are remaining elements.
-    fn gorge_while_eq<R>(&mut self, expected: &R)
+    /// Keep consuming elements while the element is equal to `expected` and
+    /// there are remaining elements. Returns the number of elements consumed.
+    fn gorge_while_eq<R>(&mut self, expected: &R) -> usize
     where
         R: ?Sized,
         <Self as Iterator>::Item: PartialEq<R>,
     {
-        while self.next_if_eq(expected).is_some() {}
+        let mut count = 0;
+        while self.next_if_eq(expected).is_some() {
+            count += 1;
+        }
+        count
     }
 
     /// Returns `Some(true)` if the value one element ahead is equal to `expected`.
