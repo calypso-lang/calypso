@@ -28,14 +28,12 @@ impl ContainerFile {
 
     /// Set the ABI of the container file. This can be any arbitrary value you
     /// choose.
-    #[must_use]
     pub fn abi(&mut self, abi: u64) {
         self.abi = abi;
     }
 
     /// Set the file type of the container file. This can be any arbitrary
     /// value you choose.
-    #[must_use]
     pub fn filety(&mut self, filety: u64) {
         self.filety = filety;
     }
@@ -171,6 +169,7 @@ impl Section {
     }
 
     /// Get the name of the section.
+    #[must_use]
     pub fn get_name(&self) -> &str {
         &self.name
     }
@@ -200,6 +199,7 @@ impl Section {
     }
 
     /// Set the data of the section. This can be any arbitrary data you choose.
+    #[must_use]
     pub fn data(mut self, data: Vec<u8>) -> Self {
         self.data = Some(data);
         self
@@ -231,19 +231,9 @@ impl Section {
     /// from a file).
     pub fn seek_to_data<I: Seek>(&self, input: &mut I) -> CalResult<()> {
         input
-            .seek(SeekFrom::Start(
-                self.offset
-                    .ok_or_else(|| {
-                        IOError::new(IOErrorKind::InvalidInput, "offset was not provided")
-                    })?
-                    .try_into()
-                    .map_err(|_| {
-                        IOError::new(
-                            IOErrorKind::InvalidData,
-                            "section data had a malformed size",
-                        )
-                    })?,
-            ))
+            .seek(SeekFrom::Start(self.offset.ok_or_else(|| {
+                IOError::new(IOErrorKind::InvalidInput, "offset was not provided")
+            })?))
             .map_err(|_| {
                 IOError::new(
                     IOErrorKind::InvalidData,
@@ -286,6 +276,7 @@ impl Section {
 
     /// Get the offset of the data. This is only present if loading from a file
     /// and cannot be manually set to prevent errors.
+    #[must_use]
     pub fn get_offset(&self) -> Option<u64> {
         self.offset
     }

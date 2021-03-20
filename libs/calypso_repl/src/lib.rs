@@ -124,40 +124,36 @@ impl<Ctx> Repl<Ctx> {
                                     }
                                     println!("{}help: show help for a command or list commands, aliases: `?`, `h`", self.prefix);
                                     continue;
-                                } else {
-                                    let args = args.split_whitespace().collect::<Vec<&str>>();
-                                    if args.len() != 1 {
-                                        eprintln!("error: usage: {}? [command]", self.prefix);
-                                        continue;
-                                    }
-                                    let first = *args.first().unwrap();
-                                    if let Some(command) = self.cache.get(first) {
-                                        println!(
-                                            "{}{}: {}\n===\n{}\naliases: {}",
-                                            self.prefix,
-                                            command.name,
-                                            command.description,
-                                            command.help,
-                                            command
-                                                .aliases
-                                                .iter()
-                                                .map(|v| format!("`{}`", v))
-                                                .collect::<Vec<String>>()
-                                                .join(", ")
-                                        );
-                                    } else if first == "?" || first == "h" || first == "help" {
-                                        println!(
+                                }
+                                let args = args.split_whitespace().collect::<Vec<&str>>();
+                                if args.len() != 1 {
+                                    eprintln!("error: usage: {}? [command]", self.prefix);
+                                    continue;
+                                }
+                                let first = *args.first().unwrap();
+                                if let Some(command) = self.cache.get(first) {
+                                    println!(
+                                        "{}{}: {}\n===\n{}\naliases: {}",
+                                        self.prefix,
+                                        command.name,
+                                        command.description,
+                                        command.help,
+                                        command
+                                            .aliases
+                                            .iter()
+                                            .map(|v| format!("`{}`", v))
+                                            .collect::<Vec<String>>()
+                                            .join(", ")
+                                    );
+                                } else if first == "?" || first == "h" || first == "help" {
+                                    println!(
                                             "{}help: show help for a command or list commands\n===\nusage: ? [command]\naliases: `?`, `h`\n",
                                             self.prefix
                                         );
-                                    } else {
-                                        eprintln!(
-                                            "error: no such command: `{}{}`",
-                                            self.prefix, first
-                                        );
-                                    }
-                                    continue;
+                                } else {
+                                    eprintln!("error: no such command: `{}{}`", self.prefix, first);
                                 }
+                                continue;
                             } else if let Some(command) = self.cache.get(command) {
                                 let result = (command.eval)(ctx, args.to_string());
                                 if result.is_none() {
@@ -165,10 +161,9 @@ impl<Ctx> Repl<Ctx> {
                                 }
                                 println!("{}", result.unwrap());
                                 continue;
-                            } else {
-                                eprintln!("error: could not find command `{}`", command);
-                                continue;
                             }
+                            eprintln!("error: could not find command `{}`", command);
+                            continue;
                         }
                         // If the command didn't match, then it must be valid syntax.
                     }

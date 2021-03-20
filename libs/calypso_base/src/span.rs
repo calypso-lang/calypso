@@ -91,7 +91,7 @@ impl Span {
     /// Returns `true` if `self` touches `other`.
     #[must_use]
     pub fn overlaps(self, other: Span) -> bool {
-        self.lo < other.hi && other.lo < other.hi
+        self.lo < other.hi && other.lo < self.hi
     }
 
     /// Returns a `Span` that would enclose both `self` and `end`.

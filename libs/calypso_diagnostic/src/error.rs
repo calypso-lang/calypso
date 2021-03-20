@@ -6,6 +6,7 @@ use calypso_error::CalError;
 
 /// An extension of [`CalError`] used for diagnostics.
 #[derive(Error, Debug)]
+#[allow(clippy::module_name_repetitions)]
 pub enum DiagnosticError {
     #[error("failed to render diagnostic")]
     Rendering(#[from] DiagRenderError),

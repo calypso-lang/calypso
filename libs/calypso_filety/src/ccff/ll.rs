@@ -95,19 +95,12 @@ impl CcffSectionHeader {
     /// This function will return an error if the section data had a malformed
     /// size.
     pub fn seek_to_data<I: Seek>(&self, input: &mut I) -> CalResult<()> {
-        input
-            .seek(SeekFrom::Start(self.offset.try_into().map_err(|_| {
-                IOError::new(
-                    IOErrorKind::InvalidData,
-                    "section data had a malformed size",
-                )
-            })?))
-            .map_err(|_| {
-                IOError::new(
-                    IOErrorKind::InvalidData,
-                    "section data had a malformed size",
-                )
-            })?;
+        input.seek(SeekFrom::Start(self.offset)).map_err(|_| {
+            IOError::new(
+                IOErrorKind::InvalidData,
+                "section data had a malformed size",
+            )
+        })?;
         Ok(())
     }
 
