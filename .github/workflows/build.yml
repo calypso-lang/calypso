@@ -38,6 +38,7 @@ jobs:
         path: |
           target
           ~/.cargo
+          ~/.rustup
         key: rust-${{ matrix.rust }}-cache
 
     - name: Build
@@ -78,6 +79,7 @@ jobs:
           target
           docs/out
           ~/.cargo
+          ~/.rustup
         key: rust-cache-docs
 
     - name: Build The Calypso Book
