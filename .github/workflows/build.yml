@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: ['**', '!wip/**']
+  pull_request:
+    branches: ['**', '!wip/**']
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        rust: [stable, 1.48.0, nightly]
+      fail-fast: false
+    continue-on-error: ${{ matrix.rust == "nightly" }}
+
+    runs-on: ubuntu-latest
+    name: ${{ matrix.rust }}-x86_64-unknown-linux-gnu
+
+    steps:
+    - name: Checkout repository
+    - uses: actions/checkout@v2
+      with:
+        submodules: false
+
+    - name: Install toolchain (${{ matrix.rust }})
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+
+    - name: Setup branch-specific caching
+      uses: actions/cache@v2
+      with:
+        path: target
+        key: rust-${{ matrix.rust }}-build-branch-${{ github.ref }}
+
+    - name: Setup global caching
+      uses: actions/cache@v2
+      with:
+        path: ~/.cargo
+        key: rust-cache-global
+
+    - name: Build
+      run: cargo build --verbose --workspace --all-features --all-targets
+
+    - name: Run tests
+      run: cargo test --verbose --workspace --all-features --all-targets
+  
+  docs:
+    runs-on: ubuntu-latest
+    name: Build documentation and books
+    
+    steps:
+    - name: Checkout repository
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+
+    - name: Install latest nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+    
+    - name: Install latest stable
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        
+    - name: Install mdBook
+      uses: peaceiris/actions-mdbook@v1
+      with:
+        mdbook-version: 'latest'
+
+    - name: Setup branch-specific caching
+      uses: actions/cache@v2
+      with:
+        path: |
+          target
+          docs/out
+        key: rust-docs-branch-${{ github.ref }}
+
+    - name: Setup global caching
+      uses: actions/cache@v2
+      with:
+        path: ~/.cargo
+        key: rust-cache-global
+
+    - name: Build The Calypso Book
+      run: |
+        mdbook build -d ../out/gui docs/guide
+        mdbook test -d ../out/gui docs/guide
+    
+    - name: Build The Calypso Reference
+      run: |
+        mdbook build -d ../out/ref docs/reference
+        mdbook test -d ../out/ref docs/reference
+        
+    - name: Build rustdocs
+      run: |
+        cargo +nightly doc --workspace --no-deps --document-private-items
+        mv -f target/doc docs/out/rustdoc
+
+    - name: Copy static files to out directory
+      run: cp -rf docs/static/* docs/out/
+      
+    - name: Check GitHub Pages status
+      uses: crazy-max/ghaction-github-status@v2
+      with:
+        pages_threshold: major_outage
+    
+    - name: Deploy to GitHub Pages
+      if: success()
+      uses: crazy-max/ghaction-github-pages@v2
+      with:
+        target_branch: gh-pages
+        build_dir: docs/out
+        keep_history: true
+        jekyll: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
