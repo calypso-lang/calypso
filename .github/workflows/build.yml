@@ -32,7 +32,7 @@ jobs:
         toolchain: ${{ matrix.rust }}
         override: true
 
-    - name: Setup branch-specific caching
+    - name: Setup caching
       uses: actions/cache@v2
       with:
         path: |
@@ -72,7 +72,7 @@ jobs:
       with:
         mdbook-version: 'latest'
 
-    - name: Setup branch-specific caching
+    - name: Setup caching
       uses: actions/cache@v2
       with:
         path: |
@@ -94,7 +94,7 @@ jobs:
         
     - name: Build rustdocs
       run: |
-        cargo +nightly doc --workspace --no-deps --document-private-items
+        cargo +nightly doc --verbose --workspace --no-deps --document-private-items
         mv -f target/doc docs/out/rustdoc
 
     - name: Copy static files to out directory
