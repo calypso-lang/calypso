@@ -77,7 +77,8 @@ jobs:
       with:
         path: |
           target
-          docs/out
+          docs/out/gui
+          docs/out/ref
           ~/.cargo
           ~/.rustup
         key: rust-cache-docs
