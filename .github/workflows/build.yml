@@ -116,7 +116,8 @@ jobs:
       if: success()
       uses: crazy-max/ghaction-github-pages@v2
       with:
-        target_branch: gh-pages
+        target_branch: main
+        repo: "calypso-lang/calypso-lang.github.io"
         build_dir: docs/out
         keep_history: true
         jekyll: false
