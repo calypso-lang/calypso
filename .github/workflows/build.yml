@@ -35,14 +35,10 @@ jobs:
     - name: Setup branch-specific caching
       uses: actions/cache@v2
       with:
-        path: target
-        key: rust-${{ matrix.rust }}-build-branch-${{ github.ref }}
-
-    - name: Setup global caching
-      uses: actions/cache@v2
-      with:
-        path: ~/.cargo
-        key: rust-cache-global
+        path: |
+          target
+          ~/.cargo
+        key: rust-${{ matrix.rust }}-cache
 
     - name: Build
       run: cargo build --verbose --workspace --all-features --all-targets
@@ -81,13 +77,8 @@ jobs:
         path: |
           target
           docs/out
-        key: rust-docs-branch-${{ github.ref }}
-
-    - name: Setup global caching
-      uses: actions/cache@v2
-      with:
-        path: ~/.cargo
-        key: rust-cache-global
+          ~/.cargo
+        key: rust-cache-docs
 
     - name: Build The Calypso Book
       run: |
@@ -122,4 +113,4 @@ jobs:
         keep_history: true
         jekyll: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_PAT: ${{ secrets.GH_PAT }}
