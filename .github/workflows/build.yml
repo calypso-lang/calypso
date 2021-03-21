@@ -102,7 +102,7 @@ jobs:
       uses: crazy-max/ghaction-github-status@v2
       with:
         pages_threshold: major_outage
-    
+
     - name: Deploy to GitHub Pages
       if: success()
       uses: crazy-max/ghaction-github-pages@v2
