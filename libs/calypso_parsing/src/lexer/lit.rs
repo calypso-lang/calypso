@@ -305,8 +305,9 @@ impl<'lex> Lexer<'lex> {
 
     pub(super) fn handle_string_literal(&mut self) -> CalResult<Token<'lex>> {
         while self.peek_eq(&'"') != Some(true) && !self.is_at_end() {
-            self.handle_escape_character()?;
-            self.next();
+            if !self.handle_escape_character()? {
+                self.next();
+            }
         }
 
         if self.peek_eq(&'"') != Some(true) {

@@ -1,8 +1,55 @@
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 /// Types of Calypso tokens
 pub enum TokenType {
+    /// `+`
+    Plus,
+    /// `-`
+    Minus,
+    /// `*`
+    Star,
+    /// `**`
+    StarStar,
+    /// `/`
+    Slash,
+    /// `%`
+    Percent,
+    /// `|`
+    Pipe,
+    /// `||`
+    PipePipe,
+    /// `&`
+    And,
+    /// `&&`
+    AndAnd,
+    /// `!`
+    Bang,
+    /// `^`
+    Caret,
+    /// `>>`
+    GtGt,
+    /// `<<`
+    LtLt,
+    /// `==`
+    EqEq,
+    /// `>=`
+    GtEq,
+    /// `<=`
+    LtEq,
+    /// `!=`
+    BangEq,
+    /// `<`
+    Lt,
+    /// `Gt`
+    Gt,
+    /// `:`
+    Colon,
+
     /// `_`
     Under,
+    /// `(`
+    LParen,
+    /// `)`
+    RParen,
 
     /// End-of-file / end-of-input
     Eof,
@@ -69,6 +116,17 @@ pub enum Radix {
     Octal,
     /// `0x`
     Hexadecimal,
+}
+
+impl Radix {
+    pub fn radix(self) -> u32 {
+        match self {
+            Self::Decimal => 10,
+            Self::Binary => 2,
+            Self::Octal => 8,
+            Self::Hexadecimal => 16,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]

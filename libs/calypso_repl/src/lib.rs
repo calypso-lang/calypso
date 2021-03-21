@@ -59,7 +59,7 @@ impl<Ctx> Repl<Ctx> {
     pub fn prefix(mut self, prefix: String) -> Self {
         self.prefix = prefix;
         // We escape the prefix, so it's guaranteed to be valid.
-        Regex::new(&format!(
+        self.cmd_regex = Regex::new(&format!(
             r"^{}(?P<command>\S*)( (?P<args>.*))?",
             regex::escape(&self.prefix)
         ))

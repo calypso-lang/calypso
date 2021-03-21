@@ -94,130 +94,44 @@ impl<'lex> Lexer<'lex> {
     }
 }
 
-/*
-    fn number(&mut self) -> Result<Token<'lex>, ()> {
-        let radix = if self.last() == '0' {
-            if self.peek().is_ascii_digit() {
-                self.advance();
-                Radix::Decimal
-            } else if self.peek() == '\0' {
-                Radix::Decimal
-            } else {
-                let ch = self.peek();
-                self.advance();
-                match ch {
-                    'b' => Radix::Binary,
-                    'x' => Radix::Hexadecimal,
-                    'o' => Radix::Octal,
-                    'e' | '.' => {
-                        self.backup();
-                        Radix::Decimal
-                    }
-                    _ => {
-                        println!("Invalid number base.");
-                        return Err(());
-                    }
-                }
-            }
-        } else {
-            Radix::Decimal
-        };
+impl<'lex> IntoIterator for Lexer<'lex> {
+    type IntoIter = Iter<'lex>;
+    type Item = CalResult<Token<'lex>>;
 
-        while !self.is_at_end() {
-            let ch = self.peek();
-            if ch == '\n' || ch == '.' || ch == 'e' || ch == 'E' {
-                break;
-            }
-            if is_valid_digit_for_radix(ch, radix) && is_valid_for_any_radix(ch) {
-                self.advance();
-            } else if !is_valid_for_any_radix(ch) {
-                break;
-            } else {
-                println!("Invalid digit for number.");
-                return Err(());
-            }
+    fn into_iter(self) -> Self::IntoIter {
+        Iter {
+            lexer: self,
+            encountered_eof: false,
+            encountered_error: false,
         }
-
-        Ok(
-            // Is a float literal
-            if self.peek() == '.' {
-                if radix != Radix::Decimal {
-                    println!("Cannot have a float with a non-10 base.");
-                    return Err(());
-                }
-                // Consume the `.`.
-                self.advance();
-
-                if !self.peek().is_ascii_digit() {
-                    println!("Expected decimal component of float");
-                    return Err(());
-                }
-
-                while !self.is_at_end() {
-                    let ch = self.peek();
-                    if ch == '\n' || ch == 'E' || ch == 'e' {
-                        break;
-                    }
-                    if ch.is_ascii_digit() {
-                        self.advance();
-                    } else {
-                        println!("Invalid digit for number.");
-                        return Err(());
-                    }
-                }
-
-                // Has exponent
-                if self.peek() == 'E' || self.peek() == 'e' {
-                    // Consume the `E` or `e`.
-                    self.advance();
-
-                    if !self.peek().is_ascii_digit() {
-                        println!("Expected exponent");
-                        return Err(());
-                    }
-
-                    while !self.is_at_end() {
-                        let ch = self.peek();
-                        if ch == '\n' {
-                            break;
-                        }
-                        if ch.is_ascii_digit() {
-                            self.advance();
-                        } else {
-                            println!("Invalid digit for number.");
-                            return Err(());
-                        }
-                    }
-                }
-
-                self.new_token(TokenType::FloatLiteral)
-            } else if self.peek() == 'e' || self.peek() == 'E' {
-                // Has exponent
-                // Consume the `E` or `e`.
-                self.advance();
-
-                if !self.peek().is_ascii_digit() {
-                    println!("Expected exponent");
-                    return Err(());
-                }
-
-                while !self.is_at_end() {
-                    let ch = self.peek();
-                    if ch == '\n' {
-                        break;
-                    }
-                    if ch.is_ascii_digit() {
-                        self.advance();
-                    } else {
-                        println!("Invalid digit for number.");
-                        return Err(());
-                    }
-                }
-
-                self.new_token(TokenType::FloatLiteral)
-            } else {
-                self.new_token(TokenType::IntLiteral(radix))
-            },
-        )
     }
-*/
+}
+
+#[derive(Debug)]
+pub struct Iter<'lex> {
+    lexer: Lexer<'lex>,
+    encountered_error: bool,
+    encountered_eof: bool,
+}
+
+impl<'lex> Iterator for Iter<'lex> {
+    type Item = CalResult<Token<'lex>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.encountered_error || self.encountered_eof {
+            None
+        } else {
+            let res = self.lexer.scan();
+            if res.is_err() {
+                self.encountered_error = true;
+            }
+            if let Ok(res) = res {
+                if res.value().0 == TokenType::Eof {
+                    self.encountered_eof = true;
+                    return None;
+                }
+            }
+            Some(res)
+        }
+    }
+}

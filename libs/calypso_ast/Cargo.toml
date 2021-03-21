@@ -1,0 +1,13 @@
+[package]
+name = "calypso_ast"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "Calypso's AST (Abstract Syntax Tree)"
+readme = "README.md"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_ast"
+repository = "https://github.com/calypso-lang/calypso/"
+license = "MIT"
+
+[dependencies]
+calypso_error = { path = "../calypso_error", version = "1.0.1" }

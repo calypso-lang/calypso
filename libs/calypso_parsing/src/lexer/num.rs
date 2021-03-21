@@ -88,16 +88,21 @@ impl<'lex> Lexer<'lex> {
     }
 
     pub(super) fn handle_float_part(&mut self) -> CalResult<bool> {
-        if self.peek_eq(&'.') != Some(true) {
+        if self.peek_cond(|c| {
+            let c = c.value_owned();
+            c == 'e' || c == 'E' || c == '.'
+        }) != Some(true)
+        {
             return Ok(false);
         }
         self.handle_unexpected_underscore()?;
-        self.next();
 
-        self.inval_float_decimal(false)?;
-        self.gorge_digits();
-        self.handle_unexpected_underscore()?;
-        self.inval_float_decimal(true)?;
+        if self.next_if(|c| c.value_owned() == '.').is_some() {
+            self.inval_float_decimal(false)?;
+            self.gorge_digits();
+            self.handle_unexpected_underscore()?;
+            self.inval_float_decimal(true)?;
+        }
 
         if self
             .next_if(|c| c.value_owned() == 'e' || c.value_owned() == 'E')
@@ -126,7 +131,11 @@ impl<'lex> Lexer<'lex> {
                         "expected a decimal part of this float here"
                 ]
             });
-        } else if self.peek_cond(|c| !c.value_owned().is_ascii_digit()) == Some(true) {
+        } else if self.peek_cond(|c| {
+            let c = c.value_owned();
+            !c.is_ascii_digit() && c != 'e' && c != 'E'
+        }) == Some(true)
+        {
             self.current_to_start();
             let ch = self.peek().unwrap().value_owned();
             gen_error!(sync self.grcx.borrow_mut(), self => {
@@ -212,55 +221,15 @@ impl<'lex> Lexer<'lex> {
         self.gorge_while(|c, n| is_valid_for(c, radix) || (n > 0 && c.value_owned() == '_'))
     }
 
-    fn inval_int_digit(&mut self, radix: Radix, opt: bool) -> CalResult<()> {
-        let start = self.start;
-        if !opt && self.peek_cond(is_whitespace) == Some(true) {
-            self.current_to_start();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0034;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a valid digit here"
-                ]
-            });
-        } else if self.peek_cond(|c| !is_valid_for(c, radix)) == Some(true) {
-            self.current_to_start();
-            let ch = self.peek().unwrap().value_owned();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0033, ch = ch;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a valid digit here"
-                ]
-            });
-        } else if !opt && self.is_at_end() {
-            self.current_to_start();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0035;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a valid digit here"
-                ]
-            });
-        }
-        self.set_start(start);
-        Ok(())
-    }
-
     fn handle_int(&mut self, radix: Radix) -> CalResult<Token<'lex>> {
-        self.inval_int_digit(radix, false)?;
         self.gorge_digits_radix(radix);
         self.handle_unexpected_underscore()?;
-        self.inval_int_digit(radix, true)?;
         let suffix = self.handle_suffix();
 
         if radix != Radix::Decimal {
             if let Some(Suffix::Float) = suffix {
                 gen_error!(sync self.grcx.borrow_mut(), self => {
-                    E0036;
+                    E0033;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());

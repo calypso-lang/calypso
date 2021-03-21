@@ -81,9 +81,5 @@ register_diagnostics! {
     E0030: "Expected a valid exponent of a float, found an invalid digit `{ch}`",
     E0031: "Expected a valid exponent of a float, found whitespace.",
     E0032: "Expected a valid exponent of a float, found EOF.",
-    E0033: "Expected a valid digit, found an invalid digit `{ch}`",
-    E0034: "Expected a valid digit, found whitespace.",
-    E0035: "Expected a valid digit, found EOF.",
-    E0036: "Cannot use a non-decimal base for a float",
-    E0037: "Invalid suffix for float."
+    E0033: "Cannot use a non-decimal base for a float",
 }

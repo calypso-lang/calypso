@@ -10,9 +10,18 @@ repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT"
 
 [dependencies]
-pratt = "0.3.0"
 radix_trie = "0.2.1"
 calypso_util = { path = "../calypso_util", version = "0.1.0" }
 calypso_diagnostic = { path = "../calypso_diagnostic", version = "0.1.0" }
 calypso_base = { path = "../calypso_base", version = "0.1.0" }
+calypso_ast = { path = "../calypso_ast", version = "0.1.0" }
 lazy_static = "1.4.0"
+lalrpop-util = "0.19.5"
+anyhow = "1.0.39"
+
+[build-dependencies]
+lalrpop = "0.19.5"
+
+[[example]]
+name = "expr_parser"
+path = "examples/expr_parser.rs"

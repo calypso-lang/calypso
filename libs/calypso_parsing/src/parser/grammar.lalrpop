@@ -1,0 +1,166 @@
+use calypso_diagnostic::prelude::*;
+use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind};
+
+use crate::parser::tokens::Tok;
+use crate::lexer::{TokenType, Keyword};
+
+grammar<'input>(source_id: usize);
+
+extern {
+    type Location = usize;
+    type Error = CalError;
+
+    enum Tok<'input> {
+        "SintLit"  => Tok::Sint(  <i64> ),
+        "UintLit"  => Tok::Uint(  <u64> ),
+        "FloatLit" => Tok::Float( <f64> ),
+
+        "+"  => Tok::Unprocessed( TokenType::Plus     ),
+        "-"  => Tok::Unprocessed( TokenType::Minus    ),
+        "*"  => Tok::Unprocessed( TokenType::Star     ),
+        "/"  => Tok::Unprocessed( TokenType::Slash    ),
+        "%"  => Tok::Unprocessed( TokenType::Percent  ),
+        "**" => Tok::Unprocessed( TokenType::StarStar ),
+
+        "&&" => Tok::Unprocessed( TokenType::AndAnd   ),
+        "||" => Tok::Unprocessed( TokenType::PipePipe ),
+        "!"  => Tok::Unprocessed( TokenType::Bang     ),
+
+        "&"  => Tok::Unprocessed( TokenType::And   ),
+        "^"  => Tok::Unprocessed( TokenType::Caret ),
+        "|"  => Tok::Unprocessed( TokenType::Pipe  ),
+        ">>" => Tok::Unprocessed( TokenType::GtGt  ),
+        "<<" => Tok::Unprocessed( TokenType::LtLt  ),
+
+        "(" => Tok::Unprocessed( TokenType::LParen ),
+        ")" => Tok::Unprocessed( TokenType::RParen ),
+
+        "==" => Tok::Unprocessed( TokenType::EqEq   ),
+        "!=" => Tok::Unprocessed( TokenType::BangEq ),
+        "<"  => Tok::Unprocessed( TokenType::Lt ),
+        ">"  => Tok::Unprocessed( TokenType::Gt ),
+        "<=" => Tok::Unprocessed( TokenType::LtEq ),
+        ">=" => Tok::Unprocessed( TokenType::GtEq ),
+
+        ":" => Tok::Unprocessed( TokenType::Colon ),
+
+        "Ident"     => Tok::Ident(  <&'input str> ),
+        "StringLit" => Tok::String( <&'input str> ),
+
+        "true"  => Tok::Unprocessed( TokenType::Keyword( Keyword::True  ) ),
+        "false" => Tok::Unprocessed( TokenType::Keyword( Keyword::False ) ),
+    }
+}
+
+BinOp<Left, Op, Right>: Box<Expr<'input>> = {
+    Right,
+    Left Op Right => Box::new(Expr::BinOp(<>))
+}
+BinOpR<Left, Op, Right>: Box<Expr<'input>> = {
+    Left,
+    Left Op Right => Box::new(Expr::BinOp(<>))
+}
+
+pub Expr: Box<Expr<'input>> = LogOrExpr;
+
+LogOrExpr = BinOp<LogOrExpr, LogOrOp, LogAndExpr>;
+LogAndExpr = BinOp<LogAndExpr, LogAndOp, BitOrExpr>;
+
+BitOrExpr = BinOp<BitOrExpr, BitOrOp, BitXorExpr>;
+BitXorExpr = BinOp<BitXorExpr, BitXorOp, BitAndExpr>;
+BitAndExpr = BinOp<BitAndExpr, BitAndOp, EqualityExpr>;
+
+EqualityExpr = BinOp<EqualityExpr, EqualityOp, ComparisonExpr>;
+ComparisonExpr = BinOp<ComparisonExpr, ComparisonOp, BitShiftExpr>;
+
+BitShiftExpr = BinOp<BitShiftExpr, BitShiftOp, AddExpr>;
+
+AddExpr = BinOp<AddExpr, AddOp, UnaryExpr>;
+
+UnaryExpr = {
+    MulExpr,
+    "-" <UnaryExpr> => Box::new(Expr::UnOp(UnOpKind::Negative, <>)),
+    "!" <UnaryExpr> => Box::new(Expr::UnOp(UnOpKind::UnaryNot, <>))
+}
+
+MulExpr = BinOp<MulExpr, MulOp, PowExpr>;
+PowExpr = BinOpR<Term, PowOp, PowExpr>;
+
+Term: Box<Expr<'input>> = {
+    Primary,
+    "(" <Expr> ")"
+}
+
+Primary: Box<Expr<'input>> = {
+    Number,
+    Bool,
+    Atom
+}
+
+Number: Box<Expr<'input>> = {
+    "SintLit" => Box::new(Expr::Primary(Primary::Sint(<>))),
+    "UintLit" => Box::new(Expr::Primary(Primary::Uint(<>))),
+    "FloatLit" => Box::new(Expr::Primary(Primary::Float(<>))),
+}
+
+Bool: Box<Expr<'input>> = {
+    "true" => Box::new(Expr::Primary(Primary::Bool(true))),
+    "false" => Box::new(Expr::Primary(Primary::Bool(false)))
+}
+
+Atom: Box<Expr<'input>> = {
+    ":" <"Ident"> => Box::new(Expr::Primary(Primary::Atom(<>))),
+    ":" <"StringLit"> => Box::new(Expr::Primary(Primary::AtomStr(<>)))
+}
+
+LogOrOp: BinOpKind = {
+    "||" => BinOpKind::LogicalOr
+}
+
+LogAndOp: BinOpKind = {
+    "&&" => BinOpKind::LogicalAnd
+}
+
+AddOp: BinOpKind = {
+    "+" => BinOpKind::Add,
+    "-" => BinOpKind::Subtract
+}
+
+MulOp: BinOpKind = {
+    "*" => BinOpKind::Multiply,
+    "/" => BinOpKind::Divide,
+    "%" => BinOpKind::Modulo
+}
+
+PowOp: BinOpKind = {
+    "**" => BinOpKind::Exponent
+}
+
+BitOrOp: BinOpKind = {
+    "|" => BinOpKind::BitOr
+}
+
+BitXorOp: BinOpKind = {
+    "^" => BinOpKind::BitXor
+}
+
+BitAndOp: BinOpKind = {
+    "&" => BinOpKind::BitAnd
+}
+
+BitShiftOp: BinOpKind = {
+    ">>" => BinOpKind::BitShiftRight,
+    "<<" => BinOpKind::BitShiftLeft
+}
+
+EqualityOp: BinOpKind = {
+    "==" => BinOpKind::Equal,
+    "!=" => BinOpKind::NotEqual
+}
+
+ComparisonOp: BinOpKind = {
+    "<" => BinOpKind::Lt,
+    ">" => BinOpKind::Gt,
+    "<=" => BinOpKind::LtEq,
+    ">=" => BinOpKind::GtEq,
+}

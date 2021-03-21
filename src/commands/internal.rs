@@ -48,9 +48,14 @@ pub fn lexer(matches: &ArgMatches) {
     };
 
     let mut files = FileMgr::new();
-    let source_id = files.add(path.display().to_string(), contents.clone());
+    let source_id = files.add(path.display().to_string(), contents);
     let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
-    let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
+    let mut lexer = Lexer::new(
+        source_id,
+        files.get(source_id).unwrap().source(),
+        &files,
+        Rc::clone(&grcx),
+    );
     let mut tokens = Vec::new();
     let mut printer = Printer::new(source_id, &files);
     loop {
@@ -102,9 +107,14 @@ pub fn lexer_stdin(matches: &ArgMatches) {
     }
 
     let mut files = FileMgr::new();
-    let source_id = files.add("<anon>".to_string(), contents.clone());
+    let source_id = files.add("<anon>".to_string(), contents);
     let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
-    let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
+    let mut lexer = Lexer::new(
+        source_id,
+        files.get(source_id).unwrap().source(),
+        &files,
+        Rc::clone(&grcx),
+    );
     let mut tokens = Vec::new();
     let mut printer = Printer::new(source_id, &files);
     loop {
@@ -146,9 +156,14 @@ pub fn lexer_stdin_repl(ignore_ws: bool) {
     let mut repl = Repl::new(
         Box::new(move |_ctx, contents| {
             let mut files = FileMgr::new();
-            let source_id = files.add("<anon>".to_string(), contents.clone());
+            let source_id = files.add("<anon>".to_string(), contents);
             let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
-            let mut lexer = Lexer::new(source_id, &contents, &files, Rc::clone(&grcx));
+            let mut lexer = Lexer::new(
+                source_id,
+                files.get(source_id).unwrap().source(),
+                &files,
+                Rc::clone(&grcx),
+            );
             let mut tokens = Vec::new();
             let mut printer = Printer::new(source_id, &files);
             loop {
@@ -185,7 +200,8 @@ pub fn lexer_stdin_repl(ignore_ws: bool) {
             }
         }),
         ReplCtx {},
-    );
+    )
+    .prefix("$".to_string());
     repl.run(
         &format!(
             "Calypso CLI v{} - internal debugging command: lexer",

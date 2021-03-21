@@ -53,72 +53,67 @@ impl<'lex> Lexer<'lex> {
         }
 
         let token_type = match ch {
-            // '<' if self.next_if_eq(&'<').is_some() => {
-            //     if self.next_if_eq(&'=').is_some() {
-            //         TokenType::LtLtEq
-            //     } else {
-            //         TokenType::Lt
-            //     }
-            // }
-            // '<' if self.next_if_eq(&'=').is_some() => TokenType::LtEq,
-            // '<' => TokenType::Lt,
+            '<' if self.next_if_eq(&'<').is_some() => {
+                if self.next_if_eq(&'=').is_some() {
+                    unimplemented!() // TokenType::LtLtEq
+                } else {
+                    TokenType::LtLt
+                }
+            }
+            '<' if self.next_if_eq(&'=').is_some() => TokenType::LtEq,
+            '<' => TokenType::Lt,
 
-            // '>' if self.next_if_eq(&'>').is_some() => {
-            //     if self.next_if_eq(&'=').is_some() {
-            //         TokenType::GtGtEq
-            //     } else {
-            //         TokenType::GtGt
-            //     }
-            // }
-            // '>' if self.next_if_eq(&'=').is_some() => TokenType::GtEq,
-            // '>' => TokenType::Gt,
+            '>' if self.next_if_eq(&'>').is_some() => {
+                if self.next_if_eq(&'=').is_some() {
+                    unimplemented!() // TokenType::GtGtEq
+                } else {
+                    TokenType::GtGt
+                }
+            }
+            '>' if self.next_if_eq(&'=').is_some() => TokenType::GtEq,
+            '>' => TokenType::Gt,
 
-            // '=' if self.next_if_eq(&'=').is_some() => TokenType::EqEq,
+            '=' if self.next_if_eq(&'=').is_some() => TokenType::EqEq,
             // '=' => TokenType::Eq,
-
-            // '!' if self.next_if_eq(&'=').is_some() => TokenType::BangEq,
-            // '!' => TokenType::Bang,
+            '!' if self.next_if_eq(&'=').is_some() => TokenType::BangEq,
+            '!' => TokenType::Bang,
 
             // '|' if self.next_if_eq(&'>').is_some() => TokenType::PipeGt,
-            // '|' if self.next_if_eq(&'|').is_some() => TokenType::PipePipe,
+            '|' if self.next_if_eq(&'|').is_some() => TokenType::PipePipe,
             // '|' if self.next_if_eq(&'=').is_some() => TokenType::PipeEq,
-            // '|' => TokenType::Pipe,
-
-            // '&' if self.next_if_eq(&'&').is_some() => TokenType::AndAnd,
+            '|' => TokenType::Pipe,
+            '&' if self.next_if_eq(&'&').is_some() => TokenType::AndAnd,
             // '&' if self.next_if_eq(&'=').is_some() => TokenType::AndEq,
-            // '&' => TokenType::And,
+            '&' => TokenType::And,
 
             // '+' if self.next_if_eq(&'=').is_some() => TokenType::PlusEq,
-            // '+' => TokenType::Plus,
+            '+' => TokenType::Plus,
 
             // '-' if self.next_if_eq(&'=').is_some() => TokenType::MinusEq,
             // '-' if self.next_if_eq(&'>').is_some() => TokenType::Arrow,
-            // '-' => TokenType::Minus,
+            '-' => TokenType::Minus,
 
-            // '*' if self.next_if_eq(&'*').is_some() => {
-            //     if self.next_if_eq(&'=').is_some() {
-            //         TokenType::StarStarEq
-            //     } else {
-            //         TokenType::StarStar
-            //     }
-            // }
+            '*' if self.next_if_eq(&'*').is_some() => {
+                if self.next_if_eq(&'=').is_some() {
+                    unimplemented!() // TokenType::StarStarEq
+                } else {
+                    TokenType::StarStar
+                }
+            }
             // '*' if self.next_if_eq(&'=').is_some() => TokenType::StarEq,
-            // '*' => TokenType::Star,
+            '*' => TokenType::Star,
 
             // '/' if self.next_if_eq(&'=').is_some() => TokenType::SlashEq,
-            // '/' => TokenType::Slash,
+            '/' => TokenType::Slash,
 
             // '%' if self.next_if_eq(&'=').is_some() => TokenType::PercentEq,
-            // '%' => TokenType::Percent,
+            '%' => TokenType::Percent,
 
             // '^' if self.next_if_eq(&'=').is_some() => TokenType::CaretEq,
-            // '^' => TokenType::Caret,
+            '^' => TokenType::Caret,
 
-            // '~' if self.next_if_eq(&'=').is_some() => TokenType::TildeEq,
-            // '~' => TokenType::Tilde,
-
-            // '(' => TokenType::LParen,
-            // ')' => TokenType::RParen,
+            '(' => TokenType::LParen,
+            ')' => TokenType::RParen,
 
             // '{' => TokenType::LBrace,
             // '}' => TokenType::RBrace,
@@ -128,6 +123,7 @@ impl<'lex> Lexer<'lex> {
 
             // ',' => TokenType::Comma,
             // ';' => TokenType::Semi,
+            ':' => TokenType::Colon,
 
             // '.' if self.next_if_eq(&'.').is_some() => {
             //     if self.next_if_eq(&'=').is_some() {
@@ -158,34 +154,4 @@ impl<'lex> Lexer<'lex> {
 
         Ok(self.new_token(token_type))
     }
-
-    /*
-    pub fn scan(&mut self) -> CalResult<Token<'lex>> {
-        // _T_O_D_O_: literals
-        /*if ch == '0' {
-            let peek = self.peek();
-            if peek.is_some() {
-                self.advance();
-            }
-            let radix = match peek {
-                Some('x') => Radix::Hexadecimal,
-                Some('o') => Radix::Octal,
-                Some('b') => Radix::Binary,
-                Some('E') | Some('e') => Radix::Decimal,
-                None => Radix::Decimal,
-                _ => {
-                    let diagnostic = Diagnostic::new(
-                        Span::new(self.start(), self.current() - self.start()),
-                        self.buffer(),
-                        self.source_name.clone(),
-                        format!("invalid string base `{}`", peek.unwrap()),
-                        4, // Invalid string base.
-                    );
-                    return Err(diagnostic.into());
-                }
-            };
-            ch = self.advance();
-        }*/
-    }
-    */
 }
