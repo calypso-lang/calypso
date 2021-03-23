@@ -1,6 +1,6 @@
 name: calypso
 author: The Puzzlemaker <tpzker@thepuzzlemaker.info>
-about: A (very work-in-progress) general-purpose interpreted language with built-in systems for cryptography, ciphers, and encodings, implemented with Rust.
+about: Calypso is a mostly imperative language with some functional influences that is focused on flexibility and simplicity.
 settings:
     - SubcommandRequired
 subcommands:
