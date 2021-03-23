@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use calypso_diagnostic::prelude::*;
 use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind};
 

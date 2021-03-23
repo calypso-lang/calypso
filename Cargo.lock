@@ -548,18 +548,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "saturnvm"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "bitflags",
- "calypso_error",
- "calypso_filety",
- "num_enum",
- "serde",
-]
-
-[[package]]
 name = "petgraph"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -719,6 +707,18 @@ dependencies = [
  "unicode-width",
  "utf8parse",
  "winapi",
+]
+
+[[package]]
+name = "saturnvm"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "bitflags",
+ "calypso_error",
+ "calypso_filety",
+ "num_enum",
+ "serde",
 ]
 
 [[package]]
