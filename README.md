@@ -163,8 +163,8 @@ This project follows the [all-contributors](https://github.com/all-contributors/
 
 [b2]: https://tokei.rs/b1/github/calypso-lang/calypso?category=lines
 
-[b3]: https://img.shields.io/travis/com/calypso-lang/calypso
-[l3]: https://travis-ci.com/github/calypso-lang/calypso
+[b3]: https://github.com/calypso-lang/calypso/actions/workflows/main.yml/badge.svg?branch=main&event=push
+[l3]: https://github.com/calypso-lang/calypso/actions
 
 [b4]: https://img.shields.io/badge/license-MIT-blue.svg
 [l4]: ./LICENSE
