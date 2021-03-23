@@ -107,7 +107,7 @@ jobs:
         pages_threshold: major_outage
 
     - name: Deploy to GitHub Pages
-      if: success()
+      if: ${{ success() && github.event == 'push' }}
       uses: crazy-max/ghaction-github-pages@v2
       with:
         target_branch: main
