@@ -26,12 +26,6 @@ jobs:
       with:
         submodules: false
 
-    - name: Install toolchain (${{ matrix.rust }})
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        override: true
-
     - name: Setup caching
       uses: actions/cache@v2
       with:
@@ -40,6 +34,12 @@ jobs:
           ~/.cargo
           ~/.rustup
         key: rust-${{ matrix.rust }}-cache
+
+    - name: Install toolchain (${{ matrix.rust }})
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
 
     - name: Build
       run: cargo build --verbose --workspace --all-features --all-targets
@@ -57,6 +57,17 @@ jobs:
       with:
         submodules: 'recursive'
 
+    - name: Setup caching
+      uses: actions/cache@v2
+      with:
+        path: |
+          target
+          docs/out/gui
+          docs/out/ref
+          ~/.cargo
+          ~/.rustup
+        key: rust-cache-docs
+
     - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:
@@ -71,17 +82,6 @@ jobs:
       uses: peaceiris/actions-mdbook@v1
       with:
         mdbook-version: 'latest'
-
-    - name: Setup caching
-      uses: actions/cache@v2
-      with:
-        path: |
-          target
-          docs/out/gui
-          docs/out/ref
-          ~/.cargo
-          ~/.rustup
-        key: rust-cache-docs
 
     - name: Build The Calypso Book
       run: |
