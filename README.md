@@ -81,7 +81,7 @@ I'm currently holding various crates related to Calypso. These will actually be 
 | `calypso_repl`         | [![calypso_repl][bcio5]][lcio5]        | [![calypso_repl][bdrs5]][ldrs5]            |
 | `calypso_util`         | [![calypso_util][bcio6]][lcio6]        | [![calypso_util][bdrs6]][ldrs6]            |
 
-For the status of Odysseus crates, see [its README](libs/odysseus/README.md).
+For the status of SaturnVM crates, see [its README](libs/saturnvm/README.md).
 
 [bcio1]: https://img.shields.io/crates/v/calypso
 [lcio1]: https://crates.io/crates/calypso
@@ -130,11 +130,11 @@ For the status of Odysseus crates, see [its README](libs/odysseus/README.md).
 
 Docs for the `main` branch can be found [here](https://calypso-lang.github.io/rustdoc/calypso/index.html).
 
-## Odysseus
+## SaturnVM
 
-Odysseus is the VM I'm writing for Calypso. It's meant to be mostly standalone but at the moment there may be some connections or dependencies between it and Calypso. Odysseus's top-level crate can be found in `libs/odysseus` and some of it's subcrates will be found in `libs/` under the name `odysseus_*`. The `calypso_vm` crate will probably be a Calypso-specific interface to Odyssey.
+SaturnVM is the VM I'm writing for Calypso. It's meant to be mostly standalone but at the moment there may be some connections or dependencies between it and Calypso. SaturnVM's top-level crate can be found in `libs/saturnvm` and some of it's subcrates will be found in `libs/` under the name `saturnvm_*`. The `calypso_vm` crate will probably be a Calypso-specific interface to Odyssey.
 
-For more information, see [its README](libs/odysseus/README.md).
+For more information, see [its README](libs/saturnvm/README.md).
 
 ## Logo Credits
 

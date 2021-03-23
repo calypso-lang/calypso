@@ -1,8 +1,8 @@
-# Odysseus
+# SaturnVM
 
 [![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171)](https://discord.gg/26X6ChQQcG) ![Lines of Code][b2]
 
-Odysseus is a bytecode VM written entirely in Rust (although there may eventually be some small parts in C). It's meant to be fast and performant but flexible and idiomatic. It's meant to be standalone but as it's written specifically for [Calypso](https://github.com/calypso-lang/calypso), there may be some connections between the two projects, though they should not be anything significant. The top-level crate for Odysseus can be found in `/libs/odysseus` (where `/` is the Calypso repository root). Its subcrates, if any, will be found in `/libs/` under the name `odysseus_*`.
+SaturnVM is a bytecode VM written entirely in Rust (although there may eventually be some small parts in C). It's meant to be fast and performant but flexible and idiomatic. It's meant to be standalone but as it's written specifically for [Calypso](https://github.com/calypso-lang/calypso), there may be some connections between the two projects, though they should not be anything significant. The top-level crate for SaturnVM can be found in `/libs/saturnvm` (where `/` is the Calypso repository root). Its subcrates, if any, will be found in `/libs/` under the name `saturnvm_*`.
 
 The crate `calypso_vm` is going to eventually be a more Calypso-specific interface to the VM.
 
@@ -17,7 +17,7 @@ The following example creates a module "foo". This is currently the only part of
 As GATs are not stable (and I'd like to use stable code for this as of now), the `&mut ctx` and `&ctx` references are required due to the nature of the traits behind the bytecode builder. Hopefully GATs will become stable Soon:tm: and then they can be used to make the code simpler and more ergonomic.
 
 ```rust
-use odysseus::bc::prelude::*;
+use saturnvm::bc::prelude::*;
 
 fn foo() {
     let mut ctx = Context::new();
@@ -58,18 +58,18 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## [crates.io][crates.io] statuses
 
-I'm currently holding various crates related to Odysseus. These will actually be used but they are being held so that no one uses them for malicious purposes or confuses anyone.
+I'm currently holding various crates related to SaturnVM. These will actually be used but they are being held so that no one uses them for malicious purposes or confuses anyone.
 
 > Note: A version number of `0.0.0` indicates an unreleased crate.
 
 | Crate Name             | Version                                | [docs.rs][docs.rs] Status                  |
 |:----------------------:|:--------------------------------------:|:------------------------------------------:|
-| `odysseus`             | [![odysseus][ody_bc]][ody_lc]          | [![odysseus][ody_bd]][ody_ld]              |
+| `saturnvm`             | [![saturnvm][ody_bc]][ody_lc]          | [![saturnvm][ody_bd]][ody_ld]              |
 
-[ody_bc]: https://img.shields.io/crates/v/odysseus
+[ody_bc]: https://img.shields.io/crates/v/saturnvm
 [ody_bd]: https://docs.rs/calypso/badge.svg
-[ody_lc]: https://crates.io/crates/odysseus
-[ody_ld]: https://docs.rs/odysseus/*
+[ody_lc]: https://crates.io/crates/saturnvm
+[ody_ld]: https://docs.rs/saturnvm/*
 
 ## Contributors
 

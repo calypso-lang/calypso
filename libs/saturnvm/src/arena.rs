@@ -1,7 +1,7 @@
-//! A simple arena for use within Odysseus, built with a `Vec`, using `usize`s
+//! A simple arena for use within SaturnVM, built with a `Vec`, using `usize`s
 //! for IDs.
 
-/// A simple arena for use within Odysseus, built with a `Vec`, using `usize`s
+/// A simple arena for use within SaturnVM, built with a `Vec`, using `usize`s
 /// for IDs.
 pub struct Arena<T> {
     storage: Vec<T>,

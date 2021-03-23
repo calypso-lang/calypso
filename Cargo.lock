@@ -135,7 +135,7 @@ dependencies = [
  "calypso_repl",
  "clap",
  "mimalloc",
- "odysseus",
+ "saturnvm",
 ]
 
 [[package]]
@@ -548,7 +548,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "odysseus"
+name = "saturnvm"
 version = "0.1.0"
 dependencies = [
  "bincode",

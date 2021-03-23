@@ -1,4 +1,4 @@
-//! The root [`Parent`] object for Odysseus bytecode.
+//! The root [`Parent`] object for SaturnVM bytecode.
 
 use super::module::{Module, ModuleBuilder, ModuleEntry};
 use super::traits::Parent;
