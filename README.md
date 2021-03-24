@@ -138,7 +138,7 @@ For more information, see [its README](libs/saturnvm/README.md).
 
 ## Logo Credits
 
-The logo was modified from an image made by [OpenClipart-Vectors](https://pixabay.com/users/openclipart-vectors-30363/) from [Pixabay](https://pixabay.com/)
+The logo was modified from an image by [Freepik](https://www.freepik.com) on [Flaticon](https://www.flaticon.com). The original image can be found [here](https://www.flaticon.com/free-icon/saturn_124559) or in [`logo-base.svg`](https://raw.githubusercontent.com/calypso-lang/assets/main/logo/logo-base.svg) in the [assets](https://github.com/calypso-lang/assets) repository.
 
 ## Contributors ✨
 
