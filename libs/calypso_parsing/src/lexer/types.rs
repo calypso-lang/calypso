@@ -1,3 +1,5 @@
+use calypso_ast::expr::{Radix, Suffix};
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 /// Types of Calypso tokens
 pub enum TokenType {
@@ -103,41 +105,4 @@ pub enum Keyword {
     /// `true`
     True,
     // NOTE: PRODUCTIVITY MARKER: This is purposefully incomplete. I'll come back to it later.
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-/// Number radixes.
-pub enum Radix {
-    /// No prefix or `0d`
-    Decimal,
-    /// `0b`
-    Binary,
-    /// `0o`
-    Octal,
-    /// `0x`
-    Hexadecimal,
-}
-
-impl Radix {
-    pub fn radix(self) -> u32 {
-        match self {
-            Self::Decimal => 10,
-            Self::Binary => 2,
-            Self::Octal => 8,
-            Self::Hexadecimal => 16,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-/// Number suffixes.
-pub enum Suffix {
-    /// `u`
-    Uint,
-    /// `s`
-    Sint,
-    /// `f`
-    Float,
-    /// Invalid suffix
-    Invalid,
 }

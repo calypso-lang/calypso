@@ -1,6 +1,7 @@
 use super::helpers::{is_valid_for, is_whitespace};
-use super::{Lexer, Radix, Suffix, Token, TokenType};
+use super::{Lexer, Token, TokenType};
 
+use calypso_ast::expr::{Radix, Suffix};
 use calypso_base::span::Spanned;
 use calypso_base::streams::Stream;
 use calypso_diagnostic::prelude::*;

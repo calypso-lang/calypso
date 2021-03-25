@@ -6,6 +6,8 @@ use calypso_diagnostic::{prelude::*, report::GlobalReportingCtxt};
 use calypso_parsing::parser::tokens::process_iter;
 use calypso_parsing::{lexer::Lexer, parser::grammar::ExprParser};
 
+use lalrpop_util::ParseError;
+
 fn main() {
     let stdin = std::io::stdin();
     loop {
@@ -24,6 +26,15 @@ fn main() {
         let iter = lexer.into_iter();
         let iter = process_iter(iter, true);
         let parser = ExprParser::new();
-        println!("{:#?}", parser.parse(source_id, iter));
+        let res = parser.parse(source_id, iter);
+        if let Ok(parsed) = res {
+            // println!("{:#?}", parsed);
+        } else if let Err(err) = res {
+            if matches!(err, ParseError::UnrecognizedEOF { .. }) {
+                break;
+            } else {
+                println!("{:#?}", err);
+            }
+        }
     }
 }

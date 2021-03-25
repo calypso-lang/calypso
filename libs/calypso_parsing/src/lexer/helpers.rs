@@ -1,7 +1,6 @@
+use calypso_ast::expr::Radix;
 use calypso_base::span::Spanned;
 use calypso_base::static_list as sl;
-
-use super::Radix;
 
 sl!(WHITESPACE: char = [
     '\t',       // Horizontal tab

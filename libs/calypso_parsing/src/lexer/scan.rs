@@ -1,6 +1,7 @@
-use super::{helpers::is_ident_start, Radix};
+use super::helpers::is_ident_start;
 use super::{Lexer, Token, TokenType};
 
+use calypso_ast::expr::Radix;
 use calypso_base::streams::Stream;
 use calypso_diagnostic::prelude::*;
 

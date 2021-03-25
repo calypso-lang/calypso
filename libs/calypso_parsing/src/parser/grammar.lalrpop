@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 use calypso_diagnostic::prelude::*;
-use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind};
+use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind, Radix, Suffix};
 use calypso_base::symbol::Symbol;
 
 use crate::parser::tokens::Tok;
@@ -13,9 +13,7 @@ extern {
     type Error = CalError;
 
     enum Tok<'input> {
-        "SintLit"  => Tok::Sint(  <i64> ),
-        "UintLit"  => Tok::Uint(  <u64> ),
-        "FloatLit" => Tok::Float( <f64> ),
+        "NumberLit" => Tok::Number( <&'input str>, <Radix>, <Option<Suffix>> ),
 
         "+"  => Tok::Unprocessed( TokenType::Plus     ),
         "-"  => Tok::Unprocessed( TokenType::Minus    ),
@@ -93,15 +91,9 @@ Term: Box<Expr<'input>> = {
 }
 
 Primary: Box<Expr<'input>> = {
-    Number,
+    "NumberLit" => Box::new(Expr::Primary(Primary::detuple_number(<>))),
     Bool,
     Atom
-}
-
-Number: Box<Expr<'input>> = {
-    "SintLit" => Box::new(Expr::Primary(Primary::Sint(<>))),
-    "UintLit" => Box::new(Expr::Primary(Primary::Uint(<>))),
-    "FloatLit" => Box::new(Expr::Primary(Primary::Float(<>))),
 }
 
 Bool: Box<Expr<'input>> = {

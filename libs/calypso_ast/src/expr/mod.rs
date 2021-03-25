@@ -38,10 +38,52 @@ pub enum UnOpKind {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Primary<'tok> {
-    Sint(i64),
-    Uint(u64),
-    Float(f64),
+    Number(&'tok str, Radix, Option<Suffix>),
     Bool(bool),
     Atom(Symbol),
     AtomStr(&'tok str),
+}
+
+impl<'tok> Primary<'tok> {
+    /// Implementation detail.
+    pub fn detuple_number((s, base, suffix): (&'tok str, Radix, Option<Suffix>)) -> Self {
+        Self::Number(s, base, suffix)
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+/// Number radixes.
+pub enum Radix {
+    /// No prefix or `0d`
+    Decimal,
+    /// `0b`
+    Binary,
+    /// `0o`
+    Octal,
+    /// `0x`
+    Hexadecimal,
+}
+
+impl Radix {
+    pub fn radix(self) -> u32 {
+        match self {
+            Self::Decimal => 10,
+            Self::Binary => 2,
+            Self::Octal => 8,
+            Self::Hexadecimal => 16,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+/// Number suffixes.
+pub enum Suffix {
+    /// `u`
+    Uint,
+    /// `s`
+    Sint,
+    /// `f`
+    Float,
+    /// Invalid suffix
+    Invalid,
 }

@@ -27,3 +27,6 @@ enable_mimalloc = ["mimalloc"]
 [workspace]
 exclude = ["libs/sublib_skeleton"]
 members = ["libs/*"]
+
+[profile.release]
+debug = true
