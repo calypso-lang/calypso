@@ -1,3 +1,4 @@
+use std::convert::AsRef;
 use std::fmt::{self, Debug, Display};
 
 use lasso::{Key, Spur, ThreadedRodeo};
@@ -45,6 +46,43 @@ impl Debug for Symbol {
 impl Display for Symbol {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum PotentiallyInterned<'a> {
+    Uninterned(&'a str),
+    Interned(Symbol),
+}
+
+impl<'a> Debug for PotentiallyInterned<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_ref())
+    }
+}
+
+impl<'a> Display for PotentiallyInterned<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_ref())
+    }
+}
+
+impl<'a> PotentiallyInterned<'a> {
+    pub fn potentially_intern(string: &'a str) -> Self {
+        if string.len() > 255 {
+            Self::Uninterned(string)
+        } else {
+            Self::Interned(Symbol::intern(string))
+        }
+    }
+}
+
+impl<'a> AsRef<str> for PotentiallyInterned<'a> {
+    fn as_ref(&self) -> &str {
+        match self {
+            PotentiallyInterned::Interned(sym) => sym.as_str(),
+            PotentiallyInterned::Uninterned(s) => *s,
+        }
     }
 }
 

@@ -28,7 +28,7 @@ fn main() {
         let parser = ExprParser::new();
         let res = parser.parse(source_id, iter);
         if let Ok(parsed) = res {
-            // println!("{:#?}", parsed);
+            println!("{:#?}", parsed);
         } else if let Err(err) = res {
             if matches!(err, ParseError::UnrecognizedEOF { .. }) {
                 break;

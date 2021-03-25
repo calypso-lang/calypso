@@ -1,4 +1,7 @@
-use calypso_base::{span::Spanned, symbol::Symbol};
+use calypso_base::{
+    span::Spanned,
+    symbol::{PotentiallyInterned, Symbol},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr<'tok> {
@@ -41,7 +44,7 @@ pub enum Primary<'tok> {
     Number(&'tok str, Radix, Option<Suffix>),
     Bool(bool),
     Atom(Symbol),
-    AtomStr(&'tok str),
+    AtomStr(PotentiallyInterned<'tok>),
 }
 
 impl<'tok> Primary<'tok> {
