@@ -1,7 +1,9 @@
+use calypso_base::{span::Spanned, symbol::Symbol};
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr<'tok> {
     BinOp(Box<Expr<'tok>>, BinOpKind, Box<Expr<'tok>>),
-    UnOp(UnOpKind, Box<Expr<'tok>>),
+    UnOp(Spanned<UnOpKind>, Box<Expr<'tok>>),
     Primary(Primary<'tok>),
 }
 
@@ -40,6 +42,6 @@ pub enum Primary<'tok> {
     Uint(u64),
     Float(f64),
     Bool(bool),
-    Atom(&'tok str),
+    Atom(Symbol),
     AtomStr(&'tok str),
 }

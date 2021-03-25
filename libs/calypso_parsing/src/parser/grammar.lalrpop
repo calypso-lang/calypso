@@ -1,6 +1,7 @@
 #![allow(unused_imports)]
 use calypso_diagnostic::prelude::*;
 use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind};
+use calypso_base::symbol::Symbol;
 
 use crate::parser::tokens::Tok;
 use crate::lexer::{TokenType, Keyword};
@@ -45,7 +46,7 @@ extern {
 
         ":" => Tok::Unprocessed( TokenType::Colon ),
 
-        "Ident"     => Tok::Ident(  <&'input str> ),
+        "Ident"     => Tok::Ident(  <Symbol>      ),
         "StringLit" => Tok::String( <&'input str> ),
 
         "true"  => Tok::Unprocessed( TokenType::Keyword( Keyword::True  ) ),
@@ -80,8 +81,8 @@ AddExpr = BinOp<AddExpr, AddOp, UnaryExpr>;
 
 UnaryExpr = {
     MulExpr,
-    "-" <UnaryExpr> => Box::new(Expr::UnOp(UnOpKind::Negative, <>)),
-    "!" <UnaryExpr> => Box::new(Expr::UnOp(UnOpKind::UnaryNot, <>))
+    <lo:@L> "-" <hi:@R> <op:UnaryExpr> => Box::new(Expr::UnOp((lo, UnOpKind::Negative, hi).into(), op)),
+    <lo:@L> "!" <hi:@R> <op:UnaryExpr> => Box::new(Expr::UnOp((lo, UnOpKind::UnaryNot, hi).into(), op))
 }
 
 MulExpr = BinOp<MulExpr, MulOp, PowExpr>;

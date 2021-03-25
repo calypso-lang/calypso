@@ -82,4 +82,5 @@ register_diagnostics! {
     E0031: "Expected a valid exponent of a float, found whitespace.",
     E0032: "Expected a valid exponent of a float, found EOF.",
     E0033: "Cannot use a non-decimal base for a float",
+    E0034: "Identifiers (and atoms) must be shorter than 255 characters."
 }

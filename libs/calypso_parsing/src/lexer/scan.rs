@@ -33,7 +33,7 @@ impl<'lex> Lexer<'lex> {
 
         // Is valid character for identifier's first character
         if is_ident_start(&span) {
-            return Ok(self.handle_identifier());
+            return self.handle_identifier();
         } else if ch == '\'' {
             return self.handle_char_literal();
         } else if ch == '"' {

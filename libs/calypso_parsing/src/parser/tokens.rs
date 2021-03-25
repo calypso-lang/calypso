@@ -1,5 +1,6 @@
 //! Processed versions of [`crate::lexer::TokenType`] for use with LALRPOP.
 
+use calypso_base::symbol::Symbol;
 use calypso_diagnostic::prelude::*;
 
 use crate::lexer::{Suffix, Token, TokenType};
@@ -17,7 +18,7 @@ pub enum Tok<'tok> {
     /// Boolean
     Bool(bool),
     /// Identifier
-    Ident(&'tok str),
+    Ident(Symbol),
     /// String literal
     String(&'tok str),
 }
@@ -56,7 +57,7 @@ pub fn process<'tok>(tok: Token<'tok>) -> CalResult<Tok<'tok>> {
                 .parse::<f64>()
                 .map_err(anyhow::Error::from)?,
         ),
-        (TokenType::Ident, string) => Tok::Ident(string),
+        (TokenType::Ident, string) => Tok::Ident(Symbol::intern(string)),
         (TokenType::String, string) => Tok::String(string),
         (tok, _) => Tok::Unprocessed(tok),
     })

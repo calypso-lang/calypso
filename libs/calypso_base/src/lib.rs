@@ -10,3 +10,5 @@ mod macros;
 pub mod span;
 /// Utilities for handling streams of data
 pub mod streams;
+/// Utilities for interned strings (symbols)
+pub mod symbol;

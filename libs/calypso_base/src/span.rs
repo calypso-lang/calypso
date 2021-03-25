@@ -10,11 +10,13 @@ pub struct Span {
 
 impl Span {
     #[must_use]
+    #[inline]
     pub fn new(lo: usize, hi: usize) -> Self {
         Span { lo, hi }
     }
 
     #[must_use]
+    #[inline]
     pub fn new_shrunk(amount: usize) -> Self {
         Span {
             lo: amount,
@@ -24,56 +26,66 @@ impl Span {
 
     /// Create a dummy span (that has a span equivalent to the range `0..0`).
     #[must_use]
+    #[inline]
     pub fn new_dummy() -> Self {
         Self { lo: 0, hi: 0 }
     }
 
     #[must_use]
+    #[inline]
     pub fn lo(&self) -> usize {
         self.lo
     }
 
     #[must_use]
+    #[inline]
     pub fn with_lo(self, lo: usize) -> Self {
         Self { lo, ..self }
     }
 
     #[must_use]
+    #[inline]
     pub fn hi(&self) -> usize {
         self.hi
     }
 
     #[must_use]
+    #[inline]
     pub fn with_hi(self, hi: usize) -> Self {
         Self { hi, ..self }
     }
 
-    /// Returns `true`  if this is a dummy span
+    /// Returns `true` if this is a dummy span
     #[must_use]
+    #[inline]
     pub fn is_dummy(&self) -> bool {
         self.lo == 0 && self.hi == 0
     }
 
     /// Returns a new span representing an empty span at the beginning of this span
     #[must_use]
+    #[inline]
     pub fn shrink_to_lo(&self) -> Span {
         self.with_hi(self.lo)
     }
 
     /// Returns a new span representing an empty span at the end of this span.
     #[must_use]
+    #[inline]
     pub fn shrink_to_hi(self) -> Span {
         self.with_lo(self.hi)
     }
 
     /// Returns true if if `hi == lo`
     #[must_use]
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.hi == self.lo
     }
 
     /// Returns `self` if `self` is not a dummy span, and `other` otherwise.
     #[must_use]
+    #[inline]
     pub fn substitute_dummy(self, other: Span) -> Span {
         if self.is_dummy() {
             other
@@ -84,12 +96,14 @@ impl Span {
 
     /// Returns `true` if `self` fully encloses `other`.
     #[must_use]
+    #[inline]
     pub fn contains(self, other: Span) -> bool {
         self.lo <= other.lo && other.hi <= self.hi
     }
 
     /// Returns `true` if `self` touches `other`.
     #[must_use]
+    #[inline]
     pub fn overlaps(self, other: Span) -> bool {
         self.lo < other.hi && other.lo < self.hi
     }
@@ -102,6 +116,7 @@ impl Span {
     ///     ^^^^^^^^^^^^^^^^^^^^
     /// ```
     #[must_use]
+    #[inline]
     pub fn to(self, end: Span) -> Span {
         Span::new(
             std::cmp::min(self.lo, end.lo),
@@ -117,6 +132,7 @@ impl Span {
     ///         ^^^^^^^^^^^^^
     /// ```
     #[must_use]
+    #[inline]
     pub fn between(self, end: Span) -> Span {
         Span::new(self.hi, end.lo)
     }
@@ -129,28 +145,39 @@ impl Span {
     ///     ^^^^^^^^^^^^^^^^^
     /// ```
     #[must_use]
+    #[inline]
     pub fn until(self, end: Span) -> Span {
         Span::new(self.lo, end.lo)
     }
 
     #[must_use]
+    #[inline]
     pub fn add_hi(self, amount: usize) -> Span {
-        self.with_hi(self.hi() + amount)
+        self.with_hi(self.hi + amount)
     }
 
     #[must_use]
+    #[inline]
     pub fn sub_hi(self, amount: usize) -> Span {
-        self.with_hi(self.hi() - amount)
+        self.with_hi(self.hi - amount)
     }
 
     #[must_use]
+    #[inline]
     pub fn add_lo(self, amount: usize) -> Span {
-        self.with_lo(self.lo() + amount)
+        self.with_lo(self.lo + amount)
     }
 
     #[must_use]
+    #[inline]
     pub fn sub_lo(self, amount: usize) -> Span {
-        self.with_lo(self.lo() - amount)
+        self.with_lo(self.lo - amount)
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn len(self) -> usize {
+        self.hi - self.lo
     }
 }
 
@@ -220,5 +247,11 @@ where
 impl<T: PartialEq + Debug> PartialEq<T> for Spanned<T> {
     fn eq(&self, other: &T) -> bool {
         self.value.eq(other)
+    }
+}
+
+impl<T: Debug> From<(usize, T, usize)> for Spanned<T> {
+    fn from((lo, val, hi): (usize, T, usize)) -> Self {
+        Spanned::new(Span::new(lo, hi), val)
     }
 }
