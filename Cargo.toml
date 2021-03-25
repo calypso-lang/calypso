@@ -28,5 +28,5 @@ enable_mimalloc = ["mimalloc"]
 exclude = ["libs/sublib_skeleton"]
 members = ["libs/*"]
 
-[profile.release]
-debug = true
+#[profile.release]
+#debug = true
