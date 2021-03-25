@@ -37,6 +37,10 @@ impl<'lex> Lexer<'lex> {
                 self.next();
                 self.handle_int(Radix::Binary)
             }
+            '.' => {
+                self.handle_float_part()?;
+                Ok(self.new_token(TokenType::Float))
+            }
             ch if ch.is_ascii_digit() => {
                 self.current_to_start();
                 self.gorge_digits();
@@ -75,7 +79,7 @@ impl<'lex> Lexer<'lex> {
                     },
                 ))
             }
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 
@@ -99,10 +103,9 @@ impl<'lex> Lexer<'lex> {
         self.handle_unexpected_underscore()?;
 
         if self.next_if(|c| c.value_owned() == '.').is_some() {
-            self.inval_float_decimal(false)?;
+            self.inval_float_decimal()?;
             self.gorge_digits();
             self.handle_unexpected_underscore()?;
-            self.inval_float_decimal(true)?;
         }
 
         if self
@@ -111,18 +114,17 @@ impl<'lex> Lexer<'lex> {
         {
             // +/- are optional
             self.next_if(|c| c.value_owned() == '+' || c.value_owned() == '-');
-            self.inval_float_exponent(false)?;
+            self.inval_float_exponent()?;
             self.gorge_digits();
             self.handle_unexpected_underscore()?;
-            self.inval_float_exponent(true)?
         }
 
         Ok(true)
     }
 
-    fn inval_float_decimal(&mut self, opt: bool) -> CalResult<()> {
+    fn inval_float_decimal(&mut self) -> CalResult<()> {
         let start = self.start;
-        if !opt && self.peek_cond(is_whitespace) == Some(true) {
+        if self.peek_cond(is_whitespace) == Some(true) {
             self.current_to_start();
             gen_error!(sync self.grcx.borrow_mut(), self => {
                 E0028;
@@ -147,7 +149,7 @@ impl<'lex> Lexer<'lex> {
                         "expected a decimal part of this float here"
                 ]
             });
-        } else if !opt && self.is_at_end() {
+        } else if self.is_at_end() {
             self.current_to_start();
             gen_error!(sync self.grcx.borrow_mut(), self => {
                 E0029;
@@ -162,9 +164,9 @@ impl<'lex> Lexer<'lex> {
         Ok(())
     }
 
-    fn inval_float_exponent(&mut self, opt: bool) -> CalResult<()> {
+    fn inval_float_exponent(&mut self) -> CalResult<()> {
         let start = self.start;
-        if !opt && self.peek_cond(is_whitespace) == Some(true) {
+        if self.peek_cond(is_whitespace) == Some(true) {
             self.current_to_start();
             gen_error!(sync self.grcx.borrow_mut(), self => {
                 E0031;
@@ -185,7 +187,7 @@ impl<'lex> Lexer<'lex> {
                         "expected an exponent of this float here"
                 ]
             });
-        } else if !opt && self.is_at_end() {
+        } else if self.is_at_end() {
             self.current_to_start();
             gen_error!(sync self.grcx.borrow_mut(), self => {
                 E0032;
