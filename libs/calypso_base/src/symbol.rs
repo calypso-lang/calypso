@@ -15,6 +15,14 @@ impl Symbol {
         Self(get_interner().get_or_intern_static(string))
     }
 
+    fn intern_static_2(string: &'static str) -> Self {
+        Self(
+            GLOBAL_INTERNER
+                .get_or_init(|| ThreadedRodeo::new())
+                .get_or_intern_static(string),
+        )
+    }
+
     pub fn as_u32(&self) -> u32 {
         self.0.into_usize() as u32
     }
@@ -55,7 +63,7 @@ macro_rules! intern_static {
             ::lazy_static::lazy_static! {
                 $(
                     pub static ref $ident: $crate::symbol::Symbol
-                        = $crate::symbol::Symbol::intern_static($str);
+                        = $crate::symbol::Symbol::intern_static_2($str);
                 )*
             }
 

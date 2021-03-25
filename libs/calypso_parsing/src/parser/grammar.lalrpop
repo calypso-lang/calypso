@@ -77,16 +77,15 @@ ComparisonExpr = BinOp<ComparisonExpr, ComparisonOp, BitShiftExpr>;
 
 BitShiftExpr = BinOp<BitShiftExpr, BitShiftOp, AddExpr>;
 
-AddExpr = BinOp<AddExpr, AddOp, UnaryExpr>;
+AddExpr = BinOp<AddExpr, AddOp, MulExpr>;
+MulExpr = BinOp<MulExpr, MulOp, PowExpr>;
+PowExpr = BinOpR<UnaryExpr, PowOp, PowExpr>;
 
 UnaryExpr = {
-    MulExpr,
+    Term,
     <lo:@L> "-" <hi:@R> <op:UnaryExpr> => Box::new(Expr::UnOp((lo, UnOpKind::Negative, hi).into(), op)),
     <lo:@L> "!" <hi:@R> <op:UnaryExpr> => Box::new(Expr::UnOp((lo, UnOpKind::UnaryNot, hi).into(), op))
 }
-
-MulExpr = BinOp<MulExpr, MulOp, PowExpr>;
-PowExpr = BinOpR<Term, PowOp, PowExpr>;
 
 Term: Box<Expr<'input>> = {
     Primary,
