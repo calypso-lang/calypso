@@ -1,22 +1,12 @@
-use radix_trie::Trie;
-
 use super::helpers::{is_ident_continue, is_ident_end};
-use super::{Keyword, Lexer, Token, TokenType};
+use super::{Lexer, Token, TokenType};
 
-use calypso_base::init_trie;
 use calypso_base::streams::Stream;
+use calypso_base::symbol::Symbol;
 use calypso_diagnostic::prelude::*;
-
-init_trie!(pub KEYWORD_TRIE: Keyword => {
-    "false" => False,
-    "null"  => Null,
-    "true"  => True
-});
 
 impl<'lex> Lexer<'lex> {
     pub(super) fn handle_identifier(&mut self) -> CalResult<Token<'lex>> {
-        let mut token_type = TokenType::Ident;
-
         // `_` is not an ident on its own, but all other [A-Za-z]{1} idents are.
         if self.prev().unwrap() == &'_' && self.peek_cond(is_ident_continue) != Some(true) {
             return Ok(self.new_token(TokenType::Under));
@@ -47,12 +37,11 @@ impl<'lex> Lexer<'lex> {
             });
         }
 
-        let keyword = KEYWORD_TRIE.get(sliced);
-
-        if let Some(&keyword) = keyword {
-            token_type = TokenType::Keyword(keyword);
-        }
-
-        Ok(self.new_token(token_type))
+        let ident = Symbol::intern(sliced);
+        Ok(self.new_token(if ident.is_keyword() {
+            TokenType::Keyword(ident)
+        } else {
+            TokenType::Ident(ident)
+        }))
     }
 }

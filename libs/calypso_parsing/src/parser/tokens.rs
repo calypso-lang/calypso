@@ -1,7 +1,7 @@
 //! Processed versions of [`crate::lexer::TokenType`] for use with LALRPOP.
 
 use calypso_ast::expr::{Radix, Suffix};
-use calypso_base::symbol::{PotentiallyInterned, Symbol};
+use calypso_base::symbol::{kw::Keyword, PotentiallyInterned, Symbol};
 use calypso_diagnostic::prelude::*;
 
 use crate::lexer::{Token, TokenType};
@@ -12,10 +12,10 @@ pub enum Tok<'tok> {
     Unprocessed(TokenType),
     /// Number
     Number(&'tok str, Radix, Option<Suffix>),
-    /// Boolean
-    Bool(bool),
     /// Identifier
     Ident(Symbol),
+    /// Keyword
+    Keyword(Keyword),
     /// String literal
     String(PotentiallyInterned<'tok>),
 }
@@ -23,7 +23,8 @@ pub enum Tok<'tok> {
 pub fn process<'tok>(tok: Token<'tok>) -> CalResult<Tok<'tok>> {
     Ok(match tok.value_owned() {
         (TokenType::Int { suffix, radix }, string) => Tok::Number(string, radix, suffix),
-        (TokenType::Ident, string) => Tok::Ident(Symbol::intern(string)),
+        (TokenType::Ident(symbol), _) => Tok::Ident(symbol),
+        (TokenType::Keyword(symbol), _) => Tok::Keyword(Keyword::from(symbol)),
         (TokenType::String, string) => Tok::String(PotentiallyInterned::potentially_intern(string)),
         (tok, _) => Tok::Unprocessed(tok),
     })

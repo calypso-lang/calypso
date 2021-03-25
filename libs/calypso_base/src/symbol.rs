@@ -35,6 +35,10 @@ impl Symbol {
     pub fn is_empty(&self) -> bool {
         self == &kw::EMPTY
     }
+
+    pub fn is_keyword(&self) -> bool {
+        self == &kw::TRUE || self == &kw::FALSE || self == &kw::NULL
+    }
 }
 
 impl Debug for Symbol {
@@ -95,43 +99,74 @@ pub fn get_interner() -> &'static ThreadedRodeo {
 }
 
 macro_rules! intern_static {
-    ($mod:ident => {$($ident:ident: $str:expr),*$(,)?}) => {
+    ($mod:ident, $name:ident => {$($enum_ident:ident; $static_ident:ident: $str:expr),*$(,)?}) => {
         #[allow(dead_code)]
-        mod $mod {
+        pub mod $mod {
             ::lazy_static::lazy_static! {
                 $(
-                    pub static ref $ident: $crate::symbol::Symbol
+                    pub static ref $static_ident: $crate::symbol::Symbol
                         = $crate::symbol::Symbol::intern_static_2($str);
                 )*
             }
 
             pub(super) fn init() {
-                $(::lazy_static::initialize(&$ident);)*
+                $(::lazy_static::initialize(&$static_ident);)*
             }
 
+            #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+            pub enum $name {
+                $(
+                    $enum_ident,
+                )*
+            }
+
+            impl From<$crate::symbol::Symbol> for $name {
+                fn from(sym: $crate::symbol::Symbol) -> Self {
+                    $(
+                        if sym == $static_ident {
+                            return Self::$enum_ident;
+                        }
+                    )*
+                    unreachable!()
+                }
+            }
+            impl From<$name> for $crate::symbol::Symbol {
+                fn from(elem: $name) -> Self {
+                    $(
+                        if elem == $name::$enum_ident {
+                            return *$static_ident;
+                        }
+                    )*
+                    unreachable!()
+                }
+            }
+
+            // Not sure why, but I have to use `.deref()` like this,
+            // otherwise it infinitely recurses. :/
+            use ::std::ops::Deref;
             $(
-                impl PartialEq<$ident> for $crate::symbol::Symbol {
-                    fn eq(&self, symbol: &$ident) -> bool {
-                        self == symbol
+                impl PartialEq<$static_ident> for $crate::symbol::Symbol {
+                    fn eq(&self, symbol: &$static_ident) -> bool {
+                        self == symbol.deref()
                     }
                 }
-                impl PartialEq<$ident> for $ident {
-                    fn eq(&self, symbol: &$ident) -> bool {
-                        self == symbol
+                impl PartialEq<$static_ident> for $static_ident {
+                    fn eq(&self, symbol: &$static_ident) -> bool {
+                        self.deref() == symbol.deref()
                     }
                 }
-                impl Eq for $ident {}
+                impl Eq for $static_ident {}
             )*
         }
 
     }
 }
 
-intern_static! {kw => {
-    EMPTY: "",
-    UNDERSCORE: "_",
+intern_static! {kw, Keyword => {
+    Empty; EMPTY: "",
+    Under; UNDERSCORE: "_",
 
-    TRUE: "true",
-    FALSE: "false",
-    NULL: "null"
+    True; TRUE: "true",
+    False; FALSE: "false",
+    Null; NULL: "null"
 }}

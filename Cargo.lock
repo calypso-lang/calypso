@@ -213,7 +213,6 @@ dependencies = [
  "lalrpop",
  "lalrpop-util",
  "lazy_static",
- "radix_trie",
 ]
 
 [[package]]

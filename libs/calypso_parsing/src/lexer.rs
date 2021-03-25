@@ -10,7 +10,6 @@ use calypso_base::{
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::report::GlobalReportingCtxt;
 
-pub use ident_kw::KEYWORD_TRIE;
 pub use types::*;
 
 pub mod types;

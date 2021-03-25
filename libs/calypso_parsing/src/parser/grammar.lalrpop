@@ -1,10 +1,10 @@
 #![allow(unused_imports)]
 use calypso_diagnostic::prelude::*;
 use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind, Radix, Suffix};
-use calypso_base::symbol::{Symbol, PotentiallyInterned};
+use calypso_base::symbol::{kw::Keyword, Symbol, PotentiallyInterned};
 
 use crate::parser::tokens::Tok;
-use crate::lexer::{TokenType, Keyword};
+use crate::lexer::{TokenType};
 
 grammar<'input>(source_id: usize);
 
@@ -37,18 +37,18 @@ extern {
 
         "==" => Tok::Unprocessed( TokenType::EqEq   ),
         "!=" => Tok::Unprocessed( TokenType::BangEq ),
-        "<"  => Tok::Unprocessed( TokenType::Lt ),
-        ">"  => Tok::Unprocessed( TokenType::Gt ),
-        "<=" => Tok::Unprocessed( TokenType::LtEq ),
-        ">=" => Tok::Unprocessed( TokenType::GtEq ),
+        "<"  => Tok::Unprocessed( TokenType::Lt     ),
+        ">"  => Tok::Unprocessed( TokenType::Gt     ),
+        "<=" => Tok::Unprocessed( TokenType::LtEq   ),
+        ">=" => Tok::Unprocessed( TokenType::GtEq   ),
 
         ":" => Tok::Unprocessed( TokenType::Colon ),
 
-        "Ident"     => Tok::Ident(  <Symbol>      ),
+        "Ident"     => Tok::Ident(  <Symbol>                      ),
         "StringLit" => Tok::String( <PotentiallyInterned<'input>> ),
 
-        "true"  => Tok::Unprocessed( TokenType::Keyword( Keyword::True  ) ),
-        "false" => Tok::Unprocessed( TokenType::Keyword( Keyword::False ) ),
+        "true"    => Tok::Keyword( Keyword::True  ),
+        "false"   => Tok::Keyword( Keyword::False ),
     }
 }
 
@@ -103,7 +103,13 @@ Bool: Box<Expr<'input>> = {
 
 Atom: Box<Expr<'input>> = {
     ":" <"Ident"> => Box::new(Expr::Primary(Primary::Atom(<>))),
-    ":" <"StringLit"> => Box::new(Expr::Primary(Primary::AtomStr(<>)))
+    ":" <"StringLit"> => Box::new(Expr::Primary(Primary::AtomStr(<>))),
+    ":" <Keyword> => Box::new(Expr::Primary(Primary::Atom(Symbol::from(<>))))
+}
+
+Keyword: Keyword = {
+    "true" => Keyword::True,
+    "false" => Keyword::False
 }
 
 LogOrOp: BinOpKind = {

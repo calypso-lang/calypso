@@ -1,4 +1,5 @@
 use calypso_ast::expr::{Radix, Suffix};
+use calypso_base::symbol::Symbol;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 /// Types of Calypso tokens
@@ -58,7 +59,7 @@ pub enum TokenType {
     /// Unexpected characters, included for lexer synchronization
     Unexpected,
     /// Identifier
-    Ident,
+    Ident(Symbol),
     /// Whitespace
     Ws,
     /// Line comments
@@ -79,7 +80,7 @@ pub enum TokenType {
     },
 
     /// Keyword
-    Keyword(Keyword),
+    Keyword(Symbol),
     /// String literal
     String,
     /// Character literal
@@ -93,16 +94,5 @@ pub enum TokenType {
     },
     /// Float literal
     Float,
-    // NOTE: PRODUCTIVITY MARKER: This is purposefully incomplete. I'll come back to it later.
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum Keyword {
-    /// `false`
-    False,
-    /// `null`
-    Null,
-    /// `true`
-    True,
     // NOTE: PRODUCTIVITY MARKER: This is purposefully incomplete. I'll come back to it later.
 }

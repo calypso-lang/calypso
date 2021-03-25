@@ -10,7 +10,6 @@ repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT"
 
 [dependencies]
-radix_trie = "0.2.1"
 calypso_util = { path = "../calypso_util", version = "0.1.0" }
 calypso_diagnostic = { path = "../calypso_diagnostic", version = "0.1.0" }
 calypso_base = { path = "../calypso_base", version = "0.1.0" }
