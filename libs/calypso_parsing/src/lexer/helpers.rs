@@ -1,8 +1,7 @@
 use calypso_ast::expr::Radix;
 use calypso_base::span::Spanned;
-use calypso_base::static_list as sl;
 
-sl!(WHITESPACE: char = [
+static WHITESPACE: &[char] = &[
     '\t',       // Horizontal tab
     '\n',       // Line feed
     '\u{000B}', // Vertical tab
@@ -14,7 +13,7 @@ sl!(WHITESPACE: char = [
     '\u{200F}', // Right-to-left mark
     '\u{2028}', // Line separator
     '\u{2029}', // Paragraph separator
-]);
+];
 
 #[inline]
 pub(super) fn is_valid_for_char_literal(elem: &Spanned<char>) -> bool {

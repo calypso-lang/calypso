@@ -2,13 +2,12 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_base/index.html")]
 #![warn(clippy::pedantic)]
 
-pub use macros::*;
-
-/// Common macros for ease of use in other parts of the program.
-mod macros;
 /// [`Span`](span::Span) and [`Spanned`](span::Spanned) types.
+#[cfg(feature = "span")]
 pub mod span;
 /// Utilities for handling streams of data
+#[cfg(feature = "stream")]
 pub mod streams;
 /// Utilities for interned strings (symbols)
+#[cfg(feature = "symbol")]
 pub mod symbol;
