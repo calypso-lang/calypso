@@ -5,8 +5,6 @@ pub use generic::*;
 mod generic;
 /// String streams
 mod str;
-/// Streams that wrap iterators
-mod wrapper;
 
 /// A trait for streamed data. For a stream, `EOF` means either
 /// the end of file / input if this stream is backed by a file or string,
