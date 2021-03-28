@@ -11,3 +11,5 @@ pub mod streams;
 /// Utilities for interned strings (symbols)
 #[cfg(feature = "symbol")]
 pub mod symbol;
+
+pub extern crate tracing;

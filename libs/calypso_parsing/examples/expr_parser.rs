@@ -25,13 +25,10 @@ fn main() {
         );
         let iter = lexer.into_iter();
         let iter = process_iter(iter, true);
-        // for i in iter {
-        // println!("{:#?}", i);
-        // }
         let parser = ExprParser::new();
         let res = parser.parse(source_id, iter);
         if let Ok(parsed) = res {
-            // println!("{:?}", parsed);
+            println!("{:?}", parsed);
         } else if let Err(err) = res {
             if matches!(err, ParseError::UnrecognizedEOF { .. }) {
                 break;

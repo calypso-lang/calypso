@@ -23,3 +23,7 @@ docs/out
 
 # LALRPOP generated grammar
 libs/calypso_parsing/src/parser/grammar.rs
+
+# code coverage profiling data
+*.profdata
+*.profraw

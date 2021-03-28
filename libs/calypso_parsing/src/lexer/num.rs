@@ -79,7 +79,10 @@ impl<'lex> Lexer<'lex> {
                     },
                 ))
             }
-            _ => unreachable!(),
+            _ => Ok(self.new_token(TokenType::Int {
+                suffix: None,
+                radix: Radix::Decimal,
+            })),
         }
     }
 

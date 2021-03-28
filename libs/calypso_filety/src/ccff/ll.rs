@@ -140,10 +140,35 @@ impl CcffSectionHeader {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use std::io::Cursor;
 
     static VALID_HEADER_WITHOUT_MAGIC: &[u8] = b"\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00.foo\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x46\x00\x00\x00\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00";
+
+    #[test]
+    fn header_clone() {
+        let hdr = CcffHeader {
+            magic: *b"\xCC\xFF",
+            abi: 1,
+            filety: 1,
+            sections: vec![],
+        };
+        assert_eq!(hdr, hdr.clone());
+    }
+
+    #[test]
+    fn section_header_clone() {
+        let hdr = CcffSectionHeader {
+            name: String::from(".foo"),
+            section_type: 1,
+            flags: 0,
+            offset: 70,
+            size: 3,
+        };
+        assert_eq!(hdr, hdr.clone());
+    }
 
     #[test]
     fn header_read_valid() {
@@ -174,7 +199,7 @@ mod tests {
     fn header_read_invalid_magic() {
         let mut hdr = b"\xCC\xFA".to_vec();
         hdr.extend(VALID_HEADER_WITHOUT_MAGIC);
-        let mut cursor = Cursor::new(hdr);
+        let mut cursor = Cursor::new(&hdr);
         let err = CcffHeader::read(&mut cursor).unwrap_err();
         assert_eq!(
             format!("{:?}", err),

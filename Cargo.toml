@@ -19,6 +19,7 @@ calypso_parsing = { path = "libs/calypso_parsing", version = "0.1.0" }
 calypso_diagnostic = { path = "libs/calypso_diagnostic", version = "0.1.0" }
 calypso_repl = { path = "libs/calypso_repl", version = "0.1.0" }
 saturnvm = { path = "libs/saturnvm", version = "0.1.0" }
+tracing-subscriber = { version = "0.2.17", features = ["parking_lot"] }
 
 [features]
 default = ["enable_mimalloc", "mimalloc/secure"]

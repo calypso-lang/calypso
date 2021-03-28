@@ -13,6 +13,7 @@ license = "MIT"
 lasso = { version = "0.5.0", features = ["multi-threaded"], optional = true }
 once_cell = { version = "1.7.2", optional = true }
 lazy_static = { version = "1.4.0", optional = true }
+tracing = "0.1.25"
 
 [features]
 default = ["span", "stream", "symbol"]

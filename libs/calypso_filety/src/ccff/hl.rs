@@ -320,6 +320,8 @@ impl Section {
 
 #[cfg(test)]
 pub mod tests {
+    use pretty_assertions::assert_eq;
+
     use std::io::Cursor;
 
     use super::*;
@@ -328,7 +330,7 @@ pub mod tests {
 
     #[test]
     fn container_create() {
-        let container = ContainerFile::new(1, 1);
+        let mut container = ContainerFile::new(1, 1);
         assert_eq!(
             container,
             ContainerFile {
@@ -337,8 +339,16 @@ pub mod tests {
                 sections: vec![]
             }
         );
-        assert_eq!(container.get_abi(), container.abi);
-        assert_eq!(container.get_filety(), container.filety);
+        assert_eq!(container.get_abi(), 1);
+        assert_eq!(container.get_filety(), 1);
+
+        container.abi(5);
+        container.filety(7);
+
+        assert_eq!(container.get_abi(), 5);
+        assert_eq!(container.get_filety(), 7);
+
+        assert_eq!(container.clone(), container);
     }
 
     #[test]
@@ -392,6 +402,10 @@ pub mod tests {
                 size: None
             }
         );
+        assert_eq!(
+            &container.get_section(".foo").unwrap().clone(),
+            container.get_section(".foo").unwrap()
+        );
     }
 
     #[test]
@@ -432,13 +446,30 @@ pub mod tests {
     fn container_sections_iter_mut() {
         let mut container = ContainerFile::new(1, 1);
         container.add_section(Section::new(".foo".to_string(), 1, 0).data(b"foo".to_vec()));
+        container.add_section(Section::new(".bar".to_string(), 2, 2).data(b"bar".to_vec()));
+        for section in container.sections_mut() {
+            section.stype(section.stype + 1);
+            section.flags(section.flags | 0b1000);
+        }
+        let mut sections = container.sections();
         assert_eq!(
-            container.sections().next().unwrap(),
-            &mut Section {
+            sections.next().unwrap(),
+            &Section {
                 name: ".foo".to_string(),
-                stype: 1,
-                flags: 0,
+                stype: 2,
+                flags: 0b1000,
                 data: Some(b"foo".to_vec()),
+                offset: None,
+                size: None
+            }
+        );
+        assert_eq!(
+            sections.next().unwrap(),
+            &Section {
+                name: ".bar".to_string(),
+                stype: 3,
+                flags: 0b1010,
+                data: Some(b"bar".to_vec()),
                 offset: None,
                 size: None
             }
@@ -596,7 +627,7 @@ pub mod tests {
         };
         let mut cursor = Cursor::new(VALID_CONTAINER_FILE);
         section.seek_to_data(&mut cursor).unwrap();
-        let pos = cursor.seek(SeekFrom::Current(0)).unwrap();
+        let pos = cursor.position();
         assert_eq!(pos, 0x47);
     }
 
