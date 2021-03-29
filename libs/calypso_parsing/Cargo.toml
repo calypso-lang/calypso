@@ -16,7 +16,7 @@ calypso_base = { path = "../calypso_base", version = "0.1.0" }
 calypso_ast = { path = "../calypso_ast", version = "0.1.0" }
 lazy_static = "1.4.0"
 lalrpop-util = "0.19.5"
-anyhow = "1.0.39"
+anyhow = "1.0.40"
 
 [build-dependencies]
 lalrpop = "0.19.5"
