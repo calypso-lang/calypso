@@ -11,4 +11,4 @@ license = "MIT"
 
 [dependencies]
 thiserror = "1.0.24"
-anyhow = "1.0.38"
+anyhow = "1.0.40"
