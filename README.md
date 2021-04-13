@@ -5,10 +5,10 @@
 [![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171)](https://discord.gg/26X6ChQQcG) ![Lines of Code][b2] <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
-> # :warning: WARNING :warning:
-> This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THIS CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY UNLESS OTHERWISE SPECIFIED!
 
 Calypso is a mostly imperative language with some functional influences that is focused on flexibility and simplicity.
+
+Note that this code is very work-in-progress. Contributions are welcome (and encouraged!), but it's not recommended to use this in production unless you're ready for some serious pain. Or code that just doesn't work.
 
 ## Example
 

@@ -6,9 +6,7 @@ SaturnVM is a bytecode VM written entirely in Rust (although there may eventuall
 
 The crate `calypso_vm` is going to eventually be a more Calypso-specific interface to the VM.
 
-The same warning applies to these sources as the Calypso sources:
-> # :warning: WARNING :warning:
-> This is currently just a hodgepodge of parts that work and others that don't. DO NOT ASSUME **ANY** OF THIS CODE IS RELIABLE OR READY FOR PRODUCTION IN ANY WAY UNLESS OTHERWISE SPECIFIED!
+Note that this code is very work-in-progress. Contributions are welcome (and encouraged!), but it's not recommended to use this in production unless you're ready for some serious pain. Or code that just doesn't work.
 
 ## Example - Bytecode Builder
 
