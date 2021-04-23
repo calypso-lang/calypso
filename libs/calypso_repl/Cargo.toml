@@ -11,4 +11,4 @@ license = "MIT"
 
 [dependencies]
 rustyline = "8.0.0"
-regex = "1.4.5"
+regex = "1.4.6"
