@@ -7,7 +7,7 @@ description = "A (very work-in-progress) general-purpose interpreted language wi
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/"
 repository = "https://github.com/calypso-lang/calypso/"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 keywords = ["interpreter"]
 categories = ["development-tools", "parser-implementations"]
 
@@ -27,7 +27,6 @@ enable_mimalloc = ["mimalloc"]
 
 [workspace]
 exclude = ["libs/sublib_skeleton"]
-members = ["libs/*"]
 
 #[profile.release]
 #debug = true

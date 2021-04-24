@@ -7,7 +7,7 @@ description = "Binary file type descriptions, parsers, etc. for Calypso"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_filety"
 repository = "https://github.com/calypso-lang/calypso/"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 calypso_error = { path = "../calypso_error", version = "1.0.1" }

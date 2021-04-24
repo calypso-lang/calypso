@@ -1,0 +1,87 @@
+// A few ways to do factorial
+
+/*
+pub fn factorial(n: uint): uint ->
+    case n do
+        0 -> 1,
+        n -> n * factorial(n - 1)
+    end
+
+pub fn factorial_tail(n: uint, acc: uint \\ 1): uint ->
+    case n, acc do
+        0, acc -> acc
+        n, acc -> factorial_tail(n - 1, n * acc)
+    end
+
+pub fn factorial_iter(n: uint): uint ->
+    (1..n).product()
+
+pub fn factorial_iter_loop(n: uint): uint -> do
+    let mut res = 1
+
+    if n == 0 -> ret 1
+
+    for i in 1..n -> res *= i
+
+    res
+end
+*/
+
+// IR
+(module
+    (name "factorial")
+    (fn "factorial" (arg uint) (ret uint) (block 0
+        (register %n (ty const uint))
+        (args.load %n 0)
+        (uint.eq (ty uint) %n (uint.const 0))
+        (jump_if (block 1) (block 2))
+    ) (block 1
+        (ret (uint.const 1))
+    ) (block 2
+        (register %0 (ty const uint))
+        (register %1 (ty const uint))
+        (register %2 (ty const uint))
+        (uint.sub (ty uint) %0 %n (uint.const 1))
+        (call (fn "factorial" 1) (block 0) %1 %0)
+        (drop %0)
+        (uint.mul (ty uint) %2 %n %1)
+        (drop %1 %n)
+        (ret %2)
+    ))
+)
+
+// svm asm
+(module
+    (name "factorial")
+    (fn "factorial" 1 (block 0
+        (register %n const64)
+        (args.load %n 0)
+        (uint.eq %n (uint.const 0))
+        (jump_if (block 1) (block 2))
+    ) (block 1
+        (ret (uint.const 1))
+    ) (block 2
+        (register %0 const64)
+        (register %1 const64)
+        (register %2 const64)
+        (uint.sub %0 %n (uint.const 1))
+        (call (fn "factorial" 1) (block 0) %1 %0)
+        (drop %0)
+        (uint.mul %2 %n %1)
+        (drop %1 %n)
+        (ret %2)
+    ))
+)
+
+fn factorial := c.u -> u.
+@0:
+    pop $c.u:0
+    test_eq, $c.u:0, #u:0
+    jump_if @1, @2
+@1:
+    load $r.u, #u:0
+@2:
+    sub $c.u:1, $c.u:0, #u:1
+    push $c.u:1
+    call (factorial : c.u -> u), @0
+    mul $r.u, $c.u:0, $r.u

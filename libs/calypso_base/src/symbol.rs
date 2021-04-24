@@ -4,6 +4,8 @@ use std::fmt::{self, Debug, Display};
 use lasso::{Key, Spur, ThreadedRodeo};
 use once_cell::sync::OnceCell;
 
+pub use lasso;
+
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Symbol(Spur);
 
@@ -37,7 +39,7 @@ impl Symbol {
     }
 
     pub fn is_keyword(&self) -> bool {
-        self == &kw::TRUE || self == &kw::FALSE || self == &kw::NULL
+        self == &kw::TRUE || self == &kw::FALSE
     }
 }
 
@@ -167,6 +169,5 @@ intern_static! {kw, Keyword => {
     Under; UNDERSCORE: "_",
 
     True; TRUE: "true",
-    False; FALSE: "false",
-    Null; NULL: "null"
+    False; FALSE: "false"
 }}

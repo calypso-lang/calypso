@@ -1,0 +1,18 @@
+[package]
+name = "saturnvm_builder"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "Bytecode and IR builders for SaturnVM"
+readme = "README.md"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/saturnvm_builder"
+repository = "https://github.com/calypso-lang/calypso/"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+
+[dependencies.calypso_base]
+path = "../calypso_base"
+version = "0.1.0"
+default_features = false
+features = ["symbol"]

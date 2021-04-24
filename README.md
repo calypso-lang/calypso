@@ -15,29 +15,26 @@ Note that this code is very work-in-progress. Contributions are welcome (and enc
 The following example is an implementation of [FizzBuzz](https://en.wikipedia.org/wiki/Fizz_buzz) that goes until a number specified in the CLI arguments of the program, or 100 if that is not present. Note that this is currently psuedocode and may change.
 
 
-```
-import atlas.process
+```rust
+import atlas.process.Args
 
-@spec main(process.Args) -> :ok | (:error, Error)
-fn main(args) ->
-    args[0]
-    |> Nullable.get_or!("100")
-    |> u16.parse!
+fn main(args: Args) ->
+    args
+      .get(0)
+      .unwrap_or(100)
+    |> uint.from_string
+      .unwrap_or(100)
     |> fizzbuzz
-    |> Iter.each(&println/1)
-end
+      .each(&println)
 
-@spec fizzbuzz(u16) -> [string]
-fn fizzbuzz(max) ->
-  (1..=max).map(fn n -> 
+fn fizzbuzz(max: uint): [string] ->
+  (1..=max).map(fn n ->
     case do
       15.divides(n) -> "FizzBuzz",
       3.divides(n)  -> "Fizz",
       5.divides(n)  -> "Buzz",
       _             -> n.to_string
-    end
-  end)
-end
+    end)
 ```
 
 ## Compatibility
@@ -57,11 +54,20 @@ Calypso is developed and tested on these platforms:
 
 ## License
 
-This project is licensed under the MIT license ([LICENSE](LICENSE) or http://opensource.com/licenses/MIT).
+Licensed under either of
+
+ * Apache License, Version 2.0
+   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license
+   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
 
 ## Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you (i.e. submitted as a patch or pull request), shall be licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
 
 ## [crates.io][crates.io] statuses
 
@@ -132,7 +138,7 @@ Docs for the `main` branch can be found [here](https://calypso-lang.github.io/ru
 
 ## SaturnVM
 
-SaturnVM is the VM I'm writing for Calypso. It's meant to be mostly standalone but at the moment there may be some connections or dependencies between it and Calypso. SaturnVM's top-level crate can be found in `libs/saturnvm` and some of it's subcrates will be found in `libs/` under the name `saturnvm_*`. The `calypso_vm` crate will probably be a Calypso-specific interface to Odyssey.
+SaturnVM is the VM I'm writing for Calypso. It's meant to be mostly standalone but at the moment there may be some connections or dependencies between it and Calypso. SaturnVM's top-level crate can be found in `libs/saturnvm` and some of it's subcrates will be found in `libs/` under the name `saturnvm_*`. The `calypso_vm` crate will probably be a Calypso-specific interface to SaturnVM.
 
 For more information, see [its README](libs/saturnvm/README.md).
 

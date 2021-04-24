@@ -7,7 +7,7 @@ description = "Diagnostics for Calypso"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_diagnostic"
 repository = "https://github.com/calypso-lang/calypso/"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 calypso_base = { path = "../calypso_base", version = "0.1.0" }

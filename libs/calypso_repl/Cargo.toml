@@ -7,7 +7,7 @@ description = "REPL utilities for Calypso"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_repl"
 repository = "https://github.com/calypso-lang/calypso/"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 rustyline = "8.0.0"

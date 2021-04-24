@@ -197,13 +197,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "calypso_opt"
-version = "0.1.0"
-dependencies = [
- "calypso_parsing",
-]
-
-[[package]]
 name = "calypso_parsing"
 version = "0.1.0"
 dependencies = [

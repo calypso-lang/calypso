@@ -37,3 +37,6 @@ type Option(T) -> [Some(T), None]
 
 // Type alias
 type Foo -> Bar
+
+// Generic type alias
+type FooResult(T) -> Result(T, FooError)

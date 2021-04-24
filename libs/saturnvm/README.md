@@ -48,11 +48,20 @@ Calypso is developed and tested on these platforms:
 
 ## License
 
-This project is licensed under the MIT license ([LICENSE](LICENSE) or http://opensource.com/licenses/MIT).
+Licensed under either of
+
+ * Apache License, Version 2.0
+   ([LICENSE-APACHE](../../LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license
+   ([LICENSE-MIT](../../LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
 
 ## Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you (i.e. submitted as a patch or pull request), shall be licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
 
 ## [crates.io][crates.io] statuses
 

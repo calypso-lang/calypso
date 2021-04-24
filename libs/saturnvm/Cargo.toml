@@ -7,7 +7,7 @@ description = "A bytecode VM developed for Calypso"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/saturnvm"
 repository = "https://github.com/calypso-lang/calypso/"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 calypso_filety = { path = "../calypso_filety", version = "1.2.0" }

@@ -1,0 +1,52 @@
+//! Reverse lines from a file or stdin.
+
+import standard.{
+    process.Args,
+    fs.{File, Mode},
+    io.{self, prelude.*}
+}
+
+// Declare the main function, which receives an instance of `process.Args`,
+// an iterator over the program arguments with some helper functions for CLI
+// programs.
+fn main(args: Args) -> do
+    args
+        // Get the first argument.
+        .get(0)
+        // map_or_else converts a Some(T) into a U, taking a function `T -> U`
+        // (that maps in the `Some` case), and a function () -> U (that is the
+        // default in the `None` case). Thus, this function call converts an
+        // `Option(str)` into a `dyn Read`, turning a `Some(str)` into a read-
+        // only stream of the file based on the name in the `str`, and a `None`
+        // into a read-only stream of the standard input stream.
+        //
+        // The types on both cases of this function (Some(name) and None) are
+        // different (`File` and `Stdin` respectively), so we must use
+        // `as dyn Read` to turn them into a dynamic instance of the `Read`
+        // trait.
+        .map_or_else(
+            fn name ->
+                // Open the file as read-only and panic if it could not be
+                // opened.
+                File
+                    .open(name, Mode.Read)
+                    .expect("Failed to open file")
+                    as dyn Read, 
+            fn ->
+                // Open stdin and panic if it could not be opened.
+                io
+                    .stdin()
+                    .expect("Failed to open stdin")
+                    as dyn Read
+        )
+        // Read to the end of the stream.
+        .read_to_end()
+        // Get an iterator over the lines in the stream.
+        .lines()
+        // Reverse the iterator.
+        .rev()
+        // Print each line to stdout.
+        // `&println("{}", &1)` is equivalent to `fn x -> println("{}", x)`
+        // using the terse capture syntax.
+        .for_each(&println("{}", &1))
+end

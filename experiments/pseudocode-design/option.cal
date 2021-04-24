@@ -1,4 +1,4 @@
-pub enum Option(T) = [ Some(T), None ]
+pub type Option(T) -> [ Some(T), None ]
 
 with(T) impl Option(T) {
 
@@ -38,22 +38,13 @@ with(T) pub fn option_or(a: Option(T), b: Option(T)): Option(T) ->
         _             -> None
     end
 
-
-// with(T) pub fn option_or(a: Option(T), b: Option(T)) :: Option(T) {
-    // case (a, b) {
-        // (Some(v), _)   -> Some(v),
-        // (None, Some(v) -> Some(v),
-        // _              -> None
-    // }
-// }
-
 pub fn factorial(n: uint): uint ->
     case n do
         0 -> 1,
         n -> n * factorial(n - 1)
     end
 
-pub fn factorial_tail(n: uint, acc: uint): uint ->
+pub fn factorial_tail(n: uint, acc: uint \\ 1): uint ->
     case n, acc do
         0, acc -> acc
         n, acc -> factorial_tail(n - 1, n * acc)

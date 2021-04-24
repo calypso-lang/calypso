@@ -7,7 +7,7 @@ description = "Calypso optimization passes"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_opt"
 repository = "https://github.com/calypso-lang/calypso/"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 calypso_parsing = { path = "../calypso_parsing", version = "0.1.0" }
