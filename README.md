@@ -25,7 +25,7 @@ fn main(args: Args) ->
     |> uint.from_string
     |> .unwrap_or(100)
     |> fizzbuzz
-    |> .each(&println)
+    |> .each(&println("{}", &1))
 
 fn fizzbuzz(max: uint): [string] ->
   (1..=max).map(fn n ->
