@@ -12,5 +12,10 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_filety/index.html")]
 #![warn(clippy::pedantic)]
 
+// todo(@ThePuzzlemaker: frame|filety):
+//   reimplement using nom and improving the binary format. this will probably
+//     cause backwards-incompatibility, but it will allow for better space
+//     efficiency.
+
 /// Calypso Container File Format. See the [module-level docs](self) for more information.
 pub mod ccff;
