@@ -15,7 +15,7 @@ Note that this code is very work-in-progress. Contributions are welcome (and enc
 The following example is an implementation of [FizzBuzz](https://en.wikipedia.org/wiki/Fizz_buzz) that goes until a number specified in the CLI arguments of the program, or 100 if that is not present. Note that this is currently psuedocode and may change.
 
 
-```rust
+```haxe
 import standard.process.Args
 
 fn main(args: Args) ->
