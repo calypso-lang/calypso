@@ -16,16 +16,16 @@ The following example is an implementation of [FizzBuzz](https://en.wikipedia.or
 
 
 ```rust
-import atlas.process.Args
+import standard.process.Args
 
 fn main(args: Args) ->
     args
-      .get(0)
-      .unwrap_or(100)
+    |> .get(0)
+    |> .unwrap_or(100)
     |> uint.from_string
-      .unwrap_or(100)
+    |> .unwrap_or(100)
     |> fizzbuzz
-      .each(&println)
+    |> .each(&println)
 
 fn fizzbuzz(max: uint): [string] ->
   (1..=max).map(fn n ->
