@@ -21,7 +21,7 @@ import standard.process.Args
 fn main(args: Args) ->
     args
     |> .get(0)
-    |> .unwrap_or(100)
+    |> .unwrap_or("100")
     |> uint.from_string
     |> .unwrap_or(100)
     |> fizzbuzz
