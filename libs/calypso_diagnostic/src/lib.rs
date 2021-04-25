@@ -39,6 +39,8 @@ pub type FileMgr = reporting::files::SimpleFiles<String, String>;
 /// The `as ()` at the end is to change the `Ok` type of the result, if necessary.
 /// Panic errors should only be used if there is **ABSOLUTE CONFIDENCE** that
 /// there is **NO** way to recover from this error.
+// todo(@ThePuzzlemaker: diag|frame):
+//   convert this to compile-time format strings using hacky macro stuff
 #[macro_export]
 macro_rules! gen_error {
     (Err($($rest:tt)*) as $ty:ty) => {

@@ -6,6 +6,8 @@
 
 /// A helper macro to generate a list of diagnostics.
 /// (Shamelessly stolen from rustc_error_codes)
+// todo(@ThePuzzlemaker: diag|frame):
+//   convert this to compile-time format strings using hacky macro stuff
 macro_rules! register_diagnostics {
     ($($ecode:ident: $format:expr),* $(,)? ; $($ecode_no_msg:ident: $format_no_msg:expr),* $(,)?) => (
         use ::std::collections::HashMap;
@@ -42,6 +44,7 @@ macro_rules! register_diagnostics {
     )
 }
 
+// todo(diag): add more extended diagnostic information. see #28.
 register_diagnostics! {
     // These diagnostics have detailed information in messages/<ERROR CODE>.md
     E0001: "No corresponding `/*` for `*/`.",
