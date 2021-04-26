@@ -37,6 +37,11 @@ subcommands:
                         help: The input file to lex. Use `-` to lex from standard input.
                         required: true
                         index: 1
+            - buildinfo:
+                about: Show information about the build environment of this executable.
+                visible_alias: bi
+            - panic:
+                about: Intentional panic in order to test out ICE handling.
             # - dump:
             #     about: Dump the parsed (raw, i.e. right after parsing, or AST) representation of a file.
             #     visible_alias: d
@@ -53,3 +58,19 @@ subcommands:
             #             help: Sets the input file to use
             #             required: true
             #             index: 1
+args:
+    - color:
+        long: color
+        help: Set how color is displayed, if at all. By default this is set to `auto`. Use `--help` to see more information on what the different values mean.
+        long_help: |
+            Set how color is displayed, if at all. By default this is set to `auto`.
+            - `always`: Always use color, even if stdout/stderr is not a TTY
+            - `ansi`: Always use color, using ANSI escape codes, even if stdout/stderr is not a TTY or does not support them.
+            - `auto`: Use color if stdout/stderr is a TTY, don't if it is not.
+            - `never`: Never use color, even if stdout/stderr is a TTY.
+        possible_values:
+            - always
+            - ansi
+            - auto
+            - never
+        default_value: auto

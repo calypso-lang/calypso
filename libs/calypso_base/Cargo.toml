@@ -13,13 +13,19 @@ license = "MIT OR Apache-2.0"
 lasso = { version = "0.5.0", features = ["multi-threaded"], optional = true }
 once_cell = { version = "1.7.2", optional = true }
 lazy_static = { version = "1.4.0", optional = true }
+termcolor = { version = "1.1.2", optional = true }
+atty = { version = "0.2.14", optional = true }
+# parking_lot = { version = "0.11.1", optional = true }
 tracing = "0.1.25"
+calypso_error = { path = "../calypso_error", version = "1.0.1" }
 
 [features]
-default = ["span", "stream", "symbol"]
+default = ["span", "stream", "symbol", "session", "ui"]
 span = []
 stream = []
 symbol = ["lazy_static", "once_cell", "lasso"]
+session = ["termcolor"]
+ui = ["termcolor", "atty"]
 
 # [dev-dependencies]
 # proptest = "0.10.1"

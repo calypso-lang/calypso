@@ -8,6 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_parsing"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
+build = "build.rs"
 
 [dependencies]
 calypso_util = { path = "../calypso_util", version = "0.1.0" }

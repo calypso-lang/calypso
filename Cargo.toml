@@ -10,23 +10,27 @@ repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
 keywords = ["interpreter"]
 categories = ["development-tools", "parser-implementations"]
+build = "build.rs"
 
 [dependencies]
 clap = { version = "2.33.3", features = ["yaml"] }
-ansi_term = "0.12.1"
 mimalloc = { version = "0.1.25", optional = true }
 calypso_parsing = { path = "libs/calypso_parsing", version = "0.1.0" }
 calypso_diagnostic = { path = "libs/calypso_diagnostic", version = "0.1.0" }
 calypso_repl = { path = "libs/calypso_repl", version = "0.1.0" }
+calypso_base = { path = "libs/calypso_base", version = "0.1.0", default-features = false, features = ["ui", "session"] }
 saturnvm = { path = "libs/saturnvm", version = "0.1.0" }
 tracing-subscriber = { version = "0.2.17", features = ["parking_lot"] }
+once_cell = "1.7.2"
 
 [features]
-default = ["enable_mimalloc", "mimalloc/secure"]
-enable_mimalloc = ["mimalloc"]
+default = ["mimalloc", "mimalloc/secure"]
 
 [workspace]
 exclude = ["libs/sublib_skeleton"]
+
+[build-dependencies]
+vergen = "5.1.4"
 
 #[profile.release]
 #debug = true
