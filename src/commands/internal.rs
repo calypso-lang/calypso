@@ -68,7 +68,7 @@ pub fn lexer(sess: Arc<BaseSession>, matches: &ArgMatches) {
 
     let mut files = FileMgr::new();
     let source_id = files.add(path.display().to_string(), contents);
-    let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
+    let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new(Arc::clone(&sess))));
     let mut lexer = Lexer::new(
         source_id,
         files.get(source_id).unwrap().source(),
@@ -127,7 +127,7 @@ pub fn lexer_stdin(sess: Arc<BaseSession>, matches: &ArgMatches) {
 
     let mut files = FileMgr::new();
     let source_id = files.add("<anon>".to_string(), contents);
-    let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
+    let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new(Arc::clone(&sess))));
     let mut lexer = Lexer::new(
         source_id,
         files.get(source_id).unwrap().source(),
@@ -176,7 +176,7 @@ pub fn lexer_stdin_repl(sess: Arc<BaseSession>, ignore_ws: bool) {
         Box::new(move |_ctx, contents| {
             let mut files = FileMgr::new();
             let source_id = files.add("<anon>".to_string(), contents);
-            let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new()));
+            let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new(Arc::clone(&sess))));
             let mut lexer = Lexer::new(
                 source_id,
                 files.get(source_id).unwrap().source(),

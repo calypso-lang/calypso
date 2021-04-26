@@ -5,6 +5,8 @@ use calypso_base::span::Span;
 use calypso_base::streams::Stream;
 use calypso_diagnostic::prelude::*;
 
+// todo(@ThePuzzlemaker: parse):
+//   looks like a lot of these could be converted to sync rather than panic
 impl<'lex> Lexer<'lex> {
     pub(super) fn handle_escape_character(&mut self) -> CalResult<bool> {
         let saved_start = self.start;
@@ -19,7 +21,7 @@ impl<'lex> Lexer<'lex> {
                 Some('u') => self.handle_unicode_escape()?,
                 Some(ch) => {
                     if is_whitespace_ch(ch) {
-                        gen_error!(Err(self => {
+                        gen_error!(self.grcx.borrow(), Err(self => {
                             E0008;
                             labels: [
                                 LabelStyle::Primary =>
@@ -29,7 +31,7 @@ impl<'lex> Lexer<'lex> {
                         }) as ())?
                     }
                     self.next();
-                    gen_error!(Err(self => {
+                    gen_error!(self.grcx.borrow(), Err(self => {
                         E0006, ch = ch;
                         labels: [
                             LabelStyle::Primary =>
@@ -38,7 +40,7 @@ impl<'lex> Lexer<'lex> {
                         ]
                     }) as ())?
                 }
-                None => gen_error!(Err(self => {
+                None => gen_error!(self.grcx.borrow(), Err(self => {
                         E0007;
                         labels: [
                             LabelStyle::Primary =>
@@ -64,7 +66,7 @@ impl<'lex> Lexer<'lex> {
             let sp = self.peek();
             if sp.is_none() || is_whitespace(sp.unwrap()) {
                 if i == 1 {
-                    gen_error!(Err(self => {
+                    gen_error!(self.grcx.borrow(), Err(self => {
                         E0004;
                         labels: [
                             LabelStyle::Primary =>
@@ -73,7 +75,7 @@ impl<'lex> Lexer<'lex> {
                         ]
                     }) as ())?
                 } else if i == 2 {
-                    gen_error!(Err(self => {
+                    gen_error!(self.grcx.borrow(), Err(self => {
                         E0009;
                         labels: [
                             LabelStyle::Primary =>
@@ -98,7 +100,7 @@ impl<'lex> Lexer<'lex> {
                 self.next();
             } else {
                 self.set_start(sp.span());
-                gen_error!(Err(self => {
+                gen_error!(self.grcx.borrow(), Err(self => {
                     E0005, ch = ch;
                     labels: [
                         LabelStyle::Primary =>
@@ -116,7 +118,7 @@ impl<'lex> Lexer<'lex> {
         self.next();
         self.current_to_start();
         match self.peek().copied() {
-            Some(sp) if is_whitespace(&sp) => gen_error!(Err(self => {
+            Some(sp) if is_whitespace(&sp) => gen_error!(self.grcx.borrow(), Err(self => {
                     E0012;
                     labels: [
                         LabelStyle::Primary =>
@@ -124,7 +126,7 @@ impl<'lex> Lexer<'lex> {
                             "this should be an opening curly bracket"
                     ]
                 }) as ())?,
-            None => gen_error!(Err(self => {
+            None => gen_error!(self.grcx.borrow(), Err(self => {
                 E0011;
                 labels: [
                     LabelStyle::Primary =>
@@ -134,7 +136,7 @@ impl<'lex> Lexer<'lex> {
             }) as ())?,
             Some(sp) if sp != '{' => {
                 self.next();
-                gen_error!(Err(self => {
+                gen_error!(self.grcx.borrow(), Err(self => {
                     E0010, ch = sp.value_owned();
                     labels: [
                         LabelStyle::Primary =>
@@ -151,7 +153,7 @@ impl<'lex> Lexer<'lex> {
 
         if self.is_at_end() {
             self.current_to_start();
-            gen_error!(Err(self => {
+            gen_error!(self.grcx.borrow(), Err(self => {
                 E0015;
                 labels: [
                     LabelStyle::Primary =>
@@ -164,7 +166,7 @@ impl<'lex> Lexer<'lex> {
         let sp = *self.peek().unwrap();
         if is_whitespace(&sp) {
             self.current_to_start();
-            gen_error!(Err(self => {
+            gen_error!(self.grcx.borrow(), Err(self => {
                 E0017;
                 labels: [
                     LabelStyle::Primary =>
@@ -173,7 +175,7 @@ impl<'lex> Lexer<'lex> {
                 ]
             }) as ())?
         } else if self.peek_eq(&'}') != Some(true) {
-            gen_error!(Err(self => {
+            gen_error!(self.grcx.borrow(), Err(self => {
                 E0016, ch = sp.value_owned();
                 labels: [
                     LabelStyle::Primary =>
@@ -185,7 +187,7 @@ impl<'lex> Lexer<'lex> {
 
         // We need to check for this after curly bracket checks
         if count == 0 {
-            gen_error!(Err(self => {
+            gen_error!(self.grcx.borrow(), Err(self => {
                 E0019;
                 labels: [
                     LabelStyle::Primary =>
@@ -211,7 +213,7 @@ impl<'lex> Lexer<'lex> {
             if count == 6 {
                 break;
             } else if is_whitespace(&sp) {
-                gen_error!(Err(self => {
+                gen_error!(self.grcx.borrow(), Err(self => {
                     E0018;
                     labels: [
                         LabelStyle::Primary =>
@@ -220,7 +222,7 @@ impl<'lex> Lexer<'lex> {
                     ]
                 }) as ())?
             } else if !ch.is_ascii_hexdigit() {
-                gen_error!(Err(self => {
+                gen_error!(self.grcx.borrow(), Err(self => {
                     E0014, ch = ch;
                     labels: [
                         LabelStyle::Primary =>
@@ -312,7 +314,7 @@ impl<'lex> Lexer<'lex> {
 
         if self.peek_eq(&'"') != Some(true) {
             self.current_to_start();
-            gen_error!(Err(self => {
+            gen_error!(self.grcx.borrow(), Err(self => {
                 E0024;
                 labels: [
                     LabelStyle::Primary =>

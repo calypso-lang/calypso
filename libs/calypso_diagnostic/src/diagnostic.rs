@@ -1,19 +1,18 @@
+use std::{fmt, sync::Arc};
+
 use crate::prelude::DiagnosticError;
 
 use super::{reporting, FileMgr};
-use calypso_base::span::Span;
+use calypso_base::{session::BaseSession, span::Span};
 use calypso_error::CalResult;
 use reporting::diagnostic::{Diagnostic as CodespanDiag, Label};
 use reporting::term::{self, termcolor::Buffer};
 
-use std::fmt;
-
 pub use reporting::diagnostic::{LabelStyle, Severity};
 
-#[derive(Clone, Debug)]
-pub struct Diagnostic(CodespanDiag<usize>, String);
+pub struct Diagnostic(CodespanDiag<usize>, Buffer, Arc<BaseSession>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Builder<'a> {
     level: Severity,
     code: Option<String>,
@@ -21,11 +20,12 @@ pub struct Builder<'a> {
     labels: Vec<Label<usize>>,
     notes: Vec<String>,
     files: &'a FileMgr,
+    sess: Arc<BaseSession>,
 }
 
 impl<'a> Builder<'a> {
     #[must_use]
-    pub fn new(level: Severity, files: &'a FileMgr) -> Self {
+    pub fn new(sess: Arc<BaseSession>, level: Severity, files: &'a FileMgr) -> Self {
         Self {
             level,
             code: None,
@@ -33,6 +33,7 @@ impl<'a> Builder<'a> {
             labels: Vec::new(),
             notes: Vec::new(),
             files,
+            sess,
         }
     }
 
@@ -77,13 +78,11 @@ impl<'a> Builder<'a> {
             diagnostic = diagnostic.with_message(self.message.clone())
         }
         let diagnostic = diagnostic.with_labels(self.labels).with_notes(self.notes);
-        let mut buf = Buffer::ansi();
+        let mut buf = self.sess.stderr.buffer();
         let config = term::Config::default();
 
         term::emit(&mut buf, &config, self.files, &diagnostic).map_err(DiagnosticError::from)?;
-        let buf = buf.into_inner();
-        let rendered = String::from_utf8(buf)?;
-        Ok(Diagnostic(diagnostic, rendered))
+        Ok(Diagnostic(diagnostic, buf, self.sess))
     }
 }
 
@@ -99,13 +98,20 @@ impl Diagnostic {
     }
 
     #[must_use]
-    pub fn rendered(&self) -> &str {
+    pub fn rendered(&self) -> &Buffer {
         &self.1
     }
 }
 
 impl fmt::Display for Diagnostic {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.2.stderr.print(&self.1).map_err(|_| fmt::Error)?;
+        Ok(())
+    }
+}
+
+impl fmt::Debug for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.1)
+        f.debug_tuple("Diagnostic").field(&self.0).finish()
     }
 }

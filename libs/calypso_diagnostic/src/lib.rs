@@ -43,12 +43,14 @@ pub type FileMgr = reporting::files::SimpleFiles<String, String>;
 //   convert this to compile-time format strings using hacky macro stuff
 #[macro_export]
 macro_rules! gen_error {
-    (Err($($rest:tt)*) as $ty:ty) => {
-        $crate::calypso_error::CalResult::<$ty>::Err($crate::error::DiagnosticError::from($crate::gen_error!(@i1 $($rest)*)).into())
+    ($grcx:expr, Err($($rest:tt)*) as $ty:ty) => {
+        $crate::calypso_error::CalResult::<$ty>::Err($crate::error::DiagnosticError::from($crate::gen_error!(@i1 $grcx, $($rest)*)).into())
     };
 
     (sync $grcx:expr, $($rest:tt)*) => {{
-        $grcx.report_syncd($crate::gen_error!(@i1 $($rest)*));
+        let mut grcx = $grcx;
+        let err = $crate::gen_error!(@i1 (&*grcx), $($rest)*);
+        (&mut *grcx).report_syncd(err);
     }};
 
     (@i3 $diagnostic:ident; notes: [$($note:expr),*$(,)?]) => {{
@@ -70,8 +72,9 @@ macro_rules! gen_error {
         $diag
     }};
 
-    (@i1 $self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; $($rest:tt)* }) => {{
+    (@i1 $grcx:expr, $self:expr => { $code:ident$(, $($name:ident = $value:expr),*)?; $($rest:tt)* }) => {{
         let mut diagnostic = $crate::diagnostic::Builder::new(
+            ::std::sync::Arc::clone($grcx.sess()),
             $crate::diagnostic::Severity::Error,
             &($self).files,
         );

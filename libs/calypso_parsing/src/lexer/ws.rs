@@ -78,7 +78,7 @@ impl<'lex> Lexer<'lex> {
             if self.is_at_end() && !stack.is_empty() {
                 // There's no way to tell whether stuff after a /* was intended to be a comment
                 // or code, so we make this a fatal error.
-                gen_error!(Err(self => {
+                gen_error!(self.grcx.borrow(), Err(self => {
                     E0002;
                     labels: [
                         LabelStyle::Primary =>

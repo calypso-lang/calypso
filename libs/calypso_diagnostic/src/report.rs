@@ -1,15 +1,23 @@
+use std::sync::Arc;
+
+use calypso_base::session::BaseSession;
+
 use crate::diagnostic::Diagnostic;
 
-#[derive(Clone, Debug, Default)]
 pub struct GlobalReportingCtxt {
     errors: Vec<Diagnostic>,
     nonfatals: Vec<Diagnostic>,
+    sess: Arc<BaseSession>,
 }
 
 impl GlobalReportingCtxt {
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(sess: Arc<BaseSession>) -> Self {
+        Self {
+            errors: Vec::new(),
+            nonfatals: Vec::new(),
+            sess,
+        }
     }
 
     pub fn report_syncd(&mut self, value: Diagnostic) {
@@ -28,5 +36,10 @@ impl GlobalReportingCtxt {
     #[must_use]
     pub fn errors(&self) -> &[Diagnostic] {
         &self.errors
+    }
+
+    #[must_use]
+    pub fn sess(&self) -> &Arc<BaseSession> {
+        &self.sess
     }
 }

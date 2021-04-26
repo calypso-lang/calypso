@@ -24,7 +24,6 @@ mod ws;
 pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
 pub type Lexeme<'lex> = &'lex str;
 
-#[derive(Debug)]
 pub struct Lexer<'lex> {
     stream: StringStream<'lex>,
     source_id: usize,
@@ -106,7 +105,6 @@ impl<'lex> IntoIterator for Lexer<'lex> {
     }
 }
 
-#[derive(Debug)]
 pub struct Iter<'lex> {
     lexer: Lexer<'lex>,
     encountered_error: bool,
