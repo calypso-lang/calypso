@@ -1,4 +1,4 @@
-use std::{fmt, sync::Arc};
+use std::{fmt, io::Write, sync::Arc};
 
 use crate::prelude::DiagnosticError;
 
@@ -82,6 +82,7 @@ impl<'a> Builder<'a> {
         let config = term::Config::default();
 
         term::emit(&mut buf, &config, self.files, &diagnostic).map_err(DiagnosticError::from)?;
+        buf.flush()?;
         Ok(Diagnostic(diagnostic, buf, self.sess))
     }
 }

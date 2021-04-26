@@ -81,7 +81,13 @@ pub fn lexer(sess: Arc<BaseSession>, matches: &ArgMatches) {
         let token = lexer.scan();
         if let Err(err) = token {
             ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-            ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
+            if let CalError::Other(err) = err {
+                if let Ok(DiagnosticError::Diagnostic(diag)) = err.downcast::<DiagnosticError>() {
+                    println!("{}", diag);
+                }
+            } else {
+                ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
+            }
             break;
         } else if let Ok(token) = token {
             let token_ty = token.value().0;
@@ -140,7 +146,13 @@ pub fn lexer_stdin(sess: Arc<BaseSession>, matches: &ArgMatches) {
         let token = lexer.scan();
         if let Err(err) = token {
             ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-            ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
+            if let CalError::Other(err) = err {
+                if let Ok(DiagnosticError::Diagnostic(diag)) = err.downcast::<DiagnosticError>() {
+                    println!("{}", diag);
+                }
+            } else {
+                ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
+            }
             break;
         } else if let Ok(token) = token {
             let token_ty = token.value().0;
@@ -189,7 +201,15 @@ pub fn lexer_stdin_repl(sess: Arc<BaseSession>, ignore_ws: bool) {
                 let token = lexer.scan();
                 if let Err(err) = token {
                     ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-                    ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
+                    if let CalError::Other(err) = err {
+                        if let Ok(DiagnosticError::Diagnostic(diag)) =
+                            err.downcast::<DiagnosticError>()
+                        {
+                            println!("{}", diag);
+                        }
+                    } else {
+                        ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
+                    }
                     break;
                 } else if let Ok(token) = token {
                     let token_ty = token.value().0;
