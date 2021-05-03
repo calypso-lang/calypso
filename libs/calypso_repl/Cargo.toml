@@ -11,4 +11,4 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 rustyline = "8.0.0"
-regex = "1.4.6"
+regex = "1.5.3"
