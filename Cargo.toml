@@ -20,7 +20,7 @@ calypso_diagnostic = { path = "libs/calypso_diagnostic", version = "0.1.0" }
 calypso_repl = { path = "libs/calypso_repl", version = "0.1.0" }
 calypso_base = { path = "libs/calypso_base", version = "0.1.0", default-features = false, features = ["ui", "session"] }
 saturnvm = { path = "libs/saturnvm", version = "0.1.0" }
-tracing-subscriber = { version = "0.2.17", features = ["parking_lot"] }
+tracing-subscriber = { version = "0.2.18", features = ["parking_lot"] }
 once_cell = "1.7.2"
 
 [features]
