@@ -4,7 +4,7 @@ type Point -> {
     y: float
 }
 
-// Tuple strut
+// Tuple struct
 type PairOfInts -> (sint, sint)
 
 // Generic structs
@@ -40,3 +40,9 @@ type Foo -> Bar
 
 // Generic type alias
 type FooResult(T) -> Result(T, FooError)
+
+// Empty struct
+type Empty -> {}
+
+// Void enum (cannot be initialized)
+type Void -> []

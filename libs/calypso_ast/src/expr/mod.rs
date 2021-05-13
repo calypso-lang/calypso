@@ -1,7 +1,4 @@
-use calypso_base::{
-    span::Spanned,
-    symbol::{PotentiallyInterned, Symbol},
-};
+use calypso_base::span::Spanned;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr<'tok> {
@@ -33,18 +30,51 @@ pub enum BinOpKind {
     GtEq,
 }
 
+impl BinOpKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Add => "+",
+            Self::Subtract => "-",
+            Self::Multiply => "*",
+            Self::Divide => "/",
+            Self::Modulo => "%",
+            Self::Exponent => "**",
+            Self::LogicalOr => "||",
+            Self::LogicalAnd => "&&",
+            Self::BitOr => "|",
+            Self::BitXor => "^",
+            Self::BitAnd => "&",
+            Self::BitShiftLeft => "<<",
+            Self::BitShiftRight => ">>",
+            Self::Equal => "==",
+            Self::NotEqual => "!=",
+            Self::Lt => "<",
+            Self::Gt => ">",
+            Self::LtEq => "<=",
+            Self::GtEq => ">=",
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum UnOpKind {
     Negative,
     UnaryNot,
 }
 
+impl UnOpKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Negative => "-",
+            Self::UnaryNot => "!",
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Primary<'tok> {
     Number(&'tok str, Radix, Option<Suffix>),
     Bool(bool),
-    Atom(Symbol),
-    AtomStr(PotentiallyInterned<'tok>),
 }
 
 impl<'tok> Primary<'tok> {
@@ -57,7 +87,9 @@ impl<'tok> Primary<'tok> {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 /// Number radixes.
 pub enum Radix {
-    /// No prefix or `0d`
+    /// No prefix (`0d` by default)
+    None,
+    /// `0d`
     Decimal,
     /// `0b`
     Binary,
@@ -70,10 +102,21 @@ pub enum Radix {
 impl Radix {
     pub fn radix(self) -> u32 {
         match self {
+            Self::None => 10,
             Self::Decimal => 10,
             Self::Binary => 2,
             Self::Octal => 8,
             Self::Hexadecimal => 16,
+        }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::None => "",
+            Self::Decimal => "0d",
+            Self::Binary => "0b",
+            Self::Octal => "0o",
+            Self::Hexadecimal => "0x",
         }
     }
 }
@@ -89,4 +132,17 @@ pub enum Suffix {
     Float,
     /// Invalid suffix
     Invalid,
+    /// Actually a float literal, not an integer literal converted to a float
+    TrueFloat,
+}
+
+impl Suffix {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Invalid | Self::TrueFloat => "",
+            Self::Uint => "u",
+            Self::Sint => "s",
+            Self::Float => "f",
+        }
+    }
 }

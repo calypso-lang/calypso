@@ -2,6 +2,8 @@ use std::io::prelude::*;
 use std::rc::Rc;
 use std::{cell::RefCell, sync::Arc};
 
+use calypso_ast::pretty::PrettyPrinter;
+use calypso_ast::traverse::Visitor;
 use calypso_base::{
     session::BaseSession,
     ui::{atty::Stream, parse_color_pref},
@@ -36,7 +38,9 @@ fn main() {
         let parser = ExprParser::new();
         let res = parser.parse(source_id, iter);
         if let Ok(parsed) = res {
-            println!("{:?}", parsed);
+            let mut printer = PrettyPrinter::default();
+            printer.visit_expr(&parsed).unwrap();
+            println!("{}", printer);
         } else if let Err(err) = res {
             if matches!(err, ParseError::UnrecognizedEOF { .. }) {
                 break;

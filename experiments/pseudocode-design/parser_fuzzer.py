@@ -17,13 +17,9 @@ UNOPS = [ "!", "-", "" ]
 IDENT_START = string.ascii_letters
 IDENT_CONTINUE = IDENT_START + string.digits + "_"
 
-ATOM_STR_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#$%&\'()*+,-./:;<=>?@[]^_`{|}~ "
-
 s = ""
 
 INT_MAX = 255
-ATOM_MAX_LEN = 16
-ATOM_STR_MAX_LEN = 16
 
 def gen_integer():
     return str(random.randrange(0, INT_MAX + 1)) + random.choice(["s", "u", "f", ""])
@@ -34,21 +30,9 @@ def gen_float():
 def gen_bool():
     return random.choice(["true", "false"])
 
-def gen_atom():
-    new_len = random.randrange(1, ATOM_MAX_LEN)
-    ident = random.choice(IDENT_START)
-    if new_len > 1:
-        ident += ''.join(random.choice(IDENT_CONTINUE) for _ in range(new_len))
-    return ":" + ident
-
-def gen_atom_str():
-    return ':"' + ''.join(random.choice(ATOM_STR_CHARS) for _ in range(random.randrange(1, ATOM_STR_MAX_LEN) + 1)) + '"'
-
 def gen_literal():
     ops = [
         gen_integer,
-        gen_atom,
-        gen_atom_str,
         gen_bool,
         gen_float
     ]
@@ -76,6 +60,4 @@ if __name__ == "__main__":
     import sys
     n_iters = int(get(sys.argv, 1) or "1024")
     INT_MAX = int(get(sys.argv, 2) or "255")
-    ATOM_MAX_LEN = int(get(sys.argv, 3) or "16")
-    ATOM_STR_MAX_LEN = int(get(sys.argv, 4) or "16")
     print(gen_exprs(n_iters))

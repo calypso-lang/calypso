@@ -14,6 +14,9 @@ pub enum CalError {
     /// UTF-8 decoding errors
     #[error("utf-8 decoding error")]
     FromUtf8(#[from] std::string::FromUtf8Error),
+    /// Formatting errors
+    #[error("formatting error")]
+    Fmt(#[from] std::fmt::Error),
     /// Any other error, using [`anyhow`]
     #[error(transparent)]
     Other(#[from] anyhow::Error),

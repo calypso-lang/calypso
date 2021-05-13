@@ -43,8 +43,6 @@ extern {
         "<=" => Tok::Unprocessed( TokenType::LtEq   ),
         ">=" => Tok::Unprocessed( TokenType::GtEq   ),
 
-        ":" => Tok::Unprocessed( TokenType::Colon ),
-
         "Ident"     => Tok::Ident(  <Symbol>                      ),
         "StringLit" => Tok::String( <PotentiallyInterned<'input>> ),
 
@@ -94,18 +92,11 @@ Term: Box<Expr<'input>> = {
 Primary: Box<Expr<'input>> = {
     "NumberLit" => Box::new(Expr::Primary(Primary::detuple_number(<>))),
     Bool,
-    Atom
 }
 
 Bool: Box<Expr<'input>> = {
     "true" => Box::new(Expr::Primary(Primary::Bool(true))),
     "false" => Box::new(Expr::Primary(Primary::Bool(false)))
-}
-
-Atom: Box<Expr<'input>> = {
-    ":" <"Ident"> => Box::new(Expr::Primary(Primary::Atom(<>))),
-    ":" <"StringLit"> => Box::new(Expr::Primary(Primary::AtomStr(<>))),
-    ":" <Keyword> => Box::new(Expr::Primary(Primary::Atom(Symbol::from(<>))))
 }
 
 Keyword: Keyword = {

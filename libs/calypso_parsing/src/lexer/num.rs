@@ -11,7 +11,7 @@ impl<'lex> Lexer<'lex> {
         if self.handle_float_part()? {
             return Ok(self.new_token(TokenType::Float));
         }
-        let possibly_incomplete_tok = self.handle_int(Radix::Decimal)?;
+        let possibly_incomplete_tok = self.handle_int(Radix::None)?;
         if self.handle_float_part()? {
             return Ok(self.new_token(TokenType::Float));
         }
@@ -40,6 +40,27 @@ impl<'lex> Lexer<'lex> {
             '.' => {
                 self.handle_float_part()?;
                 Ok(self.new_token(TokenType::Float))
+            }
+            's' => {
+                self.next();
+                Ok(self.new_token(TokenType::Int {
+                    suffix: Some(Suffix::Sint),
+                    radix: Radix::None,
+                }))
+            }
+            'u' => {
+                self.next();
+                Ok(self.new_token(TokenType::Int {
+                    suffix: Some(Suffix::Uint),
+                    radix: Radix::None,
+                }))
+            }
+            'f' => {
+                self.next();
+                Ok(self.new_token(TokenType::Int {
+                    suffix: Some(Suffix::Float),
+                    radix: Radix::None,
+                }))
             }
             ch if ch.is_ascii_digit() => {
                 self.current_to_start();
@@ -81,7 +102,7 @@ impl<'lex> Lexer<'lex> {
             }
             _ => Ok(self.new_token(TokenType::Int {
                 suffix: None,
-                radix: Radix::Decimal,
+                radix: Radix::None,
             })),
         }
     }
@@ -228,7 +249,24 @@ impl<'lex> Lexer<'lex> {
     }
 
     fn handle_int(&mut self, radix: Radix) -> CalResult<Token<'lex>> {
-        self.gorge_digits_radix(radix);
+        let n_gorged = self.gorge_digits_radix(radix);
+        if n_gorged == 0 && radix != Radix::None {
+            self.current_to_start();
+            gen_error!(sync self.grcx.borrow_mut(), self => {
+                E0035;
+                labels: [
+                    LabelStyle::Primary =>
+                        (self.source_id, self.new_span());
+                        "expected a number here"
+                ],
+                notes: [
+                    format!(
+                        "help: perhaps you meant to use a zero literal with this base: `{}0`?",
+                        radix.name(),
+                    )
+                ]
+            });
+        }
         self.handle_unexpected_underscore()?;
         let suffix = self.handle_suffix();
 

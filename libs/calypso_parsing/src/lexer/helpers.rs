@@ -50,6 +50,7 @@ pub(super) fn is_ident_end(elem: &Spanned<char>) -> bool {
 pub(super) fn is_valid_for(elem: &Spanned<char>, radix: Radix) -> bool {
     let ch = elem.value_owned();
     match radix {
+        Radix::None => ch.is_ascii_digit(),
         Radix::Decimal => ch.is_ascii_digit(),
         Radix::Hexadecimal => ch.is_ascii_hexdigit(),
         Radix::Octal => ('0'..'8').contains(&ch),

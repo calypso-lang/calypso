@@ -19,3 +19,5 @@
 
 /// Calypso Container File Format. See the [module-level docs](self) for more information.
 pub mod ccff;
+
+pub mod ccff_new;

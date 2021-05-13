@@ -45,7 +45,7 @@ impl<'lex> Lexer<'lex> {
             if self.is_at_end() {
                 return Ok(self.new_token(TokenType::Int {
                     suffix: None,
-                    radix: Radix::Decimal,
+                    radix: Radix::None,
                 }));
             }
             return self.handle_int_leading_zero();
