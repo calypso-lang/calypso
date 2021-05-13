@@ -262,7 +262,7 @@ impl<'lex> Lexer<'lex> {
                 notes: [
                     format!(
                         "help: perhaps you meant to use a zero literal with this base: `{}0`?",
-                        radix.name(),
+                        radix,
                     )
                 ]
             });

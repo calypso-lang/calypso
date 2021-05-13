@@ -21,9 +21,9 @@ impl Visitor for PrettyPrinter {
             Primary::Number(num, radix, suffix) => write!(
                 self.0,
                 "{}{}{}",
-                radix.name(),
+                radix,
                 num,
-                suffix.map(|s| s.name()).unwrap_or("")
+                suffix.map(|s| format!("{}", s)).unwrap_or_default()
             )?,
             Primary::Bool(b) => write!(self.0, "{}", b)?,
         }
@@ -33,7 +33,7 @@ impl Visitor for PrettyPrinter {
     fn visit_expr(&mut self, x: &Expr) -> CalResult<()> {
         match x {
             Expr::BinOp(left, op, right) => {
-                write!(self.0, "({} ", op.name())?;
+                write!(self.0, "({} ", op)?;
                 self.visit_expr(left)?;
                 write!(self.0, " ")?;
                 self.visit_expr(right)?;
@@ -41,7 +41,7 @@ impl Visitor for PrettyPrinter {
             }
             Expr::Primary(primary) => self.visit_primary(primary)?,
             Expr::UnOp(op, expr) => {
-                write!(self.0, "({} ", op.value().name())?;
+                write!(self.0, "({} ", op.value())?;
                 self.visit_expr(expr)?;
                 write!(self.0, ")")?;
             }

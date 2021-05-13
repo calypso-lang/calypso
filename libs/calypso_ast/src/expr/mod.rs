@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 use calypso_base::span::Spanned;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -30,28 +32,28 @@ pub enum BinOpKind {
     GtEq,
 }
 
-impl BinOpKind {
-    pub fn name(self) -> &'static str {
+impl Display for BinOpKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Add => "+",
-            Self::Subtract => "-",
-            Self::Multiply => "*",
-            Self::Divide => "/",
-            Self::Modulo => "%",
-            Self::Exponent => "**",
-            Self::LogicalOr => "||",
-            Self::LogicalAnd => "&&",
-            Self::BitOr => "|",
-            Self::BitXor => "^",
-            Self::BitAnd => "&",
-            Self::BitShiftLeft => "<<",
-            Self::BitShiftRight => ">>",
-            Self::Equal => "==",
-            Self::NotEqual => "!=",
-            Self::Lt => "<",
-            Self::Gt => ">",
-            Self::LtEq => "<=",
-            Self::GtEq => ">=",
+            Self::Add => write!(f, "+"),
+            Self::Subtract => write!(f, "-"),
+            Self::Multiply => write!(f, "*"),
+            Self::Divide => write!(f, "/"),
+            Self::Modulo => write!(f, "%"),
+            Self::Exponent => write!(f, "**"),
+            Self::LogicalOr => write!(f, "||"),
+            Self::LogicalAnd => write!(f, "&&"),
+            Self::BitOr => write!(f, "|"),
+            Self::BitXor => write!(f, "^"),
+            Self::BitAnd => write!(f, "&"),
+            Self::BitShiftLeft => write!(f, "<<"),
+            Self::BitShiftRight => write!(f, ">>"),
+            Self::Equal => write!(f, "=="),
+            Self::NotEqual => write!(f, "!="),
+            Self::Lt => write!(f, "<"),
+            Self::Gt => write!(f, ">"),
+            Self::LtEq => write!(f, "<="),
+            Self::GtEq => write!(f, ">="),
         }
     }
 }
@@ -62,11 +64,11 @@ pub enum UnOpKind {
     UnaryNot,
 }
 
-impl UnOpKind {
-    pub fn name(self) -> &'static str {
+impl Display for UnOpKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Negative => "-",
-            Self::UnaryNot => "!",
+            Self::Negative => write!(f, "-"),
+            Self::UnaryNot => write!(f, "!"),
         }
     }
 }
@@ -109,14 +111,16 @@ impl Radix {
             Self::Hexadecimal => 16,
         }
     }
+}
 
-    pub fn name(self) -> &'static str {
+impl Display for Radix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::None => "",
-            Self::Decimal => "0d",
-            Self::Binary => "0b",
-            Self::Octal => "0o",
-            Self::Hexadecimal => "0x",
+            Self::Decimal => write!(f, "0d"),
+            Self::Binary => write!(f, "0b"),
+            Self::Octal => write!(f, "0o"),
+            Self::Hexadecimal => write!(f, "0x"),
+            _ => Ok(()),
         }
     }
 }
@@ -136,13 +140,13 @@ pub enum Suffix {
     TrueFloat,
 }
 
-impl Suffix {
-    pub fn name(self) -> &'static str {
+impl Display for Suffix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Invalid | Self::TrueFloat => "",
-            Self::Uint => "u",
-            Self::Sint => "s",
-            Self::Float => "f",
+            Self::Uint => write!(f, "u"),
+            Self::Sint => write!(f, "s"),
+            Self::Float => write!(f, "f"),
+            _ => Ok(()),
         }
     }
 }
