@@ -48,5 +48,10 @@ fn main() {
                 println!("{:#?}", err);
             }
         }
+        grcx.borrow()
+            .errors()
+            .iter()
+            .take(1)
+            .for_each(|e| println!("{}", e));
     }
 }

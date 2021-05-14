@@ -84,7 +84,7 @@ register_diagnostics! {
     E0030: "Expected a valid exponent of a float, found an invalid digit `{ch}`",
     E0031: "Expected a valid exponent of a float, found whitespace.",
     E0032: "Expected a valid exponent of a float, found EOF.",
-    E0033: "Cannot use a non-decimal base for a float",
+    E0033: "Cannot use an explicit base for a float.",
     E0034: "Identifiers (and atoms) must be shorter than 255 characters.",
     E0035: "Expected a digit after number base specifier."
 }

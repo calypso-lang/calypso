@@ -270,14 +270,14 @@ impl<'lex> Lexer<'lex> {
         self.handle_unexpected_underscore()?;
         let suffix = self.handle_suffix();
 
-        if radix != Radix::Decimal {
+        if radix != Radix::None {
             if let Some(Suffix::Float) = suffix {
                 gen_error!(sync self.grcx.borrow_mut(), self => {
                     E0033;
                     labels: [
                         LabelStyle::Primary =>
                             (self.source_id, self.new_span());
-                            "cannot use a non-decimal base for a float"
+                            "cannot use an explicit base for this float"
                     ]
                 });
             }

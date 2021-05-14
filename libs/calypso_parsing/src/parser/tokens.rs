@@ -20,10 +20,24 @@ pub enum Tok<'tok> {
     String(PotentiallyInterned<'tok>),
 }
 
+fn trim_number(string: &str, radix: Radix) -> &str {
+    if radix != Radix::None {
+        &string[2..]
+    } else {
+        string
+    }
+}
+
 pub fn process<'tok>(tok: Token<'tok>) -> CalResult<Tok<'tok>> {
     Ok(match tok.value_owned() {
-        (TokenType::Int { suffix, radix }, string) => Tok::Number(string, radix, suffix),
-        (TokenType::Float, string) => Tok::Number(string, Radix::None, Some(Suffix::TrueFloat)),
+        (TokenType::Int { suffix, radix }, string) => {
+            Tok::Number(trim_number(string, radix), radix, suffix)
+        }
+        (TokenType::Float, string) => Tok::Number(
+            trim_number(string, Radix::None),
+            Radix::None,
+            Some(Suffix::TrueFloat),
+        ),
         (TokenType::Ident(symbol), _) => Tok::Ident(symbol),
         (TokenType::Keyword(symbol), _) => Tok::Keyword(Keyword::from(symbol)),
         (TokenType::String, string) => Tok::String(PotentiallyInterned::potentially_intern(string)),

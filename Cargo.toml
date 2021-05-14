@@ -32,5 +32,6 @@ exclude = ["libs/sublib_skeleton"]
 [build-dependencies]
 vergen = { version = "5.1.5", default-features = false, features = ["build", "cargo", "git", "rustc"] }
 
-#[profile.release]
-#debug = true
+# Do not enable with real builds, for benchmarking and debugging only.
+# [profile.release]
+# debug = true
