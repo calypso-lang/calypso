@@ -57,6 +57,12 @@ jobs:
       with:
         submodules: 'recursive'
 
+    - name: Checkout calypso-lang.github.io repository
+      uses: actions/checkout@v2
+      with:
+        repository: 'calypso-lang/calypso-lang.github.io'
+        path: 'docs/site'
+
     - name: Setup caching
       uses: actions/cache@v2
       with:
@@ -66,6 +72,9 @@ jobs:
           docs/out/ref
           ~/.cargo
           ~/.rustup
+          docs/site/.svelte-kit
+          docs/site/node_modules
+          docs/site/build
         key: rust-cache-docs
 
     - name: Install latest nightly
@@ -77,6 +86,11 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    
+    - name: Install NodeJS v16
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'
         
     - name: Install mdBook
       uses: peaceiris/actions-mdbook@v1
@@ -97,9 +111,18 @@ jobs:
       run: |
         cargo +nightly doc --verbose --workspace --no-deps --document-private-items
         mv -f target/doc docs/out/rustdoc
-
-    - name: Copy static files to out directory
-      run: cp -rf docs/static/* docs/out/
+    
+    - name: Install dependencies for site
+      run: |
+        yarn --cwd docs/site install
+    
+    - name: Build site
+      run: |
+        yarn --cwd docs/site build
+        
+    - name: Copy site to out directory
+      run: |
+        cp -r build/* docs/out
       
     - name: Check GitHub Pages status
       uses: crazy-max/ghaction-github-status@v2
