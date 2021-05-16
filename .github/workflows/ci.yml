@@ -110,7 +110,7 @@ jobs:
       if: ${{ success() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       uses: crazy-max/ghaction-github-pages@v2
       with:
-        target_branch: main
+        target_branch: gh-pages
         repo: "calypso-lang/calypso-lang.github.io"
         build_dir: docs/out
         keep_history: true
