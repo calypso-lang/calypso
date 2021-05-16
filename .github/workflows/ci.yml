@@ -122,7 +122,7 @@ jobs:
         
     - name: Copy site to out directory
       run: |
-        cp -r build/* docs/out
+        cp -r docs/site/build/* docs/out
       
     - name: Check GitHub Pages status
       uses: crazy-max/ghaction-github-status@v2
