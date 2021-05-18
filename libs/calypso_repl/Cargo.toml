@@ -10,5 +10,5 @@ repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-rustyline = "8.0.0"
+rustyline = "8.1.0"
 regex = "1.5.4"
