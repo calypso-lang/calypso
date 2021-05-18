@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ['**', '!wip/**']
+    branches: ['**', '!wip/**', '!dependabot/**']
   pull_request:
     branches: ['**', '!wip/**']
 
