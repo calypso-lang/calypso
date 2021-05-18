@@ -20,12 +20,12 @@ import standard.process.Args
 
 fn main(args: Args) ->
     args
-    |> .get(0)
-    |> .unwrap_or("100")
+    |> _.get(0)
+    |> _.unwrap_or("100")
     |> uint.from_string
-    |> .unwrap_or(100)
+    |> _.unwrap_or(100)
     |> fizzbuzz
-    |> .each(&println("{}", &1))
+    |> _.each(&println("{}", &1))
 
 fn fizzbuzz(max: uint): [string] ->
   (1..=max).map(fn n ->
