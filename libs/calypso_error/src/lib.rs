@@ -3,6 +3,8 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_error/index.html")]
 #![warn(clippy::pedantic)]
 
+use std::fmt::{Debug, Display};
+
 use thiserror::Error;
 
 /// The Calypso error type.
@@ -20,6 +22,53 @@ pub enum CalError {
     /// Any other error, using [`anyhow`]
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+impl CalError {
+    pub fn try_downcast<E>(self) -> Result<E, Self>
+    where
+        E: Display + Debug + Send + Sync + 'static,
+    {
+        if let CalError::Other(err) = self {
+            let x = err.downcast()?;
+            Ok(x)
+        } else {
+            Err(self)
+        }
+    }
+
+    pub fn try_downcast_ref<E>(&self) -> Option<&E>
+    where
+        E: Display + Debug + Send + Sync + 'static,
+    {
+        if let CalError::Other(err) = self {
+            err.downcast_ref()
+        } else {
+            None
+        }
+    }
+
+    pub fn try_downcast_mut<E>(&mut self) -> Option<&mut E>
+    where
+        E: Display + Debug + Send + Sync + 'static,
+    {
+        if let CalError::Other(err) = self {
+            err.downcast_mut()
+        } else {
+            None
+        }
+    }
+
+    pub fn other_is<E>(&self) -> bool
+    where
+        E: Display + Debug + Send + Sync + 'static,
+    {
+        if let CalError::Other(err) = self {
+            err.is::<E>()
+        } else {
+            false
+        }
+    }
 }
 
 /// A handy alias for [`Result<T, CalError>`], genericized over `T`.

@@ -10,10 +10,12 @@ pub use lasso;
 pub struct Symbol(Spur);
 
 impl Symbol {
+    #[must_use]
     pub fn intern(string: &str) -> Self {
         Self(get_interner().get_or_intern(string))
     }
 
+    #[must_use]
     pub fn intern_static(string: &'static str) -> Self {
         Self(get_interner().get_or_intern_static(string))
     }
@@ -21,25 +23,31 @@ impl Symbol {
     fn intern_static_2(string: &'static str) -> Self {
         Self(
             GLOBAL_INTERNER
-                .get_or_init(|| ThreadedRodeo::new())
+                .get_or_init(ThreadedRodeo::new)
                 .get_or_intern_static(string),
         )
     }
 
-    pub fn as_u32(&self) -> u32 {
+    #[must_use]
+    // we know that `Spur` is 32 bits
+    #[allow(clippy::cast_possible_truncation)]
+    pub fn as_u32(self) -> u32 {
         self.0.into_usize() as u32
     }
 
-    pub fn as_str(&self) -> &'static str {
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
         get_interner().resolve(&self.0)
     }
 
-    pub fn is_empty(&self) -> bool {
-        self == &kw::EMPTY
+    #[must_use]
+    pub fn is_empty(self) -> bool {
+        self == kw::EMPTY
     }
 
-    pub fn is_keyword(&self) -> bool {
-        self == &kw::TRUE || self == &kw::FALSE
+    #[must_use]
+    pub fn is_keyword(self) -> bool {
+        self == kw::TRUE || self == kw::FALSE
     }
 }
 
@@ -74,6 +82,7 @@ impl<'a> Display for PotentiallyInterned<'a> {
 }
 
 impl<'a> PotentiallyInterned<'a> {
+    #[must_use]
     pub fn potentially_intern(string: &'a str) -> Self {
         if string.len() > 255 {
             Self::Uninterned(string)
@@ -95,7 +104,7 @@ impl<'a> AsRef<str> for PotentiallyInterned<'a> {
 static GLOBAL_INTERNER: OnceCell<ThreadedRodeo> = OnceCell::new();
 
 pub fn get_interner() -> &'static ThreadedRodeo {
-    let int = GLOBAL_INTERNER.get_or_init(|| ThreadedRodeo::new());
+    let int = GLOBAL_INTERNER.get_or_init(ThreadedRodeo::new);
     kw::init();
     int
 }

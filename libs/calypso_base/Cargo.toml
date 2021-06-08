@@ -3,7 +3,7 @@ name = "calypso_base"
 version = "0.1.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2018"
-description = "Base types and utilities for Calypso that don't require any other Calypso crates"
+description = "Base types and utilities for Calypso that don't require any other Calypso crates (excluding calypso_error)"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_base"
 repository = "https://github.com/calypso-lang/calypso/"
@@ -17,15 +17,19 @@ termcolor = { version = "1.1.2", optional = true }
 atty = { version = "0.2.14", optional = true }
 # parking_lot = { version = "0.11.1", optional = true }
 tracing = "0.1.26"
-calypso_error = { path = "../calypso_error", version = "1.0.1" }
+calypso_error = { path = "../calypso_error", version = "1.0.2" }
+codespan-reporting = { version = "0.11.1", optional = true }
+dashmap = { version = "4.0.2", optional = true }
 
 [features]
-default = ["span", "stream", "symbol", "session", "ui"]
+default = ["span", "stream", "symbol", "session", "ui", "sourcemgr"]
 span = []
 stream = []
 symbol = ["lazy_static", "once_cell", "lasso"]
-session = ["termcolor"]
+session = ["termcolor", "sourcemgr", "dashmap"]
 ui = ["termcolor", "atty"]
+# codespan-reporting is required for the `Files` trait used by `calypso_diagnostic`
+sourcemgr = ["codespan-reporting", "symbol"]
 
 # [dev-dependencies]
 # proptest = "0.10.1"

@@ -11,6 +11,7 @@ pub use termcolor;
 /// Parse a color preference (`always`, `ansi`, `auto`, anything else: auto) to
 /// a color preference. Uses [`atty`] internally to test if the output stream
 /// is a TTY.
+#[must_use]
 pub fn parse_color_pref(pref: &str, stream: Stream) -> ColorChoice {
     match pref {
         "always" => ColorChoice::Always,

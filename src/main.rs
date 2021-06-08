@@ -4,6 +4,7 @@
 use std::panic;
 use std::sync::Arc;
 
+use calypso_base::sourcemgr::SourceMgr;
 use clap::{load_yaml, App};
 use once_cell::sync::OnceCell;
 use tracing_subscriber::EnvFilter;
@@ -20,7 +21,7 @@ use buildinfo::BUILD_INFO;
 use mimalloc::MiMalloc;
 
 #[cfg(feature = "mimalloc")]
-#[global_allocator]
+#[cfg_attr(feature = "mimalloc", global_allocator)]
 static GLOBAL: MiMalloc = MiMalloc;
 
 static DEFAULT_HOOK: OnceCell<Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 'static>> =
@@ -92,7 +93,11 @@ fn main() {
     let color_pref = matches.value_of("color").unwrap();
     let color_pref_stdout = ui::parse_color_pref(color_pref, Stream::Stdout);
     let color_pref_stderr = ui::parse_color_pref(color_pref, Stream::Stderr);
-    let sess = Arc::new(BaseSession::new(color_pref_stdout, color_pref_stderr));
+    let sess = Arc::new(BaseSession::new(
+        color_pref_stdout,
+        color_pref_stderr,
+        SourceMgr::new(),
+    ));
 
     init_panic_hook(Arc::clone(&sess));
     tracing_subscriber::fmt::fmt()

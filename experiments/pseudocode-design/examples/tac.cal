@@ -31,7 +31,7 @@ fn main(args: Args) -> do
                 File
                     .open(name, Mode.Read)
                     .expect("Failed to open file")
-                    as dyn Read, 
+                    as dyn Read,
             fn ->
                 // Open stdin and panic if it could not be opened.
                 io

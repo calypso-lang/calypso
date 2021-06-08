@@ -1,0 +1,16 @@
+[package]
+name = "saturnvm_macros_impl"
+version = "0.1.0"
+authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
+edition = "2018"
+description = "Unit-testable implementations for SaturnVM procedural macros (see `saturnvm_macros`)"
+readme = "README.md"
+homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/saturnvm_macros"
+repository = "https://github.com/calypso-lang/calypso/"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+proc-macro2 = "1.0.26"
+syn = "1.0.72"
+quote = "1.0.9"
+proc-macro-error = "1.0.4"

@@ -28,7 +28,7 @@ fn main(args: Args) ->
     |> _.each(&println("{}", &1))
 
 fn fizzbuzz(max: uint): [string] ->
-  (1..=max).map(fn n ->
+  1.to_incl(max).map(fn n ->
     case do
       15.divides(n) -> "FizzBuzz",
       3.divides(n)  -> "Fizz",

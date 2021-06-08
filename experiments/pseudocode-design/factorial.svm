@@ -14,14 +14,14 @@ pub fn factorial_tail(n: uint, acc: uint \\ 1): uint ->
     end
 
 pub fn factorial_iter(n: uint): uint ->
-    (1..n).product()
+    1.to(n).product()
 
 pub fn factorial_iter_loop(n: uint): uint -> do
     let mut res = 1
 
     if n == 0 -> ret 1
-
-    for i in 1..n -> res *= i
+    
+    for i in 1.to(n) -> res *= i
 
     res
 end
@@ -52,26 +52,35 @@ end
 
 /*
 
-fn main(): sint ->
+fn main() ->
     1 + 2 - 3 * 4 / 5
-
-(module
-    (name "hello_simpler")
-    (fn "main" (ret sint) (block 0
-        (register %0 (ty const sint))
-        (register %1 (ty const sint))
-        (register %2 (ty const sint))
-        (register %3 (ty const sint))
-        (sint.mul (ty sint) %0 (sint.const 3) (sint.const 4))
-        (sint.div (ty sint) %1 %0 (sint.const 5))
-        (drop %0)
-        (sint.sub (ty sint) %2 (sint.const 2) %1)
-        (drop %1)
-        (sint.add (ty sint) %3 (sint.const 1) %2)
-        (drop %2)
-        (ret %3)
-    ))
-)
 
 */
 
+(module ; define module
+    (name "hello_simpler") ; this module's name is "hello_simpler"
+    (fn "main" (ret (ty unit)) (bb 0 ; define `fn main(): unit`, start basic block 0
+        ; 1 + 2 - 3 * 4 / 5
+        ;   == ((1 + 2) - ((3 * 4) / 5))
+        ;   == (- (+ 1 2) (/ (* 3 4) 5))
+
+        (registers
+            (%0 (ty uint))  ; let %0: uint
+            (%1 (ty uint))  ; let %1: uint
+            (%2 (ty uint))) ; let %2: uint
+
+        (uint.load %0 3)              ; %0 = 3
+        (uint.load %1 4)              ; %1 = 4
+        (uint.mul (ty uint) %0 %0 %1) ; %0 = %0 * %1 :: (*) = mul<uint, uint>
+        (uint.load %1 5)              ; %1 = 5
+        (uint.div (ty uint) %0 %0 %1) ; %0 = %0 / %1 :: (/) = div<uint, uint>
+        (uint.load %1 1)              ; %1 = 1
+        (uint.load %2 2)              ; %2 = 2
+        (uint.add (ty uint) %1 %1 %2) ; %1 = %1 + %2 :: (+) = add<uint, uint>
+        (uint.sub (ty uint) %0 %1 %0) ; %0 = %1 - %0 :: (-) = sub<uint, uint>
+        
+        (dbg.inspect (ty uint) %0) ; essentially like "print" but more low-level, for debugging
+        
+        (ret) ; return
+    ))
+)

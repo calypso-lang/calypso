@@ -4,6 +4,7 @@ use std::{cell::RefCell, sync::Arc};
 
 use calypso_ast::pretty::PrettyPrinter;
 use calypso_ast::traverse::Visitor;
+use calypso_base::sourcemgr::SourceMgr;
 use calypso_base::{
     session::BaseSession,
     ui::{atty::Stream, parse_color_pref},
@@ -18,6 +19,7 @@ fn main() {
     let sess = Arc::new(BaseSession::new(
         parse_color_pref("auto", Stream::Stdout),
         parse_color_pref("auto", Stream::Stderr),
+        SourceMgr::new(),
     ));
     let stdin = std::io::stdin();
     loop {

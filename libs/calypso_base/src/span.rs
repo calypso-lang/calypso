@@ -33,7 +33,7 @@ impl Span {
 
     #[must_use]
     #[inline]
-    pub fn lo(&self) -> usize {
+    pub fn lo(self) -> usize {
         self.lo
     }
 
@@ -45,7 +45,7 @@ impl Span {
 
     #[must_use]
     #[inline]
-    pub fn hi(&self) -> usize {
+    pub fn hi(self) -> usize {
         self.hi
     }
 
@@ -58,14 +58,14 @@ impl Span {
     /// Returns `true` if this is a dummy span
     #[must_use]
     #[inline]
-    pub fn is_dummy(&self) -> bool {
+    pub fn is_dummy(self) -> bool {
         self.lo == 0 && self.hi == 0
     }
 
     /// Returns a new span representing an empty span at the beginning of this span
     #[must_use]
     #[inline]
-    pub fn shrink_to_lo(&self) -> Span {
+    pub fn shrink_to_lo(self) -> Span {
         self.with_hi(self.lo)
     }
 
@@ -79,7 +79,7 @@ impl Span {
     /// Returns true if if `hi == lo`
     #[must_use]
     #[inline]
-    pub fn is_empty(&self) -> bool {
+    pub fn is_empty(self) -> bool {
         self.hi == self.lo
     }
 

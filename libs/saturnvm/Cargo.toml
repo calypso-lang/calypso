@@ -10,4 +10,5 @@ repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-calypso_error = { path = "../calypso_error", version = "1.0.1" }
+calypso_error = { path = "../calypso_error", version = "1.0.2" }
+saturnvm_macros = { path = "../saturnvm_macros", version = "0.1.0" }

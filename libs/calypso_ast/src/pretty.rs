@@ -7,6 +7,7 @@ use crate::{
 use calypso_error::CalResult;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[allow(clippy::module_name_repetitions)]
 pub struct PrettyPrinter(String);
 
 impl Display for PrettyPrinter {

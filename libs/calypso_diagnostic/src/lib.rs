@@ -13,8 +13,7 @@ pub mod error;
 pub mod report;
 pub mod types;
 
-pub type FileMgr = reporting::files::SimpleFiles<String, String>;
-
+/*
 /// Generate errors or report synchronized errors.
 ///
 /// Panic errors are handled with [`Result`]s.
@@ -90,11 +89,29 @@ macro_rules! gen_error {
         diagnostic.build()?
     }};
 }
+*/
+
+// temporary shim to not make so many errors
+#[macro_export]
+macro_rules! gen_error {
+    ($grcx:expr, Err($($rest:tt)*) as $ty:ty) => {{
+        panic!("gen_error! is not yet (re)implemented");
+        // stop it yelling at us about identical if branches
+        println!("{}", stringify!($($rest)*));
+        $crate::calypso_error::CalResult::<$ty>::Err(
+            $crate::error::DiagnosticError::Diagnostic.into(),
+        )
+    }};
+    ($($tt:tt)*) => {
+        panic!("gen_error! is not yet (re)implented");
+        // stop it yelling at us about identical if branches
+        println!("{}", stringify!($($tt)*));
+    };
+}
 
 pub mod prelude {
     pub use super::calypso_error::{CalError, CalResult};
     pub use super::diagnostic::LabelStyle;
     pub use super::error::DiagnosticError;
     pub use super::gen_error;
-    pub use super::FileMgr;
 }

@@ -81,6 +81,7 @@ pub enum Primary<'tok> {
 
 impl<'tok> Primary<'tok> {
     /// Implementation detail.
+    #[must_use]
     pub fn detuple_number((s, base, suffix): (&'tok str, Radix, Option<Suffix>)) -> Self {
         Self::Number(s, base, suffix)
     }
@@ -102,10 +103,10 @@ pub enum Radix {
 }
 
 impl Radix {
+    #[must_use]
     pub fn radix(self) -> u32 {
         match self {
-            Self::None => 10,
-            Self::Decimal => 10,
+            Self::None | Self::Decimal => 10,
             Self::Binary => 2,
             Self::Octal => 8,
             Self::Hexadecimal => 16,

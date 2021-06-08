@@ -81,10 +81,10 @@ pub fn lexer(sess: Arc<BaseSession>, matches: &ArgMatches) {
         let token = lexer.scan();
         if let Err(err) = token {
             ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-            if let CalError::Other(err) = err {
-                if let Ok(DiagnosticError::Diagnostic(diag)) = err.downcast::<DiagnosticError>() {
-                    println!("{}", diag);
-                }
+            if let Some(DiagnosticError::Diagnostic) = err.try_downcast_ref::<DiagnosticError>() {
+                sess.stderr
+                    .print(&grcx.borrow().fatal().unwrap().rendered())
+                    .unwrap();
             } else {
                 ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
             }
@@ -146,10 +146,10 @@ pub fn lexer_stdin(sess: Arc<BaseSession>, matches: &ArgMatches) {
         let token = lexer.scan();
         if let Err(err) = token {
             ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-            if let CalError::Other(err) = err {
-                if let Ok(DiagnosticError::Diagnostic(diag)) = err.downcast::<DiagnosticError>() {
-                    println!("{}", diag);
-                }
+            if let Some(DiagnosticError::Diagnostic) = err.try_downcast_ref::<DiagnosticError>() {
+                sess.stderr
+                    .print(&grcx.borrow().fatal().unwrap().rendered())
+                    .unwrap();
             } else {
                 ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
             }
@@ -201,12 +201,12 @@ pub fn lexer_stdin_repl(sess: Arc<BaseSession>, ignore_ws: bool) {
                 let token = lexer.scan();
                 if let Err(err) = token {
                     ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-                    if let CalError::Other(err) = err {
-                        if let Ok(DiagnosticError::Diagnostic(diag)) =
-                            err.downcast::<DiagnosticError>()
-                        {
-                            println!("{}", diag);
-                        }
+                    if let Some(DiagnosticError::Diagnostic) =
+                        err.try_downcast_ref::<DiagnosticError>()
+                    {
+                        sess.stderr
+                            .print(&grcx.borrow().fatal().unwrap().rendered())
+                            .unwrap();
                     } else {
                         ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
                     }

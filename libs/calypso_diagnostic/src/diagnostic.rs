@@ -2,7 +2,8 @@ use std::{fmt, io::Write, sync::Arc};
 
 use crate::prelude::DiagnosticError;
 
-use super::{reporting, FileMgr};
+use super::reporting;
+use calypso_base::symbol::Symbol;
 use calypso_base::{session::BaseSession, span::Span};
 use calypso_error::CalResult;
 use reporting::diagnostic::{Diagnostic as CodespanDiag, Label};
@@ -10,29 +11,27 @@ use reporting::term::{self, termcolor::Buffer};
 
 pub use reporting::diagnostic::{LabelStyle, Severity};
 
-pub struct Diagnostic(CodespanDiag<usize>, Buffer, Arc<BaseSession>);
+pub struct Diagnostic(CodespanDiag<Symbol>, Buffer, Arc<BaseSession>);
 
 #[derive(Clone)]
-pub struct Builder<'a> {
+pub struct Builder {
     level: Severity,
     code: Option<String>,
     message: String,
-    labels: Vec<Label<usize>>,
+    labels: Vec<Label<Symbol>>,
     notes: Vec<String>,
-    files: &'a FileMgr,
     sess: Arc<BaseSession>,
 }
 
-impl<'a> Builder<'a> {
+impl Builder {
     #[must_use]
-    pub fn new(sess: Arc<BaseSession>, level: Severity, files: &'a FileMgr) -> Self {
+    pub fn new(sess: Arc<BaseSession>, level: Severity) -> Self {
         Self {
             level,
             code: None,
             message: String::new(),
             labels: Vec::new(),
             notes: Vec::new(),
-            files,
             sess,
         }
     }
@@ -52,7 +51,7 @@ impl<'a> Builder<'a> {
         style: LabelStyle,
         message: impl Into<String>,
         span: Span,
-        file_id: usize,
+        file_id: Symbol,
     ) -> Self {
         self.labels
             .push(Label::new(style, file_id, span).with_message(message));
@@ -81,7 +80,8 @@ impl<'a> Builder<'a> {
         let mut buf = self.sess.stderr.buffer();
         let config = term::Config::default();
 
-        term::emit(&mut buf, &config, self.files, &diagnostic).map_err(DiagnosticError::from)?;
+        term::emit(&mut buf, &config, &self.sess.sourcemgr, &diagnostic)
+            .map_err(DiagnosticError::from)?;
         buf.flush()?;
         Ok(Diagnostic(diagnostic, buf, self.sess))
     }
@@ -108,11 +108,5 @@ impl fmt::Display for Diagnostic {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.2.stderr.print(&self.1).map_err(|_| fmt::Error)?;
         Ok(())
-    }
-}
-
-impl fmt::Debug for Diagnostic {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("Diagnostic").field(&self.0).finish()
     }
 }

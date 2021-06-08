@@ -121,7 +121,7 @@ mod tests {
     fn basic_streaming() {
         // I would use the trans flag emoji but it's not supported everywhere (including my IDE) as Unicode 13.0 is pretty new :(
         let string =
-            "🌈‍🏳 TRANS RIGHTS ARE HUMAN RIGHTS! THIS THE WORLD SHALL KNOW! 🌈‍🏳 θισ 𝓲𝓼 a test 🇸 🇹 🇷 🇪 🇦 🇲. Thank you!";
+            "\u{1f308}\u{200d}\u{1f3f3} TRANS RIGHTS ARE HUMAN RIGHTS! THIS THE WORLD SHALL KNOW! \u{1f308}\u{200d}\u{1f3f3} \u{3b8}\u{3b9}\u{3c3} \u{1d4f2}\u{1d4fc} a test \u{1f1f8} \u{1f1f9} \u{1f1f7} \u{1f1ea} \u{1f1e6} \u{1f1f2}. Thank you!";
         let mut stream = StringStream::new(string);
         let mut curr_span = Span::default();
 
@@ -150,7 +150,7 @@ mod tests {
         );
         curr_span = curr_span.shrink_to_hi().add_hi(' '.len_utf8());
         // slice the whole thing and check it
-        assert_eq!(&stream[0..curr_span.hi() - 1], "🌈‍🏳");
+        assert_eq!(&stream[0..curr_span.hi() - 1], "\u{1f308}\u{200d}\u{1f3f3}");
         // the character 3 from here is a space
         assert_eq!(*stream.peek3().unwrap(), Spanned::new(curr_span, ' '));
     }
