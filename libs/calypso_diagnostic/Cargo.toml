@@ -12,7 +12,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 calypso_base = { path = "../calypso_base", version = "0.1.0" }
 calypso_error = { path = "../calypso_error", version = "1.0.2" }
-thiserror = "1.0.24"
+thiserror = "1.0.25"
 lazy_static = "1.4.0"
 codespan-reporting = "0.11.1"
 strfmt = "0.1.6"
