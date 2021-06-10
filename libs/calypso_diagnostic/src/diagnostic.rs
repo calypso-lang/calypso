@@ -107,10 +107,3 @@ impl Diagnostic {
         &self.1
     }
 }
-
-// impl fmt::Display for Diagnostic {
-//     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         self.2.stderr.print(&self.1).map_err(|_| fmt::Error)?;
-//         Ok(())
-//     }
-// }

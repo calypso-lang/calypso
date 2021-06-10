@@ -9,7 +9,7 @@ use calypso_diagnostic::types;
 pub fn explain(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
     let error_code = matches.value_of("EXXXX").unwrap();
     if let Some(diagnostic) = types::DIAGNOSTICS.get(error_code) {
-        if let Some(information) = diagnostic.1 {
+        if let Some(information) = diagnostic {
             print!("{}", information);
         } else {
             let mut emit = gcx.emit.lock();

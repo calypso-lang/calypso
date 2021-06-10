@@ -6,7 +6,6 @@ extern crate lazy_static;
 
 pub extern crate calypso_error;
 pub extern crate codespan_reporting as reporting;
-pub extern crate strfmt;
 
 pub mod diagnostic;
 pub mod error;

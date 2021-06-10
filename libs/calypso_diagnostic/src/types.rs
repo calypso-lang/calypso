@@ -5,43 +5,34 @@
 // Diagnostic information should not start with a newline and should end with a newline.
 
 /// A helper macro to generate a list of diagnostics.
-/// (Shamelessly stolen from rustc_error_codes)
 // todo(@ThePuzzlemaker: diag|frame):
 //   convert this to compile-time format strings using hacky macro stuff
 macro_rules! register_diagnostics {
-    ($($ecode:ident: $format:expr),* $(,)? ; $($ecode_no_msg:ident: $format_no_msg:expr),* $(,)?) => (
+    ($($ecode:ident: $format:expr),* $(,)? ; $($ecode_no_msg:ident: $format_no_msg:expr),* $(,)?) => {
+        #[allow(unused_macros)]
+        macro_rules! diagnostic_fmt {
+            $(($ecode) => {$format};)*
+            $(($ecode_no_msg) => {$format_no_msg};)*
+        }
+
         use ::std::collections::HashMap;
 
-        lazy_static! {
-            pub static ref DIAGNOSTICS: HashMap<&'static str, (&'static str, Option<&'static str>)> = {
+        ::lazy_static::lazy_static! {
+            pub static ref DIAGNOSTICS: HashMap<&'static str, Option<&'static str>> = {
                 let mut m = HashMap::new();
-                $(
-                    m.insert(
-                        stringify!($ecode),
-                        (
-                            $format,
-                            Some(
-                                include_str!(
-                                    concat!(
-                                        "./messages/",
-                                        stringify!($ecode),
-                                        ".md"
-                                    )
-                                )
-                            )
-                        )
-                    );
-                )*
-                $(
-                    m.insert(
-                        stringify!($ecode_no_msg),
-                        ($format_no_msg, None)
-                    );
-                )*
+                $( m.insert(stringify!($ecode), Some(include_str!(concat!("./messages/", stringify!($ecode), ".md")))); )*
+                $( m.insert(stringify!($ecode_no_msg), None); )*
                 m
             };
         }
-    )
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! err {
+    ($ecode:ident$(, $($rest:tt)*)?) => {{
+        format!(diagnostic_fmt!($ecode)$(, $($rest)*)?)
+    }}
 }
 
 // todo(diag): add more extended diagnostic information. see #28.
