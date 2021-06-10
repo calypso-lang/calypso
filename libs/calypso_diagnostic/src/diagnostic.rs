@@ -1,38 +1,39 @@
-use std::{fmt, io::Write, sync::Arc};
+use std::io::Write;
 
 use crate::prelude::DiagnosticError;
 
 use super::reporting;
-use calypso_base::symbol::Symbol;
-use calypso_base::{session::BaseSession, span::Span};
+use calypso_base::span::Span;
+use calypso_base::ui::Emitters;
 use calypso_error::CalResult;
 use reporting::diagnostic::{Diagnostic as CodespanDiag, Label};
+use reporting::files::SimpleFiles;
 use reporting::term::{self, termcolor::Buffer};
 
 pub use reporting::diagnostic::{LabelStyle, Severity};
 
-pub struct Diagnostic(CodespanDiag<Symbol>, Buffer, Arc<BaseSession>);
+pub type SourceMgr = SimpleFiles<String, String>;
+
+pub struct Diagnostic(CodespanDiag<usize>, Buffer);
 
 #[derive(Clone)]
 pub struct Builder {
     level: Severity,
     code: Option<String>,
     message: String,
-    labels: Vec<Label<Symbol>>,
+    labels: Vec<Label<usize>>,
     notes: Vec<String>,
-    sess: Arc<BaseSession>,
 }
 
 impl Builder {
     #[must_use]
-    pub fn new(sess: Arc<BaseSession>, level: Severity) -> Self {
+    pub fn new(level: Severity) -> Self {
         Self {
             level,
             code: None,
             message: String::new(),
             labels: Vec::new(),
             notes: Vec::new(),
-            sess,
         }
     }
 
@@ -51,7 +52,7 @@ impl Builder {
         style: LabelStyle,
         message: impl Into<String>,
         span: Span,
-        file_id: Symbol,
+        file_id: usize,
     ) -> Self {
         self.labels
             .push(Label::new(style, file_id, span).with_message(message));
@@ -68,7 +69,11 @@ impl Builder {
     /// # Errors
     /// As the diagnostic is pre-rendered, it returns an error if
     /// `codespan_reporting` fails to render it.
-    pub fn build(self) -> CalResult<Diagnostic> {
+    pub fn build<'gcx>(
+        self,
+        emitters: &'gcx Emitters,
+        sourcemgr: &'gcx SourceMgr,
+    ) -> CalResult<Diagnostic> {
         let mut diagnostic = CodespanDiag::new(self.level);
         if let Some(code) = self.code.clone() {
             diagnostic = diagnostic.with_code(code)
@@ -77,13 +82,12 @@ impl Builder {
             diagnostic = diagnostic.with_message(self.message.clone())
         }
         let diagnostic = diagnostic.with_labels(self.labels).with_notes(self.notes);
-        let mut buf = self.sess.stderr.buffer();
+        let mut buf = emitters.err.buffer();
         let config = term::Config::default();
 
-        term::emit(&mut buf, &config, &self.sess.sourcemgr, &diagnostic)
-            .map_err(DiagnosticError::from)?;
+        term::emit(&mut buf, &config, sourcemgr, &diagnostic).map_err(DiagnosticError::from)?;
         buf.flush()?;
-        Ok(Diagnostic(diagnostic, buf, self.sess))
+        Ok(Diagnostic(diagnostic, buf))
     }
 }
 
@@ -104,9 +108,9 @@ impl Diagnostic {
     }
 }
 
-impl fmt::Display for Diagnostic {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.2.stderr.print(&self.1).map_err(|_| fmt::Error)?;
-        Ok(())
-    }
-}
+// impl fmt::Display for Diagnostic {
+//     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         self.2.stderr.print(&self.1).map_err(|_| fmt::Error)?;
+//         Ok(())
+//     }
+// }

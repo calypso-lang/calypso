@@ -1,16 +1,21 @@
-use std::cell::RefCell;
+use std::mem::MaybeUninit;
 use std::ops::Deref;
 use std::ops::DerefMut;
-use std::rc::Rc;
+use std::ptr;
+use std::sync::Arc;
 
+use calypso_base::symbol::Symbol;
 use calypso_base::{
     span::{Span, Spanned},
     streams::{Stream, StringStream},
 };
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::report::GlobalReportingCtxt;
+use calypso_diagnostic::reporting::files::Files;
 
 pub use types::*;
+
+use crate::session::ParseSess;
 
 pub mod types;
 
@@ -26,10 +31,10 @@ pub type Lexeme<'lex> = &'lex str;
 
 pub struct Lexer<'lex> {
     stream: StringStream<'lex>,
-    source_id: usize,
-    files: &'lex FileMgr,
+    source_id: Symbol,
+    // source: &'lex str,
     start: Span,
-    grcx: Rc<RefCell<GlobalReportingCtxt>>,
+    sess: Arc<ParseSess>,
 }
 
 impl<'lex> Deref for Lexer<'lex> {
@@ -47,20 +52,57 @@ impl<'lex> DerefMut for Lexer<'lex> {
 }
 
 impl<'lex> Lexer<'lex> {
-    pub fn new(
-        source_id: usize,
-        source: &'lex str,
-        files: &'lex FileMgr,
-        grcx: Rc<RefCell<GlobalReportingCtxt>>,
-    ) -> Self {
-        Self {
-            stream: StringStream::new(source),
-            source_id,
-            files,
-            start: Span::default(),
-            grcx,
-        }
-    }
+    // no.
+    // pub fn new(source_id: Symbol, sess: Arc<ParseSess>) -> CalResult<Self> {
+    //     let mut zelf = MaybeUninit::<Self>::uninit();
+    //     let ptr = zelf.as_mut_ptr();
+
+    //     // SAFETY: It is safe to initialize these fields as their pointers are
+    //     // valid and the values are valid.
+    //     unsafe {
+    //         ptr::addr_of_mut!((*ptr).source_id).write(source_id);
+    //         ptr::addr_of_mut!((*ptr).sess).write(sess);
+    //         ptr::addr_of_mut!((*ptr).start).write(Span::default());
+    //     }
+
+    //     // SAFETY: We have already initialized the `sess` field.
+    //     let source = unsafe { &(*ptr).sess }
+    //         .bsess
+    //         .sourcemgr
+    //         .source(source_id)
+    //         .map_err(|e| CalError::Other(e.into()));
+
+    //     if let Err(err) = source {
+    //         // We must drop the fields in order to not potentially leak them.
+    //         // SAFETY: We have already initialized these fields, and it is
+    //         // valid to drop them (they have not already been dropped and they
+    //         // will not be dropped again)
+    //         unsafe {
+    //             ptr::drop_in_place(ptr::addr_of_mut!((*ptr).source_id));
+    //             ptr::drop_in_place(ptr::addr_of_mut!((*ptr).sess));
+    //             ptr::drop_in_place(ptr::addr_of_mut!((*ptr).start));
+    //         }
+    //         return Err(err);
+    //     }
+
+    //     // Will not panic (since we've already checked the value), so we won't
+    //     // leak anything.
+    //     let source = source.unwrap();
+
+    //     let stream = StringStream::new(source);
+
+    //     // SAFETY: It is safe to initialize these fields as their pointers are
+    //     // valid and the values are valid.
+    //     unsafe {
+    //         // ptr::addr_of_mut!((*ptr).source).write(source);
+    //         ptr::addr_of_mut!((*ptr).stream).write(stream);
+    //     }
+
+    //     // SAFETY: We have initialized all the fields.
+    //     let zelf = unsafe { zelf.assume_init() };
+
+    //     Ok(zelf)
+    // }
 }
 
 impl<'lex> Lexer<'lex> {

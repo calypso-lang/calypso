@@ -101,6 +101,10 @@ impl<'a> AsRef<str> for PotentiallyInterned<'a> {
     }
 }
 
+// I am aware global state is bad and whatnot, but this is the only way I know
+// of to have all this data live for `'static` without plain leaking memory.
+//
+// Also it's easy. Ish.
 static GLOBAL_INTERNER: OnceCell<ThreadedRodeo> = OnceCell::new();
 
 pub fn get_interner() -> &'static ThreadedRodeo {

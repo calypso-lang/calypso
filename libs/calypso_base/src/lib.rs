@@ -2,12 +2,6 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso_base/index.html")]
 #![warn(clippy::pedantic)]
 
-/// The base session type
-#[cfg(feature = "session")]
-pub mod session;
-/// Source file manager
-#[cfg(feature = "sourcemgr")]
-pub mod sourcemgr;
 /// [`Span`](span::Span) and [`Spanned`](span::Spanned) types.
 #[cfg(feature = "span")]
 pub mod span;

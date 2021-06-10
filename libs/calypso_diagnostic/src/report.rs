@@ -1,7 +1,3 @@
-use std::sync::Arc;
-
-use calypso_base::session::BaseSession;
-
 use crate::diagnostic::Diagnostic;
 
 // TODO(@ThePuzzlemaker: frame|diag):
@@ -10,17 +6,21 @@ pub struct GlobalReportingCtxt {
     errors: Vec<Diagnostic>,
     nonfatals: Vec<Diagnostic>,
     fatal: Option<Diagnostic>,
-    sess: Arc<BaseSession>,
+}
+
+impl Default for GlobalReportingCtxt {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl GlobalReportingCtxt {
     #[must_use]
-    pub fn new(sess: Arc<BaseSession>) -> Self {
+    pub fn new() -> Self {
         Self {
             errors: Vec::new(),
             nonfatals: Vec::new(),
             fatal: None,
-            sess,
         }
     }
 
@@ -51,10 +51,5 @@ impl GlobalReportingCtxt {
     #[must_use]
     pub fn errors(&self) -> &[Diagnostic] {
         &self.errors
-    }
-
-    #[must_use]
-    pub fn sess(&self) -> &Arc<BaseSession> {
-        &self.sess
     }
 }

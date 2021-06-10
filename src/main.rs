@@ -4,13 +4,15 @@
 use std::panic;
 use std::sync::Arc;
 
-use calypso_base::sourcemgr::SourceMgr;
 use clap::{load_yaml, App};
 use once_cell::sync::OnceCell;
 use tracing_subscriber::EnvFilter;
 
-use calypso_base::session::BaseSession;
-use calypso_base::ui::{self, atty::Stream};
+use calypso_base::ui::{self, atty::Stream, Emitters};
+use calypso_common::parking_lot::Mutex;
+use calypso_common::{gcx::GlobalCtxt, parking_lot::RwLock};
+use calypso_diagnostic::prelude::*;
+use calypso_diagnostic::{diagnostic::SourceMgr, report::GlobalReportingCtxt};
 
 mod buildinfo;
 mod commands;
@@ -30,23 +32,23 @@ static DEFAULT_HOOK: OnceCell<Box<dyn Fn(&panic::PanicInfo<'_>) + Sync + Send + 
 const BUG_REPORT_URL: &str = "https://github.com/calypso-lang/calypso/issues/new\
     ?assignees=&labels=C-bug&template=bug-report.md&title=bug%3A+";
 
-fn init_panic_hook(sess: Arc<BaseSession>) {
+fn init_panic_hook(gcx: &Arc<GlobalCtxt>) {
     // This is dumb but borrowck really wants me to do it this way. Luckily the
     // remaining useless `Arc`s will just be dropped, and this is just init
     // code.
-    let sess = Arc::clone(&sess);
+    let gcx = Arc::clone(&gcx);
     DEFAULT_HOOK.get_or_init(|| {
-        let sess = Arc::clone(&sess);
+        let gcx = Arc::clone(&gcx);
         let hook = panic::take_hook();
         panic::set_hook(Box::new(move |info| {
-            let sess = Arc::clone(&sess);
-            report_ice(&*sess, info, BUG_REPORT_URL)
+            let gcx = Arc::clone(&gcx);
+            report_ice(&*gcx, info, BUG_REPORT_URL).unwrap()
         }));
         hook
     });
 }
 
-fn report_ice(sess: &BaseSession, info: &panic::PanicInfo<'_>, bug_report_url: &str) {
+fn report_ice(gcx: &GlobalCtxt, info: &panic::PanicInfo<'_>, report_url: &str) -> CalResult<()> {
     // Invoke the default handler, which prints the actual panic message and
     // optionally a backtrace
     DEFAULT_HOOK.get().unwrap()(info);
@@ -54,34 +56,29 @@ fn report_ice(sess: &BaseSession, info: &panic::PanicInfo<'_>, bug_report_url: &
     // Separate the output with an empty line
     eprintln!();
 
-    ui::error_to(
-        &sess.stderr,
+    let mut emit = gcx.emit.lock();
+    let err = &mut emit.err;
+
+    err.error(
         None,
         "the compiler unexpectedly crashed. this is a bug.",
         None,
-    )
-    .unwrap();
-    ui::note_to(
-        &sess.stderr,
-        "we would appreciate a bug report at",
-        Some(bug_report_url),
-    )
-    .unwrap();
-    ui::note_to(
-        &sess.stderr,
+    )?
+    .note("we would appreciate a bug report at", Some(report_url))?
+    .note(
         "build information",
         Some(&format!(
             "calypso {} ({}) running on {}",
             BUILD_INFO.version, BUILD_INFO.git_commit, BUILD_INFO.cargo_target_triple
         )),
-    )
-    .unwrap();
-    ui::note_to(
-        &sess.stderr,
+    )?
+    .note(
         "for further information, run",
         Some("`calypso internal buildinfo`"),
-    )
-    .unwrap();
+    )?
+    .flush()?;
+
+    Ok(())
 }
 
 fn main() {
@@ -93,21 +90,22 @@ fn main() {
     let color_pref = matches.value_of("color").unwrap();
     let color_pref_stdout = ui::parse_color_pref(color_pref, Stream::Stdout);
     let color_pref_stderr = ui::parse_color_pref(color_pref, Stream::Stderr);
-    let sess = Arc::new(BaseSession::new(
-        color_pref_stdout,
-        color_pref_stderr,
-        SourceMgr::new(),
-    ));
 
-    init_panic_hook(Arc::clone(&sess));
+    let gcx = Arc::new(GlobalCtxt {
+        emit: Mutex::new(Emitters::new(color_pref_stdout, color_pref_stderr)),
+        grcx: RwLock::new(GlobalReportingCtxt::new()),
+        sourcemgr: RwLock::new(SourceMgr::new()),
+    });
+
+    init_panic_hook(&gcx);
     tracing_subscriber::fmt::fmt()
         .with_env_filter(EnvFilter::from_env("CALYPSO_LOG"))
         .pretty()
         .init();
 
     match matches.subcommand() {
-        ("internal", Some(matches)) => commands::internal(sess, matches),
-        ("explain", Some(matches)) => commands::explain(sess, matches),
+        ("internal", Some(matches)) => commands::internal(&gcx, matches).unwrap(),
+        ("explain", Some(matches)) => commands::explain(&gcx, matches).unwrap(),
         _ => unreachable!(),
     }
 }

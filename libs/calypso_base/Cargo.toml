@@ -18,18 +18,14 @@ atty = { version = "0.2.14", optional = true }
 # parking_lot = { version = "0.11.1", optional = true }
 tracing = "0.1.26"
 calypso_error = { path = "../calypso_error", version = "1.0.2" }
-codespan-reporting = { version = "0.11.1", optional = true }
-dashmap = { version = "4.0.2", optional = true }
 
 [features]
-default = ["span", "stream", "symbol", "session", "ui", "sourcemgr"]
+default = ["span", "stream", "symbol", "ui"]
 span = []
 stream = []
 symbol = ["lazy_static", "once_cell", "lasso"]
-session = ["termcolor", "sourcemgr", "dashmap"]
 ui = ["termcolor", "atty"]
-# codespan-reporting is required for the `Files` trait used by `calypso_diagnostic`
-sourcemgr = ["codespan-reporting", "symbol"]
+
 
 # [dev-dependencies]
 # proptest = "0.10.1"

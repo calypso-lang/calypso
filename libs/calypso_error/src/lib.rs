@@ -37,6 +37,7 @@ impl CalError {
         }
     }
 
+    #[must_use]
     pub fn try_downcast_ref<E>(&self) -> Option<&E>
     where
         E: Display + Debug + Send + Sync + 'static,
@@ -59,6 +60,7 @@ impl CalError {
         }
     }
 
+    #[must_use]
     pub fn other_is<E>(&self) -> bool
     where
         E: Display + Debug + Send + Sync + 'static,

@@ -4,7 +4,7 @@ use crate::lexer::{Token, TokenType};
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::reporting::files::Files;
 
-impl Printer<'_> {
+impl Printer {
     /// Print a token
     ///
     /// # Errors
@@ -16,11 +16,15 @@ impl Printer<'_> {
         let lo = span.lo();
         let hi = span.hi();
         let lo_loc = self
-            .fmgr
+            .sess
+            .bsess
+            .sourcemgr
             .location(self.file_id, lo)
             .map_err(DiagnosticError::from)?;
         let hi_loc = self
-            .fmgr
+            .sess
+            .bsess
+            .sourcemgr
             .location(self.file_id, hi)
             .map_err(DiagnosticError::from)?;
         Ok(format!(
