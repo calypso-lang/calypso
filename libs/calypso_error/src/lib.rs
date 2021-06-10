@@ -25,6 +25,12 @@ pub enum CalError {
 }
 
 impl CalError {
+    /// Try to downcast the error into a concrete type, if the error is a
+    /// [`CalError::Other`].
+    ///
+    /// # Errors
+    ///
+    /// `self` is returned if the error could not be downcast.
     pub fn try_downcast<E>(self) -> Result<E, Self>
     where
         E: Display + Debug + Send + Sync + 'static,
@@ -37,6 +43,8 @@ impl CalError {
         }
     }
 
+    /// Try to downcast a reference to the error into a reference to a concrete
+    /// type, if the error is a [`CalError::Other`].
     #[must_use]
     pub fn try_downcast_ref<E>(&self) -> Option<&E>
     where
@@ -49,6 +57,8 @@ impl CalError {
         }
     }
 
+    /// Try to downcast a mutable reference to the error into a mutable
+    /// reference to a concrete type, if the error is a [`CalError::Other`].
     pub fn try_downcast_mut<E>(&mut self) -> Option<&mut E>
     where
         E: Display + Debug + Send + Sync + 'static,
@@ -57,18 +67,6 @@ impl CalError {
             err.downcast_mut()
         } else {
             None
-        }
-    }
-
-    #[must_use]
-    pub fn other_is<E>(&self) -> bool
-    where
-        E: Display + Debug + Send + Sync + 'static,
-    {
-        if let CalError::Other(err) = self {
-            err.is::<E>()
-        } else {
-            false
         }
     }
 }
