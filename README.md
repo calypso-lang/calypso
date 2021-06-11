@@ -2,8 +2,8 @@
 
 # Calypso
 
-[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171)](https://discord.gg/26X6ChQQcG) ![Lines of Code][b2] <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171?style=flat-square&color=blue)](https://discord.gg/26X6ChQQcG) ![Lines of Code][b2] <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-blue.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Calypso is a mostly imperative language with some functional influences that is focused on flexibility and simplicity.
@@ -167,12 +167,12 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
 
-[b2]: https://tokei.rs/b1/github/calypso-lang/calypso?category=lines
+[b2]: https://img.shields.io/tokei/lines/github/calypso-lang/calypso?style=flat-square
 
-[b3]: https://github.com/calypso-lang/calypso/actions/workflows/ci.yml/badge.svg?branch=main&event=push
+[b3]: https://img.shields.io/github/workflow/status/calypso-lang/calypso/CI?style=flat-square
 [l3]: https://github.com/calypso-lang/calypso/actions
 
-[b4]: https://img.shields.io/badge/license-MIT-blue.svg
+[b4]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue?style=flat-square
 [l4]: ./LICENSE
 
 [crates.io]: https://crates.io/
