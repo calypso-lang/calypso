@@ -9,6 +9,7 @@
 //   convert this to compile-time format strings using hacky macro stuff
 macro_rules! register_diagnostics {
     ($($ecode:ident: $format:expr),* $(,)? ; $($ecode_no_msg:ident: $format_no_msg:expr),* $(,)?) => {
+        #[macro_export]
         #[allow(unused_macros)]
         macro_rules! diagnostic_fmt {
             $(($ecode) => {$format};)*
@@ -28,10 +29,11 @@ macro_rules! register_diagnostics {
     };
 }
 
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! err {
     ($ecode:ident$(, $($rest:tt)*)?) => {{
-        format!(diagnostic_fmt!($ecode)$(, $($rest)*)?)
+        ::std::format($crate::types::diagnostic_fmt!($ecode)$(, $($rest)*)?)
     }}
 }
 

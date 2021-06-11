@@ -321,6 +321,21 @@ impl Emitter {
     pub fn warn(&mut self, short: &str, message: Option<&str>) -> CalResult<&mut Self> {
         self.message_general("warn", Color::Yellow, short, message)
     }
+
+    /// Emit a `Buffer` now.
+    ///
+    /// Since we can't merge buffers (see
+    /// [termcolor#45](https://github.com/BurntSushi/termcolor/issues/45)),
+    /// this function directly prints the buffer instead of extending the
+    /// internal buffer with this one.
+    ///
+    /// # Errors
+    ///
+    /// This function will error
+    pub fn emit(&mut self, buf: &Buffer) -> CalResult<&mut Self> {
+        self.writer.print(&buf)?;
+        Ok(self)
+    }
 }
 
 impl Deref for Emitter {
