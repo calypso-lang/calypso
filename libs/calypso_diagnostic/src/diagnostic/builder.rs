@@ -1,3 +1,5 @@
+//! Builders for diagnostics and ensemble diagnostics.
+
 use codespan_reporting::{
     diagnostic::{Diagnostic as CodespanDiag, Label, LabelStyle, Severity},
     term::{self, Config},
@@ -9,6 +11,7 @@ use calypso_error::CalResult;
 use super::{Diagnostic, EnsembleDiagnostic, SourceMgr};
 use crate::error::DiagnosticError;
 
+/// A builder for an ensemble diagnostic.
 #[derive(Debug, Default)]
 #[allow(clippy::module_name_repetitions)]
 pub struct EnsembleBuilder {
@@ -22,7 +25,7 @@ impl EnsembleBuilder {
         Self::default()
     }
 
-    /// Add an diagnostic to the ensemble, using the builder provided.
+    /// Add a diagnostic to the ensemble, using the builder provided.
     pub fn add(&mut self, severity: Severity, f: impl FnOnce(Builder) -> Builder) -> &mut Self {
         self.diags.push(f(Builder::new(severity)));
         self
@@ -58,6 +61,7 @@ impl EnsembleBuilder {
     }
 }
 
+/// A builder for a single diagnostic.
 #[derive(Debug)]
 pub struct Builder {
     diag: CodespanDiag<usize>,

@@ -9,12 +9,14 @@ pub struct Span {
 }
 
 impl Span {
+    /// Create a new span given the low and high indices.
     #[must_use]
     #[inline]
     pub fn new(lo: usize, hi: usize) -> Self {
         Span { lo, hi }
     }
 
+    /// Create a new empty span around an index.
     #[must_use]
     #[inline]
     pub fn new_shrunk(amount: usize) -> Self {
@@ -31,24 +33,28 @@ impl Span {
         Self { lo: 0, hi: 0 }
     }
 
+    /// Get the low index of a span.
     #[must_use]
     #[inline]
     pub fn lo(self) -> usize {
         self.lo
     }
 
+    /// Set the low index of a span.
     #[must_use]
     #[inline]
     pub fn with_lo(self, lo: usize) -> Self {
         Self { lo, ..self }
     }
 
+    /// Get the high index of a span.
     #[must_use]
     #[inline]
     pub fn hi(self) -> usize {
         self.hi
     }
 
+    /// Set the high index of a span.
     #[must_use]
     #[inline]
     pub fn with_hi(self, hi: usize) -> Self {
@@ -150,30 +156,35 @@ impl Span {
         Span::new(self.lo, end.lo)
     }
 
+    /// Add the given amount to the high index of a span.
     #[must_use]
     #[inline]
     pub fn add_hi(self, amount: usize) -> Span {
         self.with_hi(self.hi + amount)
     }
 
+    /// Subtract the given amount from the high index of a span.
     #[must_use]
     #[inline]
     pub fn sub_hi(self, amount: usize) -> Span {
         self.with_hi(self.hi - amount)
     }
 
+    /// Add the given amount to the low index of a span.
     #[must_use]
     #[inline]
     pub fn add_lo(self, amount: usize) -> Span {
         self.with_lo(self.lo + amount)
     }
 
+    /// Subtract the given amount from the low index of a span.
     #[must_use]
     #[inline]
     pub fn sub_lo(self, amount: usize) -> Span {
         self.with_lo(self.lo - amount)
     }
 
+    /// Get the length (`hi - lo`) of a span.
     #[must_use]
     #[inline]
     pub fn len(self) -> usize {

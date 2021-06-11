@@ -1,3 +1,5 @@
+//! Pre-rendered diagnostics and builders to create them.
+
 use calypso_base::ui::{termcolor::Buffer, Emitter};
 use calypso_error::CalResult;
 
@@ -9,8 +11,10 @@ pub mod builder;
 pub use builder::{Builder, EnsembleBuilder};
 pub use reporting::diagnostic::{LabelStyle, Severity};
 
+/// The structure used for managing source file names, IDs, and contents.
 pub type SourceMgr = SimpleFiles<String, String>;
 
+/// A pre-rendered diagnostic.
 pub struct Diagnostic(Buffer);
 
 impl Diagnostic {

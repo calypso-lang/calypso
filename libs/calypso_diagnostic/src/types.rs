@@ -1,3 +1,5 @@
+//! Diagnostic codes and extended information
+
 // # Note to Contributors
 // Please follow Rust's RFC 1567 (https://github.com/rust-lang/rfcs/blob/master/text/1567-long-error-codes-explanation-normalization.md).
 // It's generally a good style for diagnostic information.
@@ -9,6 +11,7 @@
 //   convert this to compile-time format strings using hacky macro stuff
 macro_rules! register_diagnostics {
     ($($ecode:ident: $format:expr),* $(,)? ; $($ecode_no_msg:ident: $format_no_msg:expr),* $(,)?) => {
+        /// The registerred format string for a diagnostic.
         #[macro_export]
         #[allow(unused_macros)]
         macro_rules! diagnostic_fmt {
@@ -19,6 +22,7 @@ macro_rules! register_diagnostics {
         use ::std::collections::HashMap;
 
         ::lazy_static::lazy_static! {
+            /// A map from error codes to optional extended information.
             pub static ref DIAGNOSTICS: HashMap<&'static str, Option<&'static str>> = {
                 let mut m = HashMap::new();
                 $( m.insert(stringify!($ecode), Some(include_str!(concat!("./messages/", stringify!($ecode), ".md")))); )*
@@ -29,6 +33,7 @@ macro_rules! register_diagnostics {
     };
 }
 
+/// Format a diagnostic short message based on its registerred format string.
 #[macro_export]
 #[allow(unused_macros)]
 macro_rules! err {
