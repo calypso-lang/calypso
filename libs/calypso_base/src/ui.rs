@@ -115,25 +115,25 @@ impl Emitter {
     ///
     /// ## Without `code` or `message`
     ///
-    /// ```
+    /// ```text
     /// error: <short>
     /// ```
     ///
     /// ## With `code` but not `message`
     ///
-    /// ```
+    /// ```text
     /// error[<code>]: <short>
     /// ```
     ///
     /// ## With `message` but not `code`
     ///
-    /// ```
+    /// ```text
     /// error: <short>: <message>
     /// ```
     ///
     /// ## With `code` and `message`
     ///
-    /// ```
+    /// ```text
     /// error[<code>]: <short>: <message>
     /// ```
     ///
@@ -223,13 +223,13 @@ impl Emitter {
     ///
     /// ## Without `message`
     ///
-    /// ```
+    /// ```text
     /// info: <short>
     /// ```
     ///
     /// ## With `message`
     ///
-    /// ```
+    /// ```text
     /// info: <short>: <message>
     /// ```
     ///
@@ -259,13 +259,13 @@ impl Emitter {
     ///
     /// ## Without `message`
     ///
-    /// ```
+    /// ```text
     /// note: <short>
     /// ```
     ///
     /// ## With `message`
     ///
-    /// ```
+    /// ```text
     /// note: <short>: <message>
     /// ```
     ///
@@ -295,13 +295,13 @@ impl Emitter {
     ///
     /// ## Without `message`
     ///
-    /// ```
+    /// ```text
     /// warn: <short>
     /// ```
     ///
     /// ## With `message`
     ///
-    /// ```
+    /// ```text
     /// warn: <short>: <message>
     /// ```
     ///
