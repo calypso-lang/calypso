@@ -1,6 +1,6 @@
 # SaturnVM
 
-[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171)](https://discord.gg/26X6ChQQcG) ![Lines of Code][b2]
+[![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171?style=flat-square&color=blue)](https://discord.gg/26X6ChQQcG) ![Lines of Code][b2]
 
 SaturnVM is a bytecode VM written entirely in Rust (although there may eventually be some small parts in C). It's meant to be fast and performant but flexible and idiomatic. It's meant to be standalone but as it's written specifically for [Calypso](https://github.com/calypso-lang/calypso), there may be some connections between the two projects, though they should not be anything significant. The top-level crate for SaturnVM can be found in `/libs/saturnvm` (where `/` is the Calypso repository root). Its subcrates, if any, will be found in `/libs/` under the name `saturnvm_*`.
 
@@ -82,12 +82,12 @@ I'm currently holding various crates related to SaturnVM. These will actually be
 
 The list of contributors made using the all-contributors specification can be found on the [main README for Calypso](/README.md).
 
-[b2]: https://tokei.rs/b1/github/calypso-lang/calypso?category=lines
+[b2]: https://img.shields.io/tokei/lines/github/calypso-lang/calypso?style=flat-square
 
-[b3]: https://github.com/calypso-lang/calypso/actions/workflows/ci.yml/badge.svg?branch=main&event=push
+[b3]: https://img.shields.io/github/workflow/status/calypso-lang/calypso/CI?style=flat-square
 [l3]: https://github.com/calypso-lang/calypso/actions
 
-[b4]: https://img.shields.io/badge/license-MIT-blue.svg
+[b4]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue?style=flat-square
 [l4]: ./LICENSE
 
 [crates.io]: https://crates.io/
