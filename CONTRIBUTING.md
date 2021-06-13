@@ -2,6 +2,23 @@
 
 Unfortunately, we do not have a guide that describes the internals of Calypso. However, there are some people that are willing to mentor new users on easy issues. Issues that have a mentor are tagged with `E-mentor`. If you'd like to be a mentor, look for issues that are marked as `E-needs-mentor`, and ping `ThePuzzlemaker` to claim the mentorship for that issue.
 
+## Commits
+
+You may use any style of commit message that you wish to use, as long as your commit messages follow these basic rules:
+- Separate subject from body with a blank line
+- Limit the subject line to 50 characters
+- Capitalize the subject line
+- Do not end the subject line with a period
+- Use the imperative mood in the subject line
+- Wrap the body at 72 characters
+- Use the body to explain *what* and *why* vs. *how*
+
+See [this article](https://chris.beams.io/posts/git-commit/) for an explanation of these rules.
+
+A few of these rules can be checked using the `commit-msg` hook that you can install via `.etc/install-hooks.sh` or by manually copying `.etc/commit-msg` into your `.git/hooks`. Note that these will require Python 3.8.
+
+There is also a `pre-commit` git hook in `.etc` that will run `cargo check`, `cargo test`, and check your code for formatting errors before committing. This is mostly for committing to the main branch, but it can be helpful to have well-tested commits in a PR.
+
 ## Bug Reports / Feature Requests
 
 To submit a bug report or feature request, please submit an issue using the applicable template.
