@@ -25,8 +25,8 @@ The offsets provided in this table are from the start of the `SectionHdr`. No pa
 | :------------: | :------------: | :------------: | :---: | :----------------------------------------------------------- |
 |     `0x00`     |     `0x01`     |     `type`     | `u8`  | A user-defined section type.                                 |
 |     `0x01`     |     `0x04`     |    `flags`     | `u32` | User-defined section bitflags.                               |
-|     `0x05`     |     `0x08`     |    `offset`    | `u64` | The byte offset of this section's data from the start of the file, including the magic bytes. |
-|     `0x0d`     |     `0x08`     |     `size`     | `u64` | The byte size of this section's data.                        |
-|     `0x15`     |     `0x01`     | `sizeof(name)` | `u8`  | The byte size of the section name.                           |
-|     `0x16`     | `sizeof(name)` |     `name`     | `str` | ASCII-encoded section name. Must contain only the characters `A-Za-z0-9_` and must be unique. |
+|     `0x05`     |     `0x04`     |    `offset`    | `u32` | The byte offset of this section's data from the start of the file, including the magic bytes. |
+|     `0x09`     |     `0x04`     |     `size`     | `u32` | The byte size of this section's data.                        |
+|     `0x0d`     |     `0x01`     | `sizeof(name)` | `u8`  | The byte size of the section name.                           |
+|     `0x0e`     | `sizeof(name)` |     `name`     | `str` | ASCII-encoded section name. Must contain only the characters `A-Za-z0-9_` and must be unique. |
 
