@@ -11,25 +11,6 @@
   "commitConvention": "angular",
   "contributors": [
     {
-      "login": "ThePuzzlemaker",
-      "name": "James [Undefined]",
-      "avatar_url": "https://avatars3.githubusercontent.com/u/12666617?v=4",
-      "profile": "https://thepuzzlemaker.info/",
-      "contributions": [
-        "code",
-        "design",
-        "doc",
-        "example",
-        "ideas",
-        "infra",
-        "maintenance",
-        "projectManagement",
-        "test",
-        "tool",
-        "tutorial"
-      ]
-    },
-    {
       "login": "HTG-YT",
       "name": "HTG-YT",
       "avatar_url": "https://avatars.githubusercontent.com/u/39023054?v=4",
@@ -37,6 +18,16 @@
       "contributions": [
         "doc",
         "tutorial"
+      ]
+    },
+    {
+      "login": "tbmreza",
+      "name": "Reza",
+      "avatar_url": "https://avatars.githubusercontent.com/u/17718201?v=4",
+      "profile": "https://www.mbiz.co.id/",
+      "contributions": [
+        "bug",
+        "test"
       ]
     }
   ],
