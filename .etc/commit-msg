@@ -39,10 +39,10 @@ def verify(idx, line):
 
     if idx == 0:
         errors += verify_short(line)
-    
+
     if idx == 1 and line.strip():
         errors.append("The second line of a commit message should be empty, in order to separate the\n    short message of the commit with the body.")
-    
+
     if len(line.strip()) > 72:
         errors.append("The body of a commit should be wrapped to 72 characters.")
 
@@ -51,12 +51,17 @@ def verify(idx, line):
 def verify_short(line):
     errors = []
 
+    if len(line.strip()) == 0:
+        # We can't verify anything about the short message if it's empty.
+        return ["The short message of a commit should not be empty."]
+        
+
     if not line[0].isupper():
         errors.append("The short message of a commit should start with a capital letter.")
-    
+
     if line.strip()[-1] == ".":
         errors.append("The short message of a commit should not end with a period.")
-    
+
     if len(line) > 50:
         errors.append("The short message of a commit should not be longer than 50 characters.")
 
