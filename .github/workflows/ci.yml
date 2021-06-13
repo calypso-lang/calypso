@@ -45,7 +45,7 @@ jobs:
       run: cargo build --verbose --workspace --all-features --all-targets
 
     - name: Run tests
-      run: cargo test --verbose --workspace --all-features --all-targets
+      run: cargo test --verbose --workspace --all-features
   
   docs:
     runs-on: ubuntu-latest
