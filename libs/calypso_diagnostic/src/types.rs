@@ -37,9 +37,13 @@ macro_rules! register_diagnostics {
 #[macro_export]
 #[allow(unused_macros)]
 macro_rules! err {
-    ($ecode:ident$(, $($rest:tt)*)?) => {{
-        ::std::format($crate::types::diagnostic_fmt!($ecode)$(, $($rest)*)?)
-    }}
+    ($ecode:ident, $($rest:tt)*) => {{
+        format!($crate::types::diagnostic_fmt!($ecode)$(, $($rest)*)?)
+    }};
+
+    ($ecode:ident) => {{
+        $crate::types::diagnostic_fmt!($ecode)
+    }};
 }
 
 // todo(diag): add more extended diagnostic information. see #28.
