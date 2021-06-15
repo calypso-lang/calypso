@@ -4,21 +4,22 @@ use super::{Lexer, Token, TokenType};
 use calypso_ast::expr::{Radix, Suffix};
 use calypso_base::span::Spanned;
 use calypso_base::streams::Stream;
+use calypso_diagnostic::diagnostic::{EnsembleBuilder, LabelStyle};
 use calypso_diagnostic::prelude::*;
 
 impl<'lex> Lexer<'lex> {
-    pub(super) fn handle_number(&mut self) -> CalResult<Token<'lex>> {
-        if self.handle_float_part()? {
-            return Ok(self.new_token(TokenType::Float));
+    pub(super) fn handle_number(&mut self) -> Token<'lex> {
+        if self.handle_float_part() {
+            return self.new_token(TokenType::Float);
         }
-        let possibly_incomplete_tok = self.handle_int(Radix::None)?;
-        if self.handle_float_part()? {
-            return Ok(self.new_token(TokenType::Float));
+        let possibly_incomplete_tok = self.handle_int(Radix::None);
+        if self.handle_float_part() {
+            return self.new_token(TokenType::Float);
         }
-        Ok(possibly_incomplete_tok)
+        possibly_incomplete_tok
     }
 
-    pub(super) fn handle_int_leading_zero(&mut self) -> CalResult<Token<'lex>> {
+    pub(super) fn handle_int_leading_zero(&mut self) -> Token<'lex> {
         let ch = *self.peek().unwrap();
         match ch.value() {
             'd' => {
@@ -38,36 +39,36 @@ impl<'lex> Lexer<'lex> {
                 self.handle_int(Radix::Binary)
             }
             '.' => {
-                self.handle_float_part()?;
-                Ok(self.new_token(TokenType::Float))
+                self.handle_float_part();
+                self.new_token(TokenType::Float)
             }
             's' => {
                 self.next();
-                Ok(self.new_token(TokenType::Int {
+                self.new_token(TokenType::Int {
                     suffix: Some(Suffix::Sint),
                     radix: Radix::None,
-                }))
+                })
             }
             'u' => {
                 self.next();
-                Ok(self.new_token(TokenType::Int {
+                self.new_token(TokenType::Int {
                     suffix: Some(Suffix::Uint),
                     radix: Radix::None,
-                }))
+                })
             }
             'f' => {
                 self.next();
-                Ok(self.new_token(TokenType::Int {
+                self.new_token(TokenType::Int {
                     suffix: Some(Suffix::Float),
                     radix: Radix::None,
-                }))
+                })
             }
             ch if ch.is_ascii_digit() => {
                 self.current_to_start();
                 self.gorge_digits();
                 // Leading zeroes are not a problem with floats.
-                if self.handle_float_part()? {
-                    return Ok(self.new_token(TokenType::Float));
+                if self.handle_float_part() {
+                    return self.new_token(TokenType::Float);
                 }
                 let suffix = self.handle_suffix();
                 let len = if suffix.is_some() {
@@ -75,22 +76,21 @@ impl<'lex> Lexer<'lex> {
                 } else {
                     0
                 };
-                gen_error!(sync self.grcx.borrow_mut(), self => {
-                    E0025;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            "did not expect a number here"
-                    ],
-                    notes: [
-                        "leading zeroes are not allowed in integer literals, even ones with the `f` suffix.",
-                        format!(
-                            "help: perhaps you meant to use an octal literal: `0o{}`?",
-                            self.slice(self.new_span()),
-                        )
-                    ]
-                });
-                Ok(self.new_token_with_span(
+
+                self.gcx.grcx.write().report_syncd(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0025").short(err!(E0025)).label(
+                                LabelStyle::Primary,
+                                Some("didn't expect a number here"),
+                                self.file_id,
+                                self.new_span(),
+                            ).note("leading zeroes are not allowed in integer literals, even ones with the `f` suffix.")
+                            .note(format!("help: perhaps you meant to use an octal literal: `0o{}`?", self.slice(self.new_span())))
+                        })
+                        .build(),
+                );
+                self.new_token_with_span(
                     self.new_span().sub_hi(len),
                     TokenType::Int {
                         suffix,
@@ -98,12 +98,12 @@ impl<'lex> Lexer<'lex> {
                         // `0755` to mean `0o755`.
                         radix: Radix::Octal,
                     },
-                ))
+                )
             }
-            _ => Ok(self.new_token(TokenType::Int {
+            _ => self.new_token(TokenType::Int {
                 suffix: None,
                 radix: Radix::None,
-            })),
+            }),
         }
     }
 
@@ -116,20 +116,20 @@ impl<'lex> Lexer<'lex> {
         }
     }
 
-    pub(super) fn handle_float_part(&mut self) -> CalResult<bool> {
-        if self.peek_cond(|c| {
+    pub(super) fn handle_float_part(&mut self) -> bool {
+        let base_cond = |c: &Spanned<char>| {
             let c = c.value_owned();
             c == 'e' || c == 'E' || c == '.'
-        }) != Some(true)
-        {
-            return Ok(false);
+        };
+        if self.peek_cond(base_cond) != Some(true) {
+            return false;
         }
-        self.handle_unexpected_underscore()?;
+        self.handle_unexpected_underscore();
 
         if self.next_if(|c| c.value_owned() == '.').is_some() {
-            self.inval_float_decimal()?;
+            self.inval_float_decimal();
             self.gorge_digits();
-            self.handle_unexpected_underscore()?;
+            self.handle_unexpected_underscore();
         }
 
         if self
@@ -138,106 +138,131 @@ impl<'lex> Lexer<'lex> {
         {
             // +/- are optional
             self.next_if(|c| c.value_owned() == '+' || c.value_owned() == '-');
-            self.inval_float_exponent()?;
+            self.inval_float_exponent();
             self.gorge_digits();
-            self.handle_unexpected_underscore()?;
+            self.handle_unexpected_underscore();
         }
 
-        Ok(true)
+        true
     }
 
-    fn inval_float_decimal(&mut self) -> CalResult<()> {
+    fn inval_float_decimal(&mut self) {
         let start = self.start;
-        if self.peek_cond(is_whitespace) == Some(true) {
-            self.current_to_start();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0028;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a decimal part of this float here"
-                ]
-            });
-        } else if self.peek_cond(|c| {
+        let exp_part = |c: &Spanned<char>| {
             let c = c.value_owned();
             !c.is_ascii_digit() && c != 'e' && c != 'E'
-        }) == Some(true)
-        {
+        };
+        if self.peek_cond(is_whitespace) == Some(true) {
+            self.current_to_start();
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0028").short(err!(E0028)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
+        } else if self.peek_cond(exp_part) == Some(true) {
             self.current_to_start();
             let ch = self.peek().unwrap().value_owned();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0027, ch = ch;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a decimal part of this float here"
-                ]
-            });
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0027").short(err!(E0027, ch = ch)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
         } else if self.is_at_end() {
             self.current_to_start();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0029;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a decimal part of this float here"
-                ]
-            });
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0029").short(err!(E0029)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
         }
         self.set_start(start);
-        Ok(())
     }
 
-    fn inval_float_exponent(&mut self) -> CalResult<()> {
+    fn inval_float_exponent(&mut self) {
         let start = self.start;
         if self.peek_cond(is_whitespace) == Some(true) {
             self.current_to_start();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0031;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected an exponent of this float here"
-                ]
-            });
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0031").short(err!(E0031)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
         } else if self.peek_cond(|c| !c.value_owned().is_ascii_digit()) == Some(true) {
             self.current_to_start();
             let ch = self.peek().unwrap().value_owned();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0030, ch = ch;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected an exponent of this float here"
-                ]
-            });
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0030").short(err!(E0030, ch = ch)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
         } else if self.is_at_end() {
             self.current_to_start();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0032;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected an exponent of this float here"
-                ]
-            });
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0032").short(err!(E0032)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
         }
         self.set_start(start);
-        Ok(())
     }
 
-    fn handle_unexpected_underscore(&mut self) -> CalResult<()> {
+    fn handle_unexpected_underscore(&mut self) {
         if self.prev_eq(&'_') == Some(true) {
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0026;
-                labels: [
-                    LabelStyle::Secondary =>
-                        (self.source_id, self.prev().unwrap().span());
-                        "help: remove this underscore"
-                ]
-            });
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0026").short(err!(E0026)).label(
+                            LabelStyle::Secondary,
+                            Some("help: remove this underscore"),
+                            self.file_id,
+                            self.prev().unwrap().span(),
+                        )
+                    })
+                    .build(),
+            );
         }
-        Ok(())
     }
 
     fn gorge_digits(&mut self) -> usize {
@@ -248,38 +273,40 @@ impl<'lex> Lexer<'lex> {
         self.gorge_while(|c, n| is_valid_for(c, radix) || (n > 0 && c.value_owned() == '_'))
     }
 
-    fn handle_int(&mut self, radix: Radix) -> CalResult<Token<'lex>> {
+    fn handle_int(&mut self, radix: Radix) -> Token<'lex> {
         let n_gorged = self.gorge_digits_radix(radix);
         if n_gorged == 0 && radix != Radix::None {
             self.current_to_start();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0035;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a number here"
-                ],
-                notes: [
-                    format!(
-                        "help: perhaps you meant to use a zero literal with this base: `{}0`?",
-                        radix,
-                    )
-                ]
-            });
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0035").short(err!(E0035)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        ).note(format!("help: perhaps you meant to use a zero literal with this base: `{}0`?", radix))
+                    })
+                    .build(),
+            );
         }
-        self.handle_unexpected_underscore()?;
+        self.handle_unexpected_underscore();
         let suffix = self.handle_suffix();
 
         if radix != Radix::None {
             if let Some(Suffix::Float) = suffix {
-                gen_error!(sync self.grcx.borrow_mut(), self => {
-                    E0033;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            "cannot use an explicit base for this float"
-                    ]
-                });
+                self.gcx.grcx.write().report_syncd(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0033").short(err!(E0033)).label(
+                                LabelStyle::Primary,
+                                None,
+                                self.file_id,
+                                self.new_span(),
+                            )
+                        })
+                        .build(),
+                );
             }
         }
 
@@ -288,9 +315,9 @@ impl<'lex> Lexer<'lex> {
         } else {
             0
         };
-        Ok(self.new_token_with_span(
+        self.new_token_with_span(
             self.new_span().sub_hi(len),
             TokenType::Int { suffix, radix },
-        ))
+        )
     }
 }

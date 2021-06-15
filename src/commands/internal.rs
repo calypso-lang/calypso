@@ -1,21 +1,17 @@
-use std::cell::RefCell;
 use std::fs;
 use std::io::{self, prelude::*};
 use std::path::Path;
-use std::rc::Rc;
 use std::sync::Arc;
 
+use calypso_repl::Repl;
 use clap::ArgMatches;
 
-use calypso_base::ui::{
-    self,
-    termcolor::{Color, ColorSpec, WriteColor},
-};
+use calypso_base::ui::termcolor::{Color, ColorSpec, WriteColor};
 use calypso_common::gcx::GlobalCtxt;
 use calypso_diagnostic::prelude::*;
-use calypso_diagnostic::report::GlobalReportingCtxt;
-// use calypso_parsing::lexer::{Lexer, TokenType};
-// use calypso_parsing::pretty::Printer;
+use calypso_diagnostic::reporting::files::Files;
+use calypso_parsing::lexer::{Lexer, TokenType};
+use calypso_parsing::pretty::Printer;
 // use calypso_repl::Repl;
 
 use crate::buildinfo::BUILD_INFO;
@@ -23,239 +19,175 @@ use crate::buildinfo::BUILD_INFO;
 #[allow(clippy::single_match)]
 pub fn internal(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
     match matches.subcommand() {
-        // ("lexer", Some(matches)) => lexer(sess, matches),
+        ("lexer", Some(matches)) => lexer(gcx, matches),
         ("buildinfo", _) => buildinfo(gcx),
         ("panic", _) => panic!("Intentional panic to test ICE handling, please ignore."),
         _ => Ok(()),
     }
 }
 
-// pub fn lexer(sess: Arc<BaseSession>, matches: &ArgMatches) {
-//     let ignore_ws = matches.is_present("ignore_ws");
-//     let path = matches.value_of("INPUT").unwrap();
+pub fn lexer(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
+    let ignore_ws = matches.is_present("ignore_ws");
+    let path = matches.value_of("INPUT").unwrap();
 
-//     if path == "-" {
-//         lexer_stdin(sess, matches);
-//         return;
-//     }
+    let (file_name, contents) = if path == "-" {
+        if matches.is_present("repl") {
+            return lexer_repl(gcx, ignore_ws);
+        }
 
-//     let path = Path::new(path);
-//     if !path.exists() {
-//         ui::error_to(
-//             &sess.stderr,
-//             None,
-//             "file does not exist",
-//             Some(&format!("`{}`", path.display())),
-//         )
-//         .unwrap();
-//         return;
-//     }
+        let stdin = io::stdin();
+        let mut contents = String::new();
+        if let Err(err) = stdin.lock().read_to_string(&mut contents) {
+            gcx.emit
+                .write()
+                .err
+                .error(None, "while reading from stdin:", None)?
+                .error(None, &format!("{}", err), None)?
+                .flush()?;
+            return Ok(());
+        }
 
-//     let contents = match fs::read_to_string(&path) {
-//         Ok(v) => v,
-//         Err(err) => {
-//             ui::error_to(
-//                 &sess.stderr,
-//                 None,
-//                 "while reading file",
-//                 Some(&format!("`{}`:", path.display())),
-//             )
-//             .unwrap();
-//             ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
-//             return;
-//         }
-//     };
+        ("<stdin>".to_string(), contents)
+    } else {
+        let path = Path::new(path);
+        if !path.exists() {
+            gcx.emit
+                .write()
+                .err
+                .error(
+                    None,
+                    "file does not exist",
+                    Some(&format!("`{}`", path.display())),
+                )?
+                .flush()?;
+            return Ok(());
+        }
 
-//     let mut files = FileMgr::new();
-//     let source_id = files.add(path.display().to_string(), contents);
-//     let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new(Arc::clone(&sess))));
-//     let mut lexer = Lexer::new(
-//         source_id,
-//         files.get(source_id).unwrap().source(),
-//         &files,
-//         Rc::clone(&grcx),
-//     );
-//     let mut tokens = Vec::new();
-//     let mut printer = Printer::new(source_id, &files);
-//     loop {
-//         let token = lexer.scan();
-//         if let Err(err) = token {
-//             ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-//             if let Some(DiagnosticError::Diagnostic) = err.try_downcast_ref::<DiagnosticError>() {
-//                 sess.stderr
-//                     .print(&grcx.borrow().fatal().unwrap().rendered())
-//                     .unwrap();
-//             } else {
-//                 ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
-//             }
-//             break;
-//         } else if let Ok(token) = token {
-//             let token_ty = token.value().0;
-//             if !ignore_ws || token_ty != TokenType::Ws {
-//                 tokens.push(token);
-//             }
-//             if token_ty == TokenType::Eof {
-//                 break;
-//             }
-//         }
-//     }
-//     grcx.borrow()
-//         .errors()
-//         .iter()
-//         .for_each(|e| println!("{}", e));
-//     let tokens = tokens
-//         .iter()
-//         .map(|v| printer.print_token(v))
-//         .collect::<Result<Vec<String>, _>>();
-//     match tokens {
-//         Ok(tokens) => println!("{}", tokens.join("\n")),
-//         Err(err) => {
-//             ui::error_to(&sess.stderr, None, "while pretty-printing tokens:", None).unwrap();
-//             ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
-//         }
-//     }
-// }
+        (
+            path.display().to_string(),
+            match fs::read_to_string(&path) {
+                Ok(v) => v,
+                Err(err) => {
+                    gcx.emit
+                        .write()
+                        .err
+                        .error(
+                            None,
+                            "while reading file",
+                            Some(&format!("`{}`:", path.display())),
+                        )?
+                        .error(None, &format!("{}", err), None)?
+                        .flush()?;
+                    return Ok(());
+                }
+            },
+        )
+    };
 
-// pub fn lexer_stdin(sess: Arc<BaseSession>, matches: &ArgMatches) {
-//     let ignore_ws = matches.is_present("ignore_ws");
-//     if matches.is_present("repl") {
-//         lexer_stdin_repl(sess, ignore_ws);
-//         return;
-//     }
+    run_lexer(gcx, ignore_ws, file_name, contents)
+}
 
-//     let stdin = io::stdin();
-//     let mut contents = String::new();
-//     if let Err(err) = stdin.lock().read_to_string(&mut contents) {
-//         ui::error_to(&sess.stderr, None, "while reading from stdin:", None).unwrap();
-//         ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
-//         return;
-//     }
+pub fn run_lexer(
+    gcx: &Arc<GlobalCtxt>,
+    ignore_ws: bool,
+    file_name: String,
+    contents: String,
+) -> CalResult<()> {
+    let file_id = gcx.sourcemgr.write().add(file_name, contents);
 
-//     let mut files = FileMgr::new();
-//     let source_id = files.add("<anon>".to_string(), contents);
-//     let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new(Arc::clone(&sess))));
-//     let mut lexer = Lexer::new(
-//         source_id,
-//         files.get(source_id).unwrap().source(),
-//         &files,
-//         Rc::clone(&grcx),
-//     );
-//     let mut tokens = Vec::new();
-//     let mut printer = Printer::new(source_id, &files);
-//     loop {
-//         let token = lexer.scan();
-//         if let Err(err) = token {
-//             ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-//             if let Some(DiagnosticError::Diagnostic) = err.try_downcast_ref::<DiagnosticError>() {
-//                 sess.stderr
-//                     .print(&grcx.borrow().fatal().unwrap().rendered())
-//                     .unwrap();
-//             } else {
-//                 ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
-//             }
-//             break;
-//         } else if let Ok(token) = token {
-//             let token_ty = token.value().0;
-//             if !ignore_ws || token_ty != TokenType::Ws {
-//                 tokens.push(token);
-//             }
-//             if token_ty == TokenType::Eof {
-//                 break;
-//             }
-//         }
-//     }
-//     grcx.borrow()
-//         .errors()
-//         .iter()
-//         .for_each(|e| println!("{}", e));
-//     let tokens = tokens
-//         .iter()
-//         .map(|v| printer.print_token(v))
-//         .collect::<Result<Vec<String>, _>>();
-//     match tokens {
-//         Ok(tokens) => println!("{}", tokens.join("\n")),
-//         Err(err) => {
-//             ui::error_to(&sess.stderr, None, "while pretty-printing tokens:", None).unwrap();
-//             ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
-//         }
-//     }
-// }
+    let sourcemgr = gcx.sourcemgr.read();
+    let source = sourcemgr.source(file_id).unwrap();
 
-// pub fn lexer_stdin_repl(sess: Arc<BaseSession>, ignore_ws: bool) {
-//     struct ReplCtx {}
+    let mut lexer = Lexer::new(file_id, source, Arc::clone(gcx));
+    let mut tokens = Vec::new();
+    let mut printer = Printer::new(file_id, Arc::clone(gcx));
+    loop {
+        let token = lexer.scan();
+        if let Err(err) = token {
+            let mut emit = gcx.emit.write();
 
-//     let mut repl = Repl::new(
-//         Box::new(move |_ctx, contents| {
-//             let mut files = FileMgr::new();
-//             let source_id = files.add("<anon>".to_string(), contents);
-//             let grcx = Rc::new(RefCell::new(GlobalReportingCtxt::new(Arc::clone(&sess))));
-//             let mut lexer = Lexer::new(
-//                 source_id,
-//                 files.get(source_id).unwrap().source(),
-//                 &files,
-//                 Rc::clone(&grcx),
-//             );
-//             let mut tokens = Vec::new();
-//             let mut printer = Printer::new(source_id, &files);
-//             loop {
-//                 let token = lexer.scan();
-//                 if let Err(err) = token {
-//                     ui::error_to(&sess.stderr, None, "while lexing input:", None).unwrap();
-//                     if let Some(DiagnosticError::Diagnostic) =
-//                         err.try_downcast_ref::<DiagnosticError>()
-//                     {
-//                         sess.stderr
-//                             .print(&grcx.borrow().fatal().unwrap().rendered())
-//                             .unwrap();
-//                     } else {
-//                         ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
-//                     }
-//                     break;
-//                 } else if let Ok(token) = token {
-//                     let token_ty = token.value().0;
-//                     if !ignore_ws || token_ty != TokenType::Ws {
-//                         tokens.push(token);
-//                     }
-//                     if token_ty == TokenType::Eof {
-//                         break;
-//                     }
-//                 }
-//             }
-//             grcx.borrow()
-//                 .errors()
-//                 .iter()
-//                 .for_each(|e| println!("{}", e));
-//             let tokens = tokens
-//                 .iter()
-//                 .map(|v| printer.print_token(v))
-//                 .collect::<Result<Vec<String>, _>>();
-//             match tokens {
-//                 Ok(tokens) => Some(tokens.join("\n")),
-//                 Err(err) => {
-//                     ui::error_to(&sess.stderr, None, "while pretty-printing tokens:", None)
-//                         .unwrap();
-//                     ui::error_to(&sess.stderr, None, &format!("{}", err), None).unwrap();
-//                     None
-//                 }
-//             }
-//         }),
-//         ReplCtx {},
-//     )
-//     .prefix("$".to_string());
-//     repl.run(
-//         &format!(
-//             "Calypso CLI v{} - internal debugging command: lexer",
-//             BUILD_INFO.version
-//         ),
-//         |_| String::from(">>> "),
-//     )
-//     .expect("REPL failure");
-// }
+            emit.err.error(None, "while lexing input:", None)?;
+            if let Some(DiagnosticError::Diagnostic) = err.try_downcast_ref::<DiagnosticError>() {
+                let mut buf = emit.err.buffer();
+                gcx.grcx
+                    .read()
+                    .fatal()
+                    .unwrap()
+                    .render(&mut buf, &sourcemgr, None)?;
+                emit.err.emit(&buf)?;
+            } else {
+                emit.err.error(None, &format!("{}", err), None)?;
+            }
+            break;
+        } else if let Ok(token) = token {
+            let token_ty = token.value().0;
+            if !ignore_ws || token_ty != TokenType::Ws {
+                tokens.push(token);
+            }
+            if token_ty == TokenType::Eof {
+                break;
+            }
+        }
+    }
+
+    gcx.grcx
+        .read()
+        .errors()
+        .iter()
+        .try_for_each(|e| -> CalResult<()> {
+            let mut emit = gcx.emit.write();
+            let mut buf = emit.err.buffer();
+            e.render(&mut buf, &sourcemgr, None)?;
+            emit.err.emit(&buf)?;
+            Ok(())
+        })?;
+
+    let tokens = tokens
+        .iter()
+        .map(|v| printer.print_token(v))
+        .collect::<Result<Vec<String>, _>>();
+    match tokens {
+        Ok(tokens) => println!("{}", tokens.join("\n")),
+        Err(err) => {
+            gcx.emit
+                .write()
+                .err
+                .error(None, "while pretty-printing tokens:", None)?
+                .error(None, &format!("{}", err), None)?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn lexer_repl(gcx: &Arc<GlobalCtxt>, ignore_ws: bool) -> CalResult<()> {
+    struct ReplCtx {}
+
+    let repl_gcx = Arc::clone(gcx);
+    let mut repl = Repl::new(
+        Box::new(move |_ctx, contents| {
+            run_lexer(&repl_gcx, ignore_ws, "<repl>".to_string(), contents)
+                .ok()
+                .map(|_| String::new())
+        }),
+        ReplCtx {},
+    )
+    .prefix("\\".to_string());
+    repl.run(
+        &format!(
+            "Calypso CLI v{} - internal debugging command: lexer",
+            BUILD_INFO.version
+        ),
+        |_| String::from(">>> "),
+    )
+    .expect("REPL failure");
+    Ok(())
+}
 
 pub fn buildinfo(gcx: &Arc<GlobalCtxt>) -> CalResult<()> {
     let mut bi = BUILD_INFO;
 
-    let mut emit = gcx.emit.lock();
+    let mut emit = gcx.emit.write();
     let out = &mut emit.out;
 
     out.info("=:= Version =:=", None)?

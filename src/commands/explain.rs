@@ -12,7 +12,7 @@ pub fn explain(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
         if let Some(information) = diagnostic {
             print!("{}", information);
         } else {
-            let mut emit = gcx.emit.lock();
+            let mut emit = gcx.emit.write();
             let err = &mut emit.err;
 
             err.error(
@@ -22,7 +22,7 @@ pub fn explain(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
             )?;
         }
     } else {
-        let mut emit = gcx.emit.lock();
+        let mut emit = gcx.emit.write();
         let err = &mut emit.err;
 
         err.error(

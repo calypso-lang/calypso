@@ -9,7 +9,6 @@ use once_cell::sync::OnceCell;
 use tracing_subscriber::EnvFilter;
 
 use calypso_base::ui::{self, atty::Stream, Emitters};
-use calypso_common::parking_lot::Mutex;
 use calypso_common::{gcx::GlobalCtxt, parking_lot::RwLock};
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::{diagnostic::SourceMgr, report::GlobalReportingCtxt};
@@ -53,30 +52,28 @@ fn report_ice(gcx: &GlobalCtxt, info: &panic::PanicInfo<'_>, report_url: &str) -
     // optionally a backtrace
     DEFAULT_HOOK.get().unwrap()(info);
 
-    // Separate the output with an empty line
-    eprintln!();
-
-    let mut emit = gcx.emit.lock();
-    let err = &mut emit.err;
-
-    err.error(
-        None,
-        "the compiler unexpectedly crashed. this is a bug.",
-        None,
-    )?
-    .note("we would appreciate a bug report at", Some(report_url))?
-    .note(
-        "build information",
-        Some(&format!(
-            "calypso {} ({}) running on {}",
-            BUILD_INFO.version, BUILD_INFO.git_commit, BUILD_INFO.cargo_target_triple
-        )),
-    )?
-    .note(
-        "for further information, run",
-        Some("`calypso internal buildinfo`"),
-    )?
-    .flush()?;
+    gcx.emit
+        .write()
+        .err
+        .newline()?
+        .error(
+            None,
+            "the compiler unexpectedly crashed. this is a bug.",
+            None,
+        )?
+        .note("we would appreciate a bug report at", Some(report_url))?
+        .note(
+            "build information",
+            Some(&format!(
+                "calypso {} ({}) running on {}",
+                BUILD_INFO.version, BUILD_INFO.git_commit, BUILD_INFO.cargo_target_triple
+            )),
+        )?
+        .note(
+            "for further information, run",
+            Some("`calypso internal buildinfo`"),
+        )?
+        .flush()?;
 
     Ok(())
 }
@@ -92,7 +89,7 @@ fn main() {
     let color_pref_stderr = ui::parse_color_pref(color_pref, Stream::Stderr);
 
     let gcx = Arc::new(GlobalCtxt {
-        emit: Mutex::new(Emitters::new(color_pref_stdout, color_pref_stderr)),
+        emit: RwLock::new(Emitters::new(color_pref_stdout, color_pref_stderr)),
         grcx: RwLock::new(GlobalReportingCtxt::new()),
         sourcemgr: RwLock::new(SourceMgr::new()),
     });

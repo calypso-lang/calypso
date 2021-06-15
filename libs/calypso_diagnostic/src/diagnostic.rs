@@ -1,30 +1,50 @@
-//! Pre-rendered diagnostics and builders to create them.
+//! Diagnostics and builders to create them.
 
-use calypso_base::ui::{termcolor::Buffer, Emitter};
+use std::io::prelude::*;
+
+use calypso_base::ui::termcolor::Buffer;
 use calypso_error::CalResult;
 
-use super::reporting;
-use reporting::files::SimpleFiles;
+use codespan_reporting::files::SimpleFiles;
+use codespan_reporting::{
+    diagnostic::Diagnostic as CodespanDiag,
+    term::{self, Config},
+};
+
+use super::error::DiagnosticError;
 
 pub mod builder;
 
 pub use builder::{Builder, EnsembleBuilder};
-pub use reporting::diagnostic::{LabelStyle, Severity};
+
+pub use codespan_reporting::diagnostic::{LabelStyle, Severity};
 
 /// The structure used for managing source file names, IDs, and contents.
 pub type SourceMgr = SimpleFiles<String, String>;
 
-/// A pre-rendered diagnostic.
-pub struct Diagnostic(Buffer);
+/// A diagnostic.
+pub struct Diagnostic(CodespanDiag<usize>);
 
 impl Diagnostic {
-    /// Emit this diagnostic now.
+    /// Render the diagnostic to the provided buffer. This will add a newline
+    /// at the end.
     ///
     /// # Errors
     ///
-    /// This function will error if the diagnostic could not be emitted.
-    pub fn emit(&self, stderr: &mut Emitter) -> CalResult<()> {
-        stderr.emit(&self.0)?;
+    /// This function will error if rendering the diagnostic or writing to the
+    /// buffer failed.
+    pub fn render<'gcx>(
+        &self,
+        buf: &mut Buffer,
+        sourcemgr: &'gcx SourceMgr,
+        config: Option<&Config>,
+    ) -> CalResult<()> {
+        let def_config = Config::default();
+        let config = config.unwrap_or(&def_config);
+
+        term::emit(buf, &config, sourcemgr, &self.0).map_err(DiagnosticError::from)?;
+        writeln!(buf)?;
+
         Ok(())
     }
 }
@@ -40,15 +60,24 @@ pub enum EnsembleDiagnostic {
 }
 
 impl EnsembleDiagnostic {
-    /// Emit this ensemble diagnostic now.
+    /// Render the ensemble diagnostic to the provided buffer. This will add a
+    /// newline at the end.
     ///
     /// # Errors
     ///
-    /// This function will error if the diagnostic could not be emitted.
-    pub fn emit(&self, stderr: &mut Emitter) -> CalResult<()> {
+    /// This function will error if rendering the diagnostic or writing to the
+    /// buffer failed.
+    pub fn render<'gcx>(
+        &self,
+        buf: &mut Buffer,
+        sourcemgr: &'gcx SourceMgr,
+        config: Option<&Config>,
+    ) -> CalResult<()> {
         match self {
-            Self::One(diag) => diag.emit(stderr),
-            Self::Many(diags) => diags.iter().try_for_each(|diag| diag.emit(stderr)),
+            Self::One(diag) => diag.render(buf, sourcemgr, config),
+            Self::Many(diags) => diags
+                .iter()
+                .try_for_each(|diag| diag.render(buf, sourcemgr, config)),
         }
     }
 }

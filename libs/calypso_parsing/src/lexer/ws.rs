@@ -2,6 +2,7 @@ use super::helpers::is_whitespace;
 use super::{Lexer, Token, TokenType};
 
 use calypso_base::streams::Stream;
+use calypso_diagnostic::diagnostic::{EnsembleBuilder, LabelStyle};
 use calypso_diagnostic::prelude::*;
 
 impl<'lex> Lexer<'lex> {
@@ -9,13 +10,13 @@ impl<'lex> Lexer<'lex> {
     //                               tokens
     pub(super) fn handle_whitespace(&mut self) -> CalResult<Option<Token<'lex>>> {
         self.current_to_start();
-        self.handle_dangling_comment_ends()?;
+        self.handle_dangling_comment_ends();
         while !self.is_at_end()
             && (self.handle_comment()
                 || self.handle_multiline_comment()?
                 || self.next_if(is_whitespace).is_some())
         {
-            self.handle_dangling_comment_ends()?;
+            self.handle_dangling_comment_ends();
         }
         if self.new_span().is_empty() {
             Ok(None)
@@ -78,14 +79,29 @@ impl<'lex> Lexer<'lex> {
             if self.is_at_end() && !stack.is_empty() {
                 // There's no way to tell whether stuff after a /* was intended to be a comment
                 // or code, so we make this a fatal error.
-                gen_error!(self.grcx.borrow(), Err(self => {
-                    E0002;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, stack.pop().unwrap());
-                            "this multi-line comment's beginning has no corresponding end"
-                    ]
-                }) as ())?
+
+                self.gcx.grcx.write().report_fatal(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0002").short(err!(E0002)).label(
+                                LabelStyle::Primary,
+                                Some("this needs to be terminated"),
+                                self.file_id,
+                                stack.pop().unwrap(),
+                            )
+                        })
+                        .build(),
+                );
+                return Err(DiagnosticError::Diagnostic.into());
+
+                // gen_error!(self.grcx.borrow(), Err(self => {
+                //     E0002;
+                //     labels: [
+                //         LabelStyle::Primary =>
+                //             (self.source_id, stack.pop().unwrap());
+                //             "this multi-line comment's beginning has no corresponding end"
+                //     ]
+                // }) as ())?
             }
         }
 
@@ -93,20 +109,24 @@ impl<'lex> Lexer<'lex> {
         Ok(true)
     }
 
-    pub(super) fn handle_dangling_comment_ends(&mut self) -> CalResult<()> {
+    pub(super) fn handle_dangling_comment_ends(&mut self) {
         if self.peek_eq(&'*') == Some(true) && self.peek2_eq(&'/') == Some(true) {
             self.current_to_start();
             self.next();
             self.next();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0001;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "this multi-line comment's end has no corresponding beginning"
-                ]
-            });
+
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0001").short(err!(E0001)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
         }
-        Ok(())
     }
 }

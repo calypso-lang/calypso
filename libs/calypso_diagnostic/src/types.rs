@@ -38,11 +38,11 @@ macro_rules! register_diagnostics {
 #[allow(unused_macros)]
 macro_rules! err {
     ($ecode:ident, $($rest:tt)*) => {{
-        format!($crate::types::diagnostic_fmt!($ecode)$(, $($rest)*)?)
+        format!($crate::diagnostic_fmt!($ecode), $($rest)*)
     }};
 
     ($ecode:ident) => {{
-        $crate::types::diagnostic_fmt!($ecode)
+        $crate::diagnostic_fmt!($ecode)
     }};
 }
 
@@ -79,7 +79,7 @@ register_diagnostics! {
     E0023: "Expected a single quote at end of character literal, found EOF.",
     E0024: "Expected a double quote at end of string literal, found EOF.",
     E0025: "Found a leading zero in an integer literal.",
-    E0026: "Encountered an underscore at the end of a number literal.",
+    E0026: "Encountered an underscore at an invalid part of a number literal.",
     E0027: "Expected a valid decimal part of a float, found an invalid digit `{ch}`",
     E0028: "Expected a valid decimal part of a float, found whitespace.",
     E0029: "Expected a valid decimal part of a float, found EOF.",

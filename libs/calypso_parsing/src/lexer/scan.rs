@@ -3,6 +3,7 @@ use super::{Lexer, Token, TokenType};
 
 use calypso_ast::expr::Radix;
 use calypso_base::streams::Stream;
+use calypso_diagnostic::diagnostic::{EnsembleBuilder, LabelStyle};
 use calypso_diagnostic::prelude::*;
 
 impl<'lex> Lexer<'lex> {
@@ -34,7 +35,7 @@ impl<'lex> Lexer<'lex> {
 
         // Is valid character for identifier's first character
         if is_ident_start(&span) {
-            return self.handle_identifier();
+            return Ok(self.handle_identifier());
         } else if ch == '\'' {
             return self.handle_char_literal();
         } else if ch == '"' {
@@ -48,9 +49,9 @@ impl<'lex> Lexer<'lex> {
                     radix: Radix::None,
                 }));
             }
-            return self.handle_int_leading_zero();
+            return Ok(self.handle_int_leading_zero());
         } else if ch.is_ascii_digit() {
-            return self.handle_number();
+            return Ok(self.handle_number());
         }
 
         let token_type = match ch {
@@ -140,15 +141,20 @@ impl<'lex> Lexer<'lex> {
             // '#' => TokenType::Hash,
 
             // Unexpected character
-            ch => {
-                gen_error!(sync self.grcx.borrow_mut(), self => {
-                    E0003;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            format!("did not expect `{}` here", ch)
-                    ]
-                });
+            _ => {
+                self.gcx.grcx.write().report_syncd(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0003").short(err!(E0003)).label(
+                                LabelStyle::Primary,
+                                Some("didn't expect this character here"),
+                                self.file_id,
+                                self.new_span(),
+                            )
+                        })
+                        .build(),
+                );
+
                 TokenType::Unexpected
             }
         };

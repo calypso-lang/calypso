@@ -21,15 +21,16 @@ pub enum Tok<'tok> {
 }
 
 fn trim_number(string: &str, radix: Radix) -> &str {
-    if radix != Radix::None {
-        &string[2..]
-    } else {
+    if radix == Radix::None {
         string
+    } else {
+        &string[2..]
     }
 }
 
-pub fn process<'tok>(tok: Token<'tok>) -> CalResult<Tok<'tok>> {
-    Ok(match tok.value_owned() {
+#[must_use]
+pub fn process(tok: Token) -> Tok {
+    match tok.value_owned() {
         (TokenType::Int { suffix, radix }, string) => {
             Tok::Number(trim_number(string, radix), radix, suffix)
         }
@@ -42,26 +43,23 @@ pub fn process<'tok>(tok: Token<'tok>) -> CalResult<Tok<'tok>> {
         (TokenType::Keyword(symbol), _) => Tok::Keyword(Keyword::from(symbol)),
         (TokenType::String, string) => Tok::String(PotentiallyInterned::potentially_intern(string)),
         (tok, _) => Tok::Unprocessed(tok),
-    })
+    }
 }
 
 pub fn process_iter<'tok>(
     iter: impl Iterator<Item = CalResult<Token<'tok>>> + 'tok,
     filter_ws: bool,
 ) -> impl Iterator<Item = CalResult<(usize, Tok<'tok>, usize)>> + 'tok {
-    iter.map(|tok| {
-        tok.map(|tok| process(tok).map(|t| (tok.span().lo(), t, tok.span().hi())))
-            .and_then(std::convert::identity)
-    })
-    .filter(move |tok| {
-        if filter_ws {
-            !matches!(
-                tok,
-                Ok((_, Tok::Unprocessed(TokenType::Ws), _))
-                    | Ok((_, Tok::Unprocessed(TokenType::BlockComment { .. }), _))
-            )
-        } else {
-            true
-        }
-    })
+    iter.map(|tok| tok.map(|tok| (tok.span().lo(), process(tok), tok.span().hi())))
+        .filter(move |tok| {
+            if filter_ws {
+                !matches!(
+                    tok,
+                    Ok((_, Tok::Unprocessed(TokenType::Ws), _))
+                        | Ok((_, Tok::Unprocessed(TokenType::BlockComment { .. }), _))
+                )
+            } else {
+                true
+            }
+        })
 }

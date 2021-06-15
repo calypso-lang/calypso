@@ -1,15 +1,10 @@
 //! Builders for diagnostics and ensemble diagnostics.
 
-use codespan_reporting::{
-    diagnostic::{Diagnostic as CodespanDiag, Label, LabelStyle, Severity},
-    term::{self, Config},
-};
+use codespan_reporting::diagnostic::{Diagnostic as CodespanDiag, Label, LabelStyle, Severity};
 
-use calypso_base::{span::Span, ui::Emitter};
-use calypso_error::CalResult;
+use calypso_base::span::Span;
 
-use super::{Diagnostic, EnsembleDiagnostic, SourceMgr};
-use crate::error::DiagnosticError;
+use super::{Diagnostic, EnsembleDiagnostic};
 
 /// A builder for an ensemble diagnostic.
 #[derive(Debug, Default)]
@@ -26,37 +21,56 @@ impl EnsembleBuilder {
     }
 
     /// Add a diagnostic to the ensemble, using the builder provided.
-    pub fn add(&mut self, severity: Severity, f: impl FnOnce(Builder) -> Builder) -> &mut Self {
+    pub fn add(mut self, severity: Severity, f: impl FnOnce(Builder) -> Builder) -> Self {
         self.diags.push(f(Builder::new(severity)));
         self
     }
 
-    /// Build the diagnostic. This pre-renders the diagnostic.
-    ///
-    /// # Errors
-    ///
-    /// As the diagnostic is pre-rendered, it returns an error if
-    /// `codespan_reporting` fails to render it.
-    ///
-    /// # Panics
-    ///
-    /// This function should not panic.
-    pub fn build(
-        self,
-        stderr: &Emitter,
-        sourcemgr: &SourceMgr,
-        config: Option<&Config>,
-    ) -> CalResult<EnsembleDiagnostic> {
+    /// Add a diagnostic to the ensemble, using the builder provided and the
+    /// severity [`Severity::Bug`].
+    pub fn bug(self, f: impl FnOnce(Builder) -> Builder) -> Self {
+        self.add(Severity::Bug, f)
+    }
+
+    /// Add a diagnostic to the ensemble, using the builder provided and the
+    /// severity [`Severity::Error`].
+    pub fn error(self, f: impl FnOnce(Builder) -> Builder) -> Self {
+        self.add(Severity::Error, f)
+    }
+
+    /// Add a diagnostic to the ensemble, using the builder provided and the
+    /// severity [`Severity::Warning`].
+    pub fn warning(self, f: impl FnOnce(Builder) -> Builder) -> Self {
+        self.add(Severity::Warning, f)
+    }
+
+    /// Add a diagnostic to the ensemble, using the builder provided and the
+    /// severity [`Severity::Note`].
+    pub fn note(self, f: impl FnOnce(Builder) -> Builder) -> Self {
+        self.add(Severity::Note, f)
+    }
+
+    /// Add a diagnostic to the ensemble, using the builder provided and the
+    /// severity [`Severity::Help`].
+    pub fn help(self, f: impl FnOnce(Builder) -> Builder) -> Self {
+        self.add(Severity::Help, f)
+    }
+
+    /// Build the diagnostic.
+    // This function won't panic.
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn build(self) -> EnsembleDiagnostic {
         let diags = self
             .diags
             .into_iter()
-            .map(|b| b.build(stderr, sourcemgr, config))
-            .collect::<CalResult<Vec<_>>>()?;
+            .map(Builder::build)
+            .collect::<Vec<_>>();
 
         if diags.len() == 1 {
-            Ok(diags.into_iter().next().unwrap().into())
+            diags.into_iter().next().unwrap().into()
         } else {
-            Ok(diags.into())
+            diags.into()
         }
     }
 }
@@ -108,7 +122,7 @@ impl Builder {
     pub fn label(
         mut self,
         style: LabelStyle,
-        message: Option<impl Into<String>>,
+        message: Option<&str>,
         file_id: usize,
         span: Span,
     ) -> Self {
@@ -120,26 +134,9 @@ impl Builder {
         self
     }
 
-    /// Build the diagnostic. This pre-renders the diagnostic.
-    ///
-    /// # Errors
-    ///
-    /// As the diagnostic is pre-rendered, it returns an error if
-    /// `codespan_reporting` fails to render it.
-    pub fn build(
-        mut self,
-        stderr: &Emitter,
-        sourcemgr: &SourceMgr,
-        config: Option<&Config>,
-    ) -> CalResult<Diagnostic> {
-        self.diag = self.diag.with_labels(self.labels).with_notes(self.notes);
-
-        let mut buf = stderr.buffer();
-        let def_config = Config::default();
-        let config = config.unwrap_or(&def_config);
-
-        term::emit(&mut buf, &config, sourcemgr, &self.diag).map_err(DiagnosticError::from)?;
-
-        Ok(Diagnostic(buf))
+    /// Build the diagnostic.
+    #[must_use]
+    pub fn build(self) -> Diagnostic {
+        Diagnostic(self.diag.with_labels(self.labels).with_notes(self.notes))
     }
 }

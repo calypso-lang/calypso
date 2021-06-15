@@ -15,18 +15,16 @@ impl Printer {
         let span = tok.span();
         let lo = span.lo();
         let hi = span.hi();
-        let lo_loc = self
-            .sess
-            .bsess
-            .sourcemgr
+
+        let sourcemgr = self.gcx.sourcemgr.read();
+        let lo_loc = sourcemgr
             .location(self.file_id, lo)
             .map_err(DiagnosticError::from)?;
-        let hi_loc = self
-            .sess
-            .bsess
-            .sourcemgr
+        let hi_loc = sourcemgr
             .location(self.file_id, hi)
             .map_err(DiagnosticError::from)?;
+        drop(sourcemgr);
+
         Ok(format!(
             "text: {} @ {}..{} (a.k.a. {}:{}..{}:{}), type: {:?}",
             match value.0 {

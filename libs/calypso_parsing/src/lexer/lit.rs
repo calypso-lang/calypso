@@ -3,6 +3,7 @@ use super::{Lexer, Token, TokenType};
 
 use calypso_base::span::Span;
 use calypso_base::streams::Stream;
+use calypso_diagnostic::diagnostic::{EnsembleBuilder, LabelStyle};
 use calypso_diagnostic::prelude::*;
 
 // todo(@ThePuzzlemaker: parse):
@@ -21,33 +22,50 @@ impl<'lex> Lexer<'lex> {
                 Some('u') => self.handle_unicode_escape()?,
                 Some(ch) => {
                     if is_whitespace_ch(ch) {
-                        gen_error!(self.grcx.borrow(), Err(self => {
-                            E0008;
-                            labels: [
-                                LabelStyle::Primary =>
-                                    (self.source_id, self.new_span());
-                                    "expected an escape sequence here"
-                            ]
-                        }) as ())?
+                        self.gcx.grcx.write().report_syncd(
+                            EnsembleBuilder::new()
+                                .error(|b| {
+                                    b.code("E0008").short(err!(E0008)).label(
+                                        LabelStyle::Primary,
+                                        None,
+                                        self.file_id,
+                                        self.new_span(),
+                                    )
+                                })
+                                .build(),
+                        );
+                        self.next();
+                    } else {
+                        self.next();
+                        self.gcx.grcx.write().report_syncd(
+                            EnsembleBuilder::new()
+                                .error(|b| {
+                                    b.code("E0006").short(err!(E0006, ch = ch)).label(
+                                        LabelStyle::Primary,
+                                        Some("this escape sequence is invalid"),
+                                        self.file_id,
+                                        self.new_span(),
+                                    )
+                                })
+                                .build(),
+                        );
                     }
-                    self.next();
-                    gen_error!(self.grcx.borrow(), Err(self => {
-                        E0006, ch = ch;
-                        labels: [
-                            LabelStyle::Primary =>
-                                (self.source_id, self.new_span());
-                                "this escape sequence is unknown"
-                        ]
-                    }) as ())?
                 }
-                None => gen_error!(self.grcx.borrow(), Err(self => {
-                        E0007;
-                        labels: [
-                            LabelStyle::Primary =>
-                                (self.source_id, self.new_span());
-                                "expected an escape sequence here"
-                        ]
-                    }) as ())?,
+                None => {
+                    self.gcx.grcx.write().report_fatal(
+                        EnsembleBuilder::new()
+                            .error(|b| {
+                                b.code("E0007").short(err!(E0007)).label(
+                                    LabelStyle::Primary,
+                                    None,
+                                    self.file_id,
+                                    self.new_span(),
+                                )
+                            })
+                            .build(),
+                    );
+                    return Err(DiagnosticError::Diagnostic.into());
+                }
             }
             self.set_start(saved_start);
             return Ok(true);
@@ -64,33 +82,40 @@ impl<'lex> Lexer<'lex> {
         self.current_to_start();
         for i in 1..=2 {
             let sp = self.peek();
-            if sp.is_none() || is_whitespace(sp.unwrap()) {
+            if sp.is_none()
+                || is_whitespace(sp.unwrap())
+                || sp.unwrap().value_owned() == '\''
+                || sp.unwrap().value_owned() == '\"'
+            {
                 if i == 1 {
-                    gen_error!(self.grcx.borrow(), Err(self => {
-                        E0004;
-                        labels: [
-                            LabelStyle::Primary =>
-                                (self.source_id, self.new_span());
-                                "expected two hexadecimal digits here"
-                        ]
-                    }) as ())?
+                    self.gcx.grcx.write().report_fatal(
+                        EnsembleBuilder::new()
+                            .error(|b| {
+                                b.code("E0004").short(err!(E0004)).label(
+                                    LabelStyle::Primary,
+                                    None,
+                                    self.file_id,
+                                    self.new_span(),
+                                )
+                            })
+                            .build(),
+                    );
+                    return Err(DiagnosticError::Diagnostic.into());
                 } else if i == 2 {
-                    gen_error!(self.grcx.borrow(), Err(self => {
-                        E0009;
-                        labels: [
-                            LabelStyle::Primary =>
-                                (self.source_id, self.new_span());
-                                "found only one hexadecimal digit here"
-                        ],
-                        notes: [
-                            format!(
-                                "perhaps you meant to use `\\x0{}`?",
-                                self.prev().unwrap().value_owned()
-                            )
-                        ]
-                    }) as ())?
-                } else {
-                    return Ok(());
+                    self.gcx.grcx.write().report_fatal(
+                        EnsembleBuilder::new()
+                            .error(|b| {
+                                b.code("E0009")
+                                    .short(err!(E0009))
+                                    .label(LabelStyle::Primary, None, self.file_id, self.new_span())
+                                    .note(format!(
+                                        "perhaps you meant to use `\\x0{}`?",
+                                        self.prev().unwrap().value_owned()
+                                    ))
+                            })
+                            .build(),
+                    );
+                    return Err(DiagnosticError::Diagnostic.into());
                 }
             }
             let sp = *sp.unwrap();
@@ -100,50 +125,72 @@ impl<'lex> Lexer<'lex> {
                 self.next();
             } else {
                 self.set_start(sp.span());
-                gen_error!(self.grcx.borrow(), Err(self => {
-                    E0005, ch = ch;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            "found an invalid digit here"
-                    ]
-                }) as ())?
+                self.gcx.grcx.write().report_syncd(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0005").short(err!(E0005, ch = ch)).label(
+                                LabelStyle::Primary,
+                                None,
+                                self.file_id,
+                                self.new_span(),
+                            )
+                        })
+                        .build(),
+                );
+                self.next();
             }
         }
         Ok(())
     }
 
+    #[allow(clippy::too_many_lines)]
     pub(super) fn handle_unicode_escape(&mut self) -> CalResult<()> {
         // Handle the `u` in `\u{1234}`
         self.next();
         self.current_to_start();
         match self.peek().copied() {
-            Some(sp) if is_whitespace(&sp) => gen_error!(self.grcx.borrow(), Err(self => {
-                    E0012;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            "this should be an opening curly bracket"
-                    ]
-                }) as ())?,
-            None => gen_error!(self.grcx.borrow(), Err(self => {
-                E0011;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "this should be an opening curly bracket"
-                ]
-            }) as ())?,
+            Some(sp) if is_whitespace(&sp) => {
+                self.gcx.grcx.write().report_fatal(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0012").short(err!(E0012)).label(
+                                LabelStyle::Primary,
+                                None,
+                                self.file_id,
+                                self.new_span(),
+                            )
+                        })
+                        .build(),
+                );
+                return Err(DiagnosticError::Diagnostic.into());
+            }
+            None => {
+                self.gcx.grcx.write().report_fatal(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0011").short(err!(E0011)).label(
+                                LabelStyle::Primary,
+                                None,
+                                self.file_id,
+                                self.new_span(),
+                            )
+                        })
+                        .build(),
+                );
+                return Err(DiagnosticError::Diagnostic.into());
+            }
             Some(sp) if sp != '{' => {
                 self.next();
-                gen_error!(self.grcx.borrow(), Err(self => {
-                    E0010, ch = sp.value_owned();
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            "this should be an opening curly bracket"
-                    ]
-                }) as ())?
+                self.gcx.grcx.write().report_fatal(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0010")
+                                .short(err!(E0010, ch = sp.value_owned()))
+                                .label(LabelStyle::Primary, None, self.file_id, self.new_span())
+                        })
+                        .build(),
+                );
+                return Err(DiagnosticError::Diagnostic.into());
             }
             Some(..) => (),
         }
@@ -153,51 +200,60 @@ impl<'lex> Lexer<'lex> {
 
         if self.is_at_end() {
             self.current_to_start();
-            gen_error!(self.grcx.borrow(), Err(self => {
-                E0015;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a closing curly bracket here"
-                ]
-            }) as ())?
+            self.gcx.grcx.write().report_fatal(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0015").short(err!(E0015)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
+            return Err(DiagnosticError::Diagnostic.into());
         }
 
         let sp = *self.peek().unwrap();
         if is_whitespace(&sp) {
             self.current_to_start();
-            gen_error!(self.grcx.borrow(), Err(self => {
-                E0017;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a closing curly bracket here"
-                ]
-            }) as ())?
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0017").short(err!(E0017)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
         } else if self.peek_eq(&'}') != Some(true) {
-            gen_error!(self.grcx.borrow(), Err(self => {
-                E0016, ch = sp.value_owned();
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a closing curly bracket here"
-                ]
-            }) as ())?
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0016")
+                            .short(err!(E0016, ch = sp.value_owned()))
+                            .label(LabelStyle::Primary, None, self.file_id, self.new_span())
+                    })
+                    .build(),
+            );
         }
 
         // We need to check for this after curly bracket checks
         if count == 0 {
-            gen_error!(self.grcx.borrow(), Err(self => {
-                E0019;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected at least one hex digit here"
-                ],
-                notes: [
-                    "help: if you wanted a null byte, you can use `\\u{0}` or `\\0`"
-                ]
-            }) as ())?
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0019")
+                            .short(err!(E0019))
+                            .label(LabelStyle::Primary, None, self.file_id, self.new_span())
+                            .note("help: if you wanted a null byte, you can use `\\u{0}` or `\\0`.")
+                    })
+                    .build(),
+            );
         }
         // Handle closing `}`
         self.next();
@@ -213,23 +269,33 @@ impl<'lex> Lexer<'lex> {
             if count == 6 {
                 break;
             } else if is_whitespace(&sp) {
-                gen_error!(self.grcx.borrow(), Err(self => {
-                    E0018;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            "expected a hexadecimal digit here"
-                    ]
-                }) as ())?
+                self.gcx.grcx.write().report_fatal(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0018").short(err!(E0018)).label(
+                                LabelStyle::Primary,
+                                None,
+                                self.file_id,
+                                self.new_span(),
+                            )
+                        })
+                        .build(),
+                );
+                return Err(DiagnosticError::Diagnostic.into());
             } else if !ch.is_ascii_hexdigit() {
-                gen_error!(self.grcx.borrow(), Err(self => {
-                    E0014, ch = ch;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            "found an invalid digit here. perhaps you meant to put a `}` here?"
-                    ]
-                }) as ())?
+                self.gcx.grcx.write().report_fatal(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0014").short(err!(E0014, ch = ch)).label(
+                                LabelStyle::Secondary,
+                                Some("help: perhaps you meant to put a `}` here?"),
+                                self.file_id,
+                                self.new_span(),
+                            )
+                        })
+                        .build(),
+                );
+                return Err(DiagnosticError::Diagnostic.into());
             }
             self.next();
             count += 1;
@@ -242,62 +308,80 @@ impl<'lex> Lexer<'lex> {
         let mut chs_found = 0;
         let mut expected_quote_here = Span::new_dummy();
         while self.peek_eq(&'\'') != Some(true) && !self.is_at_end() {
+            if chs_found == 1 {
+                expected_quote_here = self.current();
+            }
             if self.handle_escape_character()? {
                 chs_found += 1;
             } else if is_valid_for_char_literal(self.peek().unwrap()) {
                 self.next();
                 chs_found += 1;
             } else {
+                if chs_found >= 1 {
+                    chs_found += 1;
+                    break;
+                }
+                self.current_to_start();
                 let ch = self.next().unwrap().value_owned();
-                gen_error!(sync self.grcx.borrow_mut(), self => {
-                    E0020;
-                    labels: [
-                        LabelStyle::Primary =>
-                            (self.source_id, self.new_span());
-                            format!(
-                                "this character ({:?}) is invalid here; it must be escaped",
-                                ch
+                self.gcx.grcx.write().report_syncd(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0020").short(err!(E0020)).label(
+                                LabelStyle::Secondary,
+                                Some(&format!("help: try escaping this character: `{:?}`", ch)),
+                                self.file_id,
+                                self.new_span().shrink_to_lo(),
                             )
-                    ]
-                });
+                        })
+                        .build(),
+                );
                 chs_found += 1;
-            }
-            if chs_found == 1 {
-                expected_quote_here = self.current();
             }
         }
 
         if chs_found > 1 {
             self.set_start(expected_quote_here);
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0021;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a `'` here"
-                ]
-            });
-        } else if chs_found == 0 {
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0022;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected one character here"
-                ]
-            });
+            self.gcx.grcx.write().report_fatal(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0021").short(err!(E0021)).label(
+                            LabelStyle::Primary,
+                            Some("expected a `'` here"),
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
+            return Err(DiagnosticError::Diagnostic.into());
+        } else if chs_found == 0 && !self.is_at_end() {
+            self.gcx.grcx.write().report_syncd(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0022")
+                            .short(err!(E0022))
+                            .label(LabelStyle::Primary, None, self.file_id, self.new_span())
+                            .note("help: if you wanted an empty string, try `\"\"`.")
+                    })
+                    .build(),
+            );
         }
 
         if self.is_at_end() {
             self.current_to_start();
-            gen_error!(sync self.grcx.borrow_mut(), self => {
-                E0023;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a `'` here"
-                ]
-            });
+            self.gcx.grcx.write().report_fatal(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0023").short(err!(E0023)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
+            return Err(DiagnosticError::Diagnostic.into());
         }
         self.next();
 
@@ -314,14 +398,19 @@ impl<'lex> Lexer<'lex> {
 
         if self.peek_eq(&'"') != Some(true) {
             self.current_to_start();
-            gen_error!(self.grcx.borrow(), Err(self => {
-                E0024;
-                labels: [
-                    LabelStyle::Primary =>
-                        (self.source_id, self.new_span());
-                        "expected a `\"` here"
-                ]
-            }) as ())?
+            self.gcx.grcx.write().report_fatal(
+                EnsembleBuilder::new()
+                    .error(|b| {
+                        b.code("E0024").short(err!(E0024)).label(
+                            LabelStyle::Primary,
+                            None,
+                            self.file_id,
+                            self.new_span(),
+                        )
+                    })
+                    .build(),
+            );
+            return Err(DiagnosticError::Diagnostic.into());
         }
 
         self.next();
