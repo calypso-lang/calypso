@@ -1391,7 +1391,7 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 [[package]]
 name = "vergen"
 version = "5.1.8"
-source = "git+https://github.com/calypso-lang/vergen?branch=fix-issue-78#594e534a76805be0d1a9ace0890452bde7a17a10"
+source = "git+https://github.com/calypso-lang/vergen?branch=fix-issue-78#388609608e595764eebaf81fe06832d726983d0e"
 dependencies = [
  "anyhow",
  "cfg-if",
