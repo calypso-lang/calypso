@@ -31,8 +31,16 @@ default = ["mimalloc", "mimalloc/secure"]
 [workspace]
 exclude = ["libs/sublib_skeleton"]
 
-[build-dependencies]
-vergen = { version = "5.1.6", default-features = false, features = ["build", "cargo", "git", "rustc"] }
+# [build-dependencies]
+# vergen = { version = "5.1.6", default-features = false, features = ["build", "cargo", "git", "rustc"] }
+
+# Temporary patch until vergen#78 is fixed (https://github.com/rustyhorde/vergen/issues/78)
+[build-dependencies.vergen]
+version = "5.1.8"
+git = "https://github.com/calypso-lang/vergen"
+branch = "fix-issue-78"
+default-features = false
+features = ["build", "cargo", "git", "rustc"]
 
 # Do not enable with real builds, for benchmarking and debugging only.
 # [profile.release]
