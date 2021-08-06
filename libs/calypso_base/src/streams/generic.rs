@@ -91,7 +91,7 @@ where
     type Output = <I as SliceIndex<[T]>>::Output;
 
     fn index(&self, index: I) -> &Self::Output {
-        &self.elements.index(index)
+        self.elements.index(index)
     }
 }
 

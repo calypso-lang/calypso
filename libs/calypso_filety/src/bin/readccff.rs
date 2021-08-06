@@ -21,7 +21,6 @@ fn main() {
         dump_cc(container);
     } else {
         eprintln!("usage: readccff <FILE>");
-        return;
     }
 }
 

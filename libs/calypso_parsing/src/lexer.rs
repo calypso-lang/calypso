@@ -1,127 +1,317 @@
-use std::ops::Deref;
-use std::ops::DerefMut;
-use std::sync::Arc;
+use std::{convert::TryFrom, ops::Range, sync::Arc};
 
+use itertools::Itertools;
+use logos::{Lexer, Logos};
+
+use calypso_ast::expr::{Numeral, Radix, Suffix};
 use calypso_base::{
-    span::{Span, Spanned},
-    streams::{Stream, StringStream},
+    span::Spanned,
+    symbol::{kw::Keyword, Symbol},
 };
 use calypso_common::gcx::GlobalCtxt;
 use calypso_diagnostic::prelude::*;
 
-pub use types::*;
+pub type Lexeme<'lex> = Spanned<(Token, &'lex str)>;
 
-pub mod types;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Logos)]
+#[logos(extras = (usize, Arc<GlobalCtxt>))]
+pub enum Token {
+    #[token("<<=")]
+    LtLtEq,
+    #[token("<<")]
+    LtLt,
+    #[token("<=")]
+    LtEq,
+    #[token("<")]
+    Lt,
 
-mod helpers;
-mod ident_kw;
-mod lit;
-mod num;
-mod scan;
-mod ws;
+    #[token(">>=")]
+    GtGtEq,
+    #[token(">>")]
+    GtGt,
+    #[token(">=")]
+    GtEq,
+    #[token(">")]
+    Gt,
 
-pub type Token<'lex> = Spanned<(TokenType, Lexeme<'lex>)>;
-pub type Lexeme<'lex> = &'lex str;
+    #[token("==")]
+    EqEq,
+    #[token("=")]
+    Eq,
 
-pub struct Lexer<'lex> {
-    stream: StringStream<'lex>,
-    file_id: usize,
-    start: Span,
-    gcx: Arc<GlobalCtxt>,
+    #[token("!=")]
+    BangEq,
+    #[token("!")]
+    Bang,
+
+    #[token("||")]
+    PipePipe,
+    #[token("|=")]
+    PipeEq,
+    #[token("|")]
+    Pipe,
+
+    #[token("&&")]
+    AndAnd,
+    #[token("&=")]
+    AndEq,
+    #[token("&")]
+    And,
+
+    #[token("+=")]
+    PlusEq,
+    #[token("+")]
+    Plus,
+
+    #[token("->")]
+    Arrow,
+
+    #[token("-=")]
+    MinusEq,
+    #[token("-")]
+    Minus,
+
+    #[token("**=")]
+    StarStarEq,
+    #[token("**")]
+    StarStar,
+    #[token("*=")]
+    StarEq,
+    #[token("*")]
+    Star,
+
+    #[token("/=")]
+    SlashEq,
+    #[token("/")]
+    Slash,
+
+    #[token("%=")]
+    PercentEq,
+    #[token("%")]
+    Percent,
+
+    #[token("^=")]
+    CaretEq,
+    #[token("^")]
+    Caret,
+
+    #[token("@!")]
+    AtBang,
+    #[token("@")]
+    At,
+
+    #[token("(")]
+    LParen,
+    #[token(")")]
+    RParen,
+
+    #[token("{")]
+    LBrace,
+    #[token("}")]
+    RBrace,
+
+    #[token("[")]
+    LBracket,
+    #[token("]")]
+    RBracket,
+
+    #[token(",")]
+    Comma,
+    #[token(":")]
+    Colon,
+    #[token("_")]
+    Under,
+
+    #[regex("_[A-Za-z0-9_]+|[A-Za-z][A-Za-z0-9_]*", ident)]
+    IdentLike(IdentLike),
+
+    #[regex("///(.*)\n?", |_| CommentProps::doc())]
+    #[regex("//!(.*)\n?", |_| CommentProps::inner_doc())]
+    #[regex("//(.*)\n?",  |_| CommentProps::default())]
+    Comment(CommentProps),
+
+    #[regex("[\n]+", |lex| lex.span().len())]
+    Nl(usize),
+
+    // this hurts.
+    // cc https://github.com/maciejhirsz/logos/issues/126
+    // TODO(parse): this could probably use a raw string, and it'd be slightly less ugly
+    // emphasis on slightly
+    #[regex(
+        "\"([^\n\r\"\\\\]|(\\\\([nrt\\\\0'\"]|\r\n|\n|x[0-9a-fA-F][0-9a-fA-F]|u\\{[0-9a-fA-F][0-9a-fA-F]?[0-9a-fA-F]?[0-9a-fA-F]?[0-9a-fA-F]?[0-9a-fA-F]?\\})))*\""
+    )]
+    String,
+
+    #[regex("'([^\n\r'\\\\]|(\\\\([nrt\\\\0'\"]|x[0-9a-fA-F][0-9a-fA-F]|u\\{[0-9a-fA-F][0-9a-fA-F]?[0-9a-fA-F]?[0-9a-fA-F]?[0-9a-fA-F]?[0-9a-fA-F]?\\})))'")]
+    Char,
+
+    #[regex("0x[0-9a-fA-F][0-9a-fA-F_]*[su]?", |lex| radix_numeral(lex, Radix::Hexadecimal))]
+    #[regex("0o[0-7][0-7_]*[su]?", |lex| radix_numeral(lex, Radix::Octal))]
+    #[regex("0b[01][01_]*[su]?", |lex| radix_numeral(lex, Radix::Binary))]
+    #[regex("0d[0-9][0-9_]*[su]?", |lex| radix_numeral(lex, Radix::Decimal))]
+    #[regex("[0-9][0-9_]*\\.[0-9][0-9_]*(e[+-]?[0-9][0-9_]*)?", |_| Numeral::Float { from_integer: false })]
+    #[regex("[0-9][0-9_]*e[+-]?[0-9][0-9_]*", |_| Numeral::Float { from_integer: false })]
+    #[regex("[1-9][0-9_]*[suf]?", |lex| integer_numeral(lex))]
+    Numeral(Numeral),
+
+    #[regex(
+        "[\t\u{000B}\u{000C}\r \u{0085}\u{200E}\u{200F}\u{2028}\u{2029}]+",
+        logos::skip
+    )]
+    #[error]
+    Error,
 }
 
-impl<'lex> Deref for Lexer<'lex> {
-    type Target = StringStream<'lex>;
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum IdentLike {
+    Ident(Symbol),
+    Keyword(Keyword),
+}
 
-    fn deref(&self) -> &Self::Target {
-        &self.stream
+pub fn ident(lex: &mut Lexer<Token>) -> IdentLike {
+    let sym = Symbol::intern(lex.slice());
+
+    match Keyword::try_from(sym) {
+        Ok(kw) => IdentLike::Keyword(kw),
+        Err(sym) => IdentLike::Ident(sym),
     }
 }
 
-impl<'lex> DerefMut for Lexer<'lex> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.stream
-    }
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct CommentProps {
+    pub is_doc: bool,
+    pub is_inner: bool,
 }
 
-impl<'lex> Lexer<'lex> {
+impl CommentProps {
     #[must_use]
-    pub fn new(file_id: usize, source: &'lex str, gcx: Arc<GlobalCtxt>) -> Self {
+    pub fn doc() -> Self {
         Self {
-            file_id,
-            gcx,
-            start: Span::default(),
-            stream: StringStream::new(source),
+            is_doc: true,
+            is_inner: false,
+        }
+    }
+
+    #[must_use]
+    pub fn inner_doc() -> Self {
+        Self {
+            is_doc: true,
+            is_inner: true,
         }
     }
 }
 
-impl<'lex> Lexer<'lex> {
-    /// Set the `start` span to the span of the next character or the empty span of the EOF.
-    fn current_to_start(&mut self) {
-        self.start = self.current();
-    }
-
-    fn set_start(&mut self, start: Span) {
-        self.start = start;
-    }
-
-    /// Get the span of the next character or the empty span of the EOF.
-    fn current(&self) -> Span {
-        self.peek()
-            .map_or_else(|| Span::new_shrunk(self.stream[..].len()), Spanned::span)
-    }
-
-    fn new_span(&self) -> Span {
-        self.start.until(self.current())
-    }
-
-    fn new_token(&self, r#type: TokenType) -> Token<'lex> {
-        self.new_token_with_span(self.new_span(), r#type)
-    }
-
-    fn new_token_with_span(&self, span: Span, r#type: TokenType) -> Token<'lex> {
-        Token::new(span, (r#type, self.slice(span)))
+fn radix_numeral(lex: &mut Lexer<Token>, radix: Radix) -> Numeral {
+    match lex.slice().chars().last() {
+        Some('s') => Numeral::Integer {
+            suffix: Some(Suffix::Sint),
+            radix,
+        },
+        Some('u') => Numeral::Integer {
+            suffix: Some(Suffix::Uint),
+            radix,
+        },
+        _ => Numeral::Integer {
+            suffix: None,
+            radix,
+        },
     }
 }
 
-impl<'lex> IntoIterator for Lexer<'lex> {
-    type IntoIter = Iter<'lex>;
-    type Item = CalResult<Token<'lex>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        Iter {
-            lexer: self,
-            encountered_eof: false,
-            encountered_error: false,
-        }
+fn integer_numeral(lex: &mut Lexer<Token>) -> Numeral {
+    match lex.slice().chars().last() {
+        Some('s') => Numeral::Integer {
+            suffix: Some(Suffix::Sint),
+            radix: Radix::None,
+        },
+        Some('u') => Numeral::Integer {
+            suffix: Some(Suffix::Uint),
+            radix: Radix::None,
+        },
+        Some('f') => Numeral::Float { from_integer: true },
+        _ => Numeral::Integer {
+            suffix: None,
+            radix: Radix::None,
+        },
     }
 }
 
-pub struct Iter<'lex> {
-    lexer: Lexer<'lex>,
-    encountered_error: bool,
-    encountered_eof: bool,
-}
+#[allow(clippy::missing_panics_doc)]
+pub fn tokens(
+    source: &'_ str,
+    file_id: usize,
+    gcx: Arc<GlobalCtxt>,
+) -> impl Iterator<Item = Lexeme<'_>> {
+    let lex = Token::lexer_with_extras(source, (file_id, Arc::clone(&gcx)));
+    let gcx2 = Arc::clone(&gcx);
+    lex.spanned()
+        .map(Spanned::from)
+        .map(|x| (x, false))
+        .coalesce(move |a, mut b| {
+            if a.0.value() == &Token::Error {
+                // Mark errors on quotes/apostrophes as fatal, as they probably
+                // are. The worst case is that they aren't, and the user is
+                // mildly annoyed. With the current state of logos, however,
+                // there's not really a way to do this without backtracking or
+                // n-token-lookahead, which I'd rather not do for this at the
+                // moment.
+                if source
+                    .get(Range::<usize>::from(a.0.span()))
+                    .map_or(false, |x: &str| x == "\'" || x == "\"")
+                {
+                    gcx2.grcx.write().report_fatal(
+                        EnsembleBuilder::new()
+                            .error(|b| {
+                                b.code("E0001").short(err!(E0001)).label(
+                                    LabelStyle::Primary,
+                                    None,
+                                    file_id,
+                                    a.0.span(),
+                                )
+                            })
+                            .build(),
+                    );
+                }
 
-impl<'lex> Iterator for Iter<'lex> {
-    type Item = CalResult<Token<'lex>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.encountered_error || self.encountered_eof {
-            None
-        } else {
-            let res = self.lexer.scan();
-            if res.is_err() {
-                self.encountered_error = true;
-            }
-            if let Ok(res) = res {
-                if res.value().0 == TokenType::Eof {
-                    self.encountered_eof = true;
-                    return None;
+                // Don't coalesce if there is a fatal error, and mark when it happened
+                // (and when was after it happened, so we know where to stop)
+                if gcx2.grcx.read().fatal().is_some() {
+                    b.1 = true;
+                    return Err((a, b));
+                }
+                if b.0.value() == &Token::Error {
+                    return Ok((Spanned::new(a.0.span().to(b.0.span()), Token::Error), false));
                 }
             }
-            Some(res)
-        }
-    }
+
+            Err((a, b))
+        })
+        // Stop after when there's a fatal error
+        .take_while(move |(_, end)| !*end)
+        .map(move |(x, end)| {
+            if x.value() == &Token::Error && !end {
+                // Report non-fatal syntax errors
+                gcx.grcx.write().report_syncd(
+                    EnsembleBuilder::new()
+                        .error(|b| {
+                            b.code("E0001").short(err!(E0001)).label(
+                                LabelStyle::Primary,
+                                None,
+                                file_id,
+                                x.span(),
+                            )
+                        })
+                        .build(),
+                );
+            }
+            x
+        })
+        .map(move |x| {
+            let tok = x.value();
+            let sp = x.span();
+            // Spans provided by logos will be valid except in extraordinary
+            // circumstances.
+            let s = source.get(Range::<usize>::from(sp)).unwrap();
+            Spanned::new(sp, (*tok, s))
+        })
 }

@@ -333,7 +333,7 @@ impl Emitter {
     ///
     /// This function will error
     pub fn emit(&mut self, buf: &Buffer) -> CalResult<&mut Self> {
-        self.writer.print(&buf)?;
+        self.writer.print(buf)?;
         Ok(self)
     }
 }

@@ -16,7 +16,7 @@ subcommands:
                 required: true
                 index: 1
     - internal:
-        about: Commands for debugging Calypso's internals. It's recommended not to mess around with this if you don't know what you're doing.
+        about: Commands for debugging Calypso's internals.
         visible_alias: int
         settings:
             - SubcommandRequired

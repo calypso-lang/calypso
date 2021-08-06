@@ -3,16 +3,15 @@ use std::io::{self, prelude::*};
 use std::path::Path;
 use std::sync::Arc;
 
-use calypso_repl::Repl;
+use calypso_parsing::pretty::Printer;
 use clap::ArgMatches;
 
 use calypso_base::ui::termcolor::{Color, ColorSpec, WriteColor};
 use calypso_common::gcx::GlobalCtxt;
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::reporting::files::Files;
-use calypso_parsing::lexer::{Lexer, TokenType};
-use calypso_parsing::pretty::Printer;
-// use calypso_repl::Repl;
+use calypso_parsing::lexer;
+use calypso_repl::Repl;
 
 use crate::buildinfo::BUILD_INFO;
 
@@ -32,7 +31,8 @@ pub fn lexer(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
 
     let (file_name, contents) = if path == "-" {
         if matches.is_present("repl") {
-            return lexer_repl(gcx, ignore_ws);
+            lexer_repl(gcx, ignore_ws);
+            return Ok(());
         }
 
         let stdin = io::stdin();
@@ -89,7 +89,7 @@ pub fn lexer(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
 
 pub fn run_lexer(
     gcx: &Arc<GlobalCtxt>,
-    ignore_ws: bool,
+    _ignore_ws: bool,
     file_name: String,
     contents: String,
 ) -> CalResult<()> {
@@ -97,50 +97,29 @@ pub fn run_lexer(
 
     let sourcemgr = gcx.sourcemgr.read();
     let source = sourcemgr.source(file_id).unwrap();
-
-    let mut lexer = Lexer::new(file_id, source, Arc::clone(gcx));
-    let mut tokens = Vec::new();
     let mut printer = Printer::new(file_id, Arc::clone(gcx));
-    loop {
-        let token = lexer.scan();
-        if let Err(err) = token {
-            let mut emit = gcx.emit.write();
+    let tokens = lexer::tokens(source, file_id, Arc::clone(gcx)).collect::<Vec<_>>();
 
-            emit.err.error(None, "while lexing input:", None)?;
-            if let Some(DiagnosticError::Diagnostic) = err.try_downcast_ref::<DiagnosticError>() {
+    let grcx_read = gcx.grcx.read();
+    if let Some(fatal) = grcx_read.fatal() {
+        let mut emit = gcx.emit.write();
+        let mut buf = emit.err.buffer();
+        fatal.render(&mut buf, &sourcemgr, None)?;
+        emit.err.emit(&buf)?.flush()?;
+    } else {
+        grcx_read
+            .errors()
+            .iter()
+            .try_for_each(|e| -> CalResult<()> {
+                let mut emit = gcx.emit.write();
                 let mut buf = emit.err.buffer();
-                gcx.grcx
-                    .read()
-                    .fatal()
-                    .unwrap()
-                    .render(&mut buf, &sourcemgr, None)?;
+                e.render(&mut buf, &sourcemgr, None)?;
                 emit.err.emit(&buf)?;
-            } else {
-                emit.err.error(None, &format!("{}", err), None)?;
-            }
-            break;
-        } else if let Ok(token) = token {
-            let token_ty = token.value().0;
-            if !ignore_ws || token_ty != TokenType::Ws {
-                tokens.push(token);
-            }
-            if token_ty == TokenType::Eof {
-                break;
-            }
-        }
+                Ok(())
+            })?;
+        gcx.emit.write().err.flush()?;
     }
-
-    gcx.grcx
-        .read()
-        .errors()
-        .iter()
-        .try_for_each(|e| -> CalResult<()> {
-            let mut emit = gcx.emit.write();
-            let mut buf = emit.err.buffer();
-            e.render(&mut buf, &sourcemgr, None)?;
-            emit.err.emit(&buf)?;
-            Ok(())
-        })?;
+    drop(grcx_read);
 
     let tokens = tokens
         .iter()
@@ -160,17 +139,27 @@ pub fn run_lexer(
     Ok(())
 }
 
-pub fn lexer_repl(gcx: &Arc<GlobalCtxt>, ignore_ws: bool) -> CalResult<()> {
-    struct ReplCtx {}
+pub fn lexer_repl(gcx: &Arc<GlobalCtxt>, ignore_ws: bool) {
+    struct ReplCtx {
+        line: usize,
+    }
 
     let repl_gcx = Arc::clone(gcx);
     let mut repl = Repl::new(
-        Box::new(move |_ctx, contents| {
-            run_lexer(&repl_gcx, ignore_ws, "<repl>".to_string(), contents)
-                .ok()
-                .map(|_| String::new())
+        Box::new(move |rcx: &mut ReplCtx, contents| {
+            let res = run_lexer(
+                &repl_gcx,
+                ignore_ws,
+                format!("<repl:{}>", rcx.line),
+                contents,
+            )
+            .ok()
+            .map(|_| String::new());
+            rcx.line += 1;
+            repl_gcx.grcx.write().clear();
+            res
         }),
-        ReplCtx {},
+        ReplCtx { line: 1 },
     )
     .prefix("\\".to_string());
     repl.run(
@@ -178,10 +167,9 @@ pub fn lexer_repl(gcx: &Arc<GlobalCtxt>, ignore_ws: bool) -> CalResult<()> {
             "Calypso CLI v{} - internal debugging command: lexer",
             BUILD_INFO.version
         ),
-        |_| String::from(">>> "),
+        |rcx| format!("[{}]: ", rcx.line),
     )
     .expect("REPL failure");
-    Ok(())
 }
 
 pub fn buildinfo(gcx: &Arc<GlobalCtxt>) -> CalResult<()> {

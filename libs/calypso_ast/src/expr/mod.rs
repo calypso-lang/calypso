@@ -3,10 +3,10 @@ use std::fmt::{self, Display};
 use calypso_base::span::Spanned;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Expr<'tok> {
-    BinOp(Box<Expr<'tok>>, BinOpKind, Box<Expr<'tok>>),
-    UnOp(Spanned<UnOpKind>, Box<Expr<'tok>>),
-    Primary(Primary<'tok>),
+pub enum Expr {
+    BinOp(Box<Expr>, BinOpKind, Box<Expr>),
+    UnOp(Spanned<UnOpKind>, Box<Expr>),
+    Primary(Primary),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -74,17 +74,9 @@ impl Display for UnOpKind {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Primary<'tok> {
-    Number(&'tok str, Radix, Option<Suffix>),
+pub enum Primary {
+    Number(Numeral),
     Bool(bool),
-}
-
-impl<'tok> Primary<'tok> {
-    /// Implementation detail.
-    #[must_use]
-    pub fn detuple_number((s, base, suffix): (&'tok str, Radix, Option<Suffix>)) -> Self {
-        Self::Number(s, base, suffix)
-    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -121,7 +113,7 @@ impl Display for Radix {
             Self::Binary => write!(f, "0b"),
             Self::Octal => write!(f, "0o"),
             Self::Hexadecimal => write!(f, "0x"),
-            _ => Ok(()),
+            Self::None => Ok(()),
         }
     }
 }
@@ -133,12 +125,6 @@ pub enum Suffix {
     Uint,
     /// `s`
     Sint,
-    /// `f`
-    Float,
-    /// Invalid suffix
-    Invalid,
-    /// Actually a float literal, not an integer literal converted to a float
-    TrueFloat,
 }
 
 impl Display for Suffix {
@@ -146,8 +132,17 @@ impl Display for Suffix {
         match self {
             Self::Uint => write!(f, "u"),
             Self::Sint => write!(f, "s"),
-            Self::Float => write!(f, "f"),
-            _ => Ok(()),
         }
     }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Numeral {
+    Integer {
+        suffix: Option<Suffix>,
+        radix: Radix,
+    },
+    Float {
+        from_integer: bool,
+    },
 }

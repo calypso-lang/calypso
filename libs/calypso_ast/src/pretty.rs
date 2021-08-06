@@ -17,33 +17,35 @@ impl Display for PrettyPrinter {
 }
 
 impl Visitor for PrettyPrinter {
-    fn visit_primary(&mut self, x: &Primary) -> CalResult<()> {
+    fn visit_primary<'src>(&mut self, _src: &'src str, x: &Primary) -> CalResult<()> {
         match *x {
-            Primary::Number(num, radix, suffix) => write!(
-                self.0,
-                "{}{}{}",
-                radix,
-                num,
-                suffix.map(|s| format!("{}", s)).unwrap_or_default()
-            )?,
+            // TODO: Waiting on more span information in the AST
+            Primary::Number(_) => todo!(),
+            // Primary::Number(Numeral { }) => write!(
+            //     self.0,
+            //     "{}{}{}",
+            //     radix,
+            //     num,
+            //     suffix.map(|s| format!("{}", s)).unwrap_or_default()
+            // )?,
             Primary::Bool(b) => write!(self.0, "{}", b)?,
         }
         Ok(())
     }
 
-    fn visit_expr(&mut self, x: &Expr) -> CalResult<()> {
+    fn visit_expr<'src>(&mut self, src: &'src str, x: &Expr) -> CalResult<()> {
         match x {
             Expr::BinOp(left, op, right) => {
                 write!(self.0, "({} ", op)?;
-                self.visit_expr(left)?;
+                self.visit_expr(src, left)?;
                 write!(self.0, " ")?;
-                self.visit_expr(right)?;
+                self.visit_expr(src, right)?;
                 write!(self.0, ")")?;
             }
-            Expr::Primary(primary) => self.visit_primary(primary)?,
+            Expr::Primary(primary) => self.visit_primary(src, primary)?,
             Expr::UnOp(op, expr) => {
                 write!(self.0, "({} ", op.value())?;
-                self.visit_expr(expr)?;
+                self.visit_expr(src, expr)?;
                 write!(self.0, ")")?;
             }
         }

@@ -107,7 +107,7 @@ where
     type Output = <I as SliceIndex<str>>::Output;
 
     fn index(&self, index: I) -> &Self::Output {
-        &self.string.index(index)
+        self.string.index(index)
     }
 }
 

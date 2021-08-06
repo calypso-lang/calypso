@@ -138,7 +138,7 @@ Docs for the `main` branch can be found [here](https://calypso-lang.github.io/ru
 
 ## SaturnVM
 
-SaturnVM is the VM I'm writing for Calypso. It's meant to be mostly standalone but at the moment there may be some connections or dependencies between it and Calypso. SaturnVM's top-level crate can be found in `libs/saturnvm` and some of it's subcrates will be found in `libs/` under the name `saturnvm_*`. The `calypso_vm` crate will probably be a Calypso-specific interface to SaturnVM.
+SaturnVM is the VM I'm writing for Calypso. It's meant to be mostly standalone but at the moment there may be some connections or dependencies between it and Calypso. SaturnVM's top-level crate can be found in `libs/saturnvm` and some of its subcrates will be found in `libs/` under the name `saturnvm_*`. The `calypso_vm` crate will probably be a Calypso-specific interface to SaturnVM.
 
 For more information, see [its README](libs/saturnvm/README.md).
 

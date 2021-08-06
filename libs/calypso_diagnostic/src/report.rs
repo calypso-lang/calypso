@@ -28,6 +28,28 @@ impl GlobalReportingCtxt {
         }
     }
 
+    /// Clear the list of synchronized errors.
+    pub fn clear_syncd(&mut self) {
+        self.errors.clear();
+    }
+
+    /// Clear the list of nonfatals.
+    pub fn clear_nonfatals(&mut self) {
+        self.nonfatals.clear();
+    }
+
+    /// Clear the current fatal error.
+    pub fn clear_fatal(&mut self) {
+        self.fatal = None;
+    }
+
+    /// Clear the entire reporting context
+    pub fn clear(&mut self) {
+        self.clear_fatal();
+        self.clear_nonfatals();
+        self.clear_syncd();
+    }
+
     /// Report an error that was synchronizable.
     pub fn report_syncd(&mut self, value: EnsembleDiagnostic) {
         self.errors.push(value);

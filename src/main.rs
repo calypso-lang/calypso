@@ -35,13 +35,13 @@ fn init_panic_hook(gcx: &Arc<GlobalCtxt>) {
     // This is dumb but borrowck really wants me to do it this way. Luckily the
     // remaining useless `Arc`s will just be dropped, and this is just init
     // code.
-    let gcx = Arc::clone(&gcx);
+    let gcx = Arc::clone(gcx);
     DEFAULT_HOOK.get_or_init(|| {
         let gcx = Arc::clone(&gcx);
         let hook = panic::take_hook();
         panic::set_hook(Box::new(move |info| {
             let gcx = Arc::clone(&gcx);
-            report_ice(&*gcx, info, BUG_REPORT_URL).unwrap()
+            report_ice(&*gcx, info, BUG_REPORT_URL).unwrap();
         }));
         hook
     });

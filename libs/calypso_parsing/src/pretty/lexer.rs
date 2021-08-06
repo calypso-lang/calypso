@@ -1,5 +1,5 @@
 use super::Printer;
-use crate::lexer::{Token, TokenType};
+use crate::lexer::{Lexeme, Token};
 
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::reporting::files::Files;
@@ -10,7 +10,7 @@ impl Printer {
     /// # Errors
     ///
     /// This function errors when it can't get the line/col location of a token from the byte span.
-    pub fn print_token(&mut self, tok: &Token<'_>) -> CalResult<String> {
+    pub fn print_token(&mut self, tok: &Lexeme<'_>) -> CalResult<String> {
         let value = tok.value();
         let span = tok.span();
         let lo = span.lo();
@@ -27,10 +27,10 @@ impl Printer {
 
         Ok(format!(
             "text: {} @ {}..{} (a.k.a. {}:{}..{}:{}), type: {:?}",
-            match value.0 {
-                TokenType::Ws => "omitted".to_string(),
-                TokenType::Eof => "inapplicable".to_string(),
-                _ => format!("`{}`", value.1),
+            if let Token::Nl(_) = value.0 {
+                "omitted".to_string()
+            } else {
+                format!("`{}`", value.1)
             },
             lo,
             hi,

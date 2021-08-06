@@ -152,14 +152,16 @@ macro_rules! intern_static {
                 )*
             }
 
-            impl From<$crate::symbol::Symbol> for $name {
-                fn from(sym: $crate::symbol::Symbol) -> Self {
+            impl ::std::convert::TryFrom<$crate::symbol::Symbol> for $name {
+                type Error = $crate::symbol::Symbol;
+
+                fn try_from(sym: $crate::symbol::Symbol) -> Result<Self, Self::Error> {
                     $(
                         if sym == $static_ident {
-                            return Self::$enum_ident;
+                            return Ok(Self::$enum_ident);
                         }
                     )*
-                    unreachable!()
+                    return Err(sym);
                 }
             }
             impl From<$name> for $crate::symbol::Symbol {
@@ -196,7 +198,6 @@ macro_rules! intern_static {
 
 intern_static! {kw, "Keywords", Keyword => {
     Empty; EMPTY: ""; "Empty string (`\"\"`)",
-    Under; UNDERSCORE: "_"; "Underscore (`_`)",
 
     True; TRUE: "true"; "True (`true`)",
     False; FALSE: "false"; "False (`false`)"

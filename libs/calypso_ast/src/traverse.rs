@@ -2,11 +2,21 @@ use crate::expr::{Expr, Primary};
 use calypso_error::CalResult;
 
 pub trait Visitor {
-    fn visit_expr(&mut self, _expr: &Expr) -> CalResult<()> {
+    /// Visit an expression.
+    ///
+    /// # Errors
+    ///
+    /// This function may arbitrarily error depending on its implementation.
+    fn visit_expr<'src>(&mut self, _src: &'src str, _expr: &Expr) -> CalResult<()> {
         Ok(())
     }
 
-    fn visit_primary(&mut self, _primary: &Primary) -> CalResult<()> {
+    /// Visit an primary value.
+    ///
+    /// # Errors
+    ///
+    /// This function may arbitrarily error depending on its implementation.
+    fn visit_primary<'src>(&mut self, _src: &'src str, _primary: &Primary) -> CalResult<()> {
         Ok(())
     }
 }

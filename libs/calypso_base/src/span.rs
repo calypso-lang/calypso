@@ -266,3 +266,9 @@ impl<T: Debug> From<(usize, T, usize)> for Spanned<T> {
         Spanned::new(Span::new(lo, hi), val)
     }
 }
+
+impl<T: Debug> From<(T, Range<usize>)> for Spanned<T> {
+    fn from((val, range): (T, Range<usize>)) -> Self {
+        Spanned::new(Span::from(range), val)
+    }
+}
