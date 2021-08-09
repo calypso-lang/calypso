@@ -3,7 +3,7 @@ name = "calypso"
 version = "0.1.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2018"
-description = "A (very work-in-progress) general-purpose interpreted language with built-in systems for cryptography, ciphers, and encodings, implemented with Rust."
+description = "Calypso is a mostly imperative language with some functional influences that is focused on flexibility and simplicity."
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/"
 repository = "https://github.com/calypso-lang/calypso/"
@@ -13,7 +13,6 @@ categories = ["development-tools", "parser-implementations"]
 build = "build.rs"
 
 [dependencies]
-clap = { version = "2.33.3", features = ["yaml"] }
 mimalloc = { version = "0.1.26", optional = true }
 calypso_parsing = { path = "libs/calypso_parsing", version = "0.1.0" }
 calypso_diagnostic = { path = "libs/calypso_diagnostic", version = "0.1.0" }
@@ -24,6 +23,7 @@ tracing-subscriber = { version = "0.2.19", features = ["parking_lot"] }
 once_cell = "1.8.0"
 calypso_common = { path = "libs/calypso_common", version = "0.1.0" }
 calypso_filety = { path = "libs/calypso_filety", version = "2.0.0" }
+structopt = "0.3.22"
 
 [features]
 default = ["mimalloc", "mimalloc/secure"]

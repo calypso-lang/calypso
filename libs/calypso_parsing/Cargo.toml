@@ -24,7 +24,3 @@ itertools = "0.10.1"
 
 [build-dependencies]
 lalrpop = "0.19.5"
-
-[[example]]
-name = "expr_parser"
-path = "examples/expr_parser.rs"

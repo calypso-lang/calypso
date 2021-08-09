@@ -1,22 +1,27 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso/index.html")]
 #![warn(clippy::pedantic)]
 
+#[macro_use]
+extern crate structopt;
+
 use std::panic;
 use std::sync::Arc;
 
-use clap::{load_yaml, App};
 use once_cell::sync::OnceCell;
+use structopt::StructOpt;
 use tracing_subscriber::EnvFilter;
 
-use calypso_base::ui::{self, atty::Stream, Emitters};
+use calypso_base::ui::Emitters;
 use calypso_common::{gcx::GlobalCtxt, parking_lot::RwLock};
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::{diagnostic::SourceMgr, report::GlobalReportingCtxt};
 
 mod buildinfo;
+mod cli;
 mod commands;
 
 use buildinfo::BUILD_INFO;
+use cli::{Args, Command, LogFormat};
 
 #[cfg(feature = "mimalloc")]
 use mimalloc::MiMalloc;
@@ -71,7 +76,7 @@ fn report_ice(gcx: &GlobalCtxt, info: &panic::PanicInfo<'_>, report_url: &str) -
         )?
         .note(
             "for further information, run",
-            Some("`calypso internal buildinfo`"),
+            Some("`calypso internal build-info`"),
         )?
         .flush()?;
 
@@ -79,30 +84,44 @@ fn report_ice(gcx: &GlobalCtxt, info: &panic::PanicInfo<'_>, report_url: &str) -
 }
 
 fn main() {
-    let yaml = load_yaml!("data/cli-en.yml");
-    let matches = App::from_yaml(yaml)
-        .version(BUILD_INFO.version)
-        .get_matches();
-
-    let color_pref = matches.value_of("color").unwrap();
-    let color_pref_stdout = ui::parse_color_pref(color_pref, Stream::Stdout);
-    let color_pref_stderr = ui::parse_color_pref(color_pref, Stream::Stderr);
+    let args = Args::from_args();
 
     let gcx = Arc::new(GlobalCtxt {
-        emit: RwLock::new(Emitters::new(color_pref_stdout, color_pref_stderr)),
+        emit: RwLock::new(Emitters::new(args.color.0, args.color.1)),
         grcx: RwLock::new(GlobalReportingCtxt::new()),
         sourcemgr: RwLock::new(SourceMgr::new()),
     });
 
     init_panic_hook(&gcx);
-    tracing_subscriber::fmt::fmt()
-        .with_env_filter(EnvFilter::from_env("CALYPSO_LOG"))
-        .pretty()
-        .init();
+    let mut trace = tracing_subscriber::fmt::fmt().with_env_filter(EnvFilter::default());
 
-    match matches.subcommand() {
-        ("internal", Some(matches)) => commands::internal(&gcx, matches).unwrap(),
-        ("explain", Some(matches)) => commands::explain(&gcx, matches).unwrap(),
-        _ => unreachable!(),
+    if let Some(log) = args.log {
+        trace = trace.with_env_filter(EnvFilter::new(log));
+    }
+
+    match args.log_format {
+        LogFormat::Pretty => {
+            trace.pretty().init();
+        }
+        LogFormat::Compat => {
+            trace.compact().init();
+        }
+        LogFormat::Json => {
+            trace.json().init();
+        }
+    }
+
+    let res = match args.cmd {
+        Command::Explain { ecode } => commands::explain(&gcx, &ecode),
+        Command::Internal { cmd } => commands::internal(&gcx, &cmd),
+    };
+    if let Err(e) = res {
+        gcx.emit
+            .write()
+            .err
+            .error(None, &e.to_string(), None)
+            .unwrap()
+            .flush()
+            .unwrap();
     }
 }

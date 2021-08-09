@@ -17,4 +17,5 @@ pub mod prelude {
     pub use super::diagnostic::{self, EnsembleBuilder, LabelStyle};
     pub use super::err;
     pub use super::error::DiagnosticError;
+    pub use super::reporting::files::Files;
 }
