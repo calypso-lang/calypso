@@ -30,7 +30,7 @@ fn section_header(b: &[u8]) -> IResult<&[u8], (Symbol, Section)> {
         name_len as usize,
         name_len as usize,
         satisfy(|c| c.is_ascii_alphanumeric() || c == '_'),
-        String::new(),
+        || String::new(),
         |mut acc: String, item| {
             acc.push(item);
             acc
