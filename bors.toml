@@ -1,5 +1,11 @@
-status = ["build", "docs"]
-pr_status = ["build", "docs"]
+status = [
+    "%-unknown-linux-gnu",
+    "Build documentation and books"
+]
+pr_status = [
+    "%-unknown-linux-gnu",
+    "Build documentation and books"
+]
 required_approvals = 0
 delete_merged_branches = false
 use_codeowners = false
