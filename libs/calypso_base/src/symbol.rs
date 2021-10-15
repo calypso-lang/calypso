@@ -200,5 +200,6 @@ intern_static! {kw, "Keywords", Keyword => {
     Empty; EMPTY: ""; "Empty string (`\"\"`)",
 
     True; TRUE: "true"; "True (`true`)",
-    False; FALSE: "false"; "False (`false`)"
+    False; FALSE: "false"; "False (`false`)",
+    Let; LET: "let"; "Let (`let`)"
 }}

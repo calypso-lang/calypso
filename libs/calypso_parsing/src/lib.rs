@@ -5,4 +5,5 @@ pub mod lexer;
 pub mod parser;
 pub mod pretty;
 
+pub use lalrpop_util;
 pub use logos;

@@ -75,7 +75,7 @@ pub fn unpretty(
     };
 
     match format {
-        UnprettyFormat::Ast => todo!(),
+        UnprettyFormat::Ast => ast::run_parser(gcx, file_name, contents),
         UnprettyFormat::TokenList => toks::run_lexer(gcx, file_name, contents),
     }
 }
@@ -89,7 +89,9 @@ pub fn run_repl(gcx: &Arc<GlobalCtxt>, format: UnprettyFormat) {
     let mut repl = Repl::new(
         Box::new(move |rcx: &mut ReplCtx, contents| {
             let res = match format {
-                UnprettyFormat::Ast => todo!(),
+                UnprettyFormat::Ast => {
+                    ast::run_parser(&repl_gcx, format!("<repl:{}>", rcx.line), contents)
+                }
                 UnprettyFormat::TokenList => {
                     toks::run_lexer(&repl_gcx, format!("<repl:{}>", rcx.line), contents)
                 }

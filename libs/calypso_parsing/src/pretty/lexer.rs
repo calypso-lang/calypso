@@ -1,5 +1,5 @@
 use super::Printer;
-use crate::lexer::{Lexeme, Token};
+use crate::lexer::Lexeme;
 
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::reporting::files::Files;
@@ -18,20 +18,16 @@ impl Printer {
 
         let sourcemgr = self.gcx.sourcemgr.read();
         let lo_loc = sourcemgr
-            .location(self.file_id, lo)
+            .location(self.file_id, lo as usize)
             .map_err(DiagnosticError::from)?;
         let hi_loc = sourcemgr
-            .location(self.file_id, hi)
+            .location(self.file_id, hi as usize)
             .map_err(DiagnosticError::from)?;
         drop(sourcemgr);
 
         Ok(format!(
-            "text: {} @ {}..{} (a.k.a. {}:{}..{}:{}), type: {:?}",
-            if let Token::Nl(_) = value.0 {
-                "omitted".to_string()
-            } else {
-                format!("`{}`", value.1)
-            },
+            "text: `{}` @ {}..{} (a.k.a. {}:{}..{}:{}), type: {:?}",
+            value.1,
             lo,
             hi,
             lo_loc.line_number,

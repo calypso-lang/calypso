@@ -5,9 +5,6 @@
 /// [`Span`](span::Span) and [`Spanned`](span::Spanned) types.
 #[cfg(feature = "span")]
 pub mod span;
-/// Utilities for handling streams of data
-#[cfg(feature = "stream")]
-pub mod streams;
 /// Utilities for interned strings (symbols)
 #[cfg(feature = "symbol")]
 pub mod symbol;

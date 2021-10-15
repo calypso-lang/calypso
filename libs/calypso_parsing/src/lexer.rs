@@ -121,6 +121,8 @@ pub enum Token {
     Colon,
     #[token("_")]
     Under,
+    #[token(".")]
+    Dot,
 
     #[regex("_[A-Za-z0-9_]+|[A-Za-z][A-Za-z0-9_]*", ident)]
     IdentLike(IdentLike),
@@ -130,8 +132,8 @@ pub enum Token {
     #[regex("//(.*)\n?",  |_| CommentProps::default())]
     Comment(CommentProps),
 
-    #[regex("[\n]+", |lex| lex.span().len())]
-    Nl(usize),
+    // #[regex("[\n]+", |lex| lex.span().len())]
+    // Nl(usize),
 
     // this hurts.
     // cc https://github.com/maciejhirsz/logos/issues/126
@@ -151,11 +153,11 @@ pub enum Token {
     #[regex("0d[0-9][0-9_]*[su]?", |lex| radix_numeral(lex, Radix::Decimal))]
     #[regex("[0-9][0-9_]*\\.[0-9][0-9_]*(e[+-]?[0-9][0-9_]*)?", |_| Numeral::Float { from_integer: false })]
     #[regex("[0-9][0-9_]*e[+-]?[0-9][0-9_]*", |_| Numeral::Float { from_integer: false })]
-    #[regex("[1-9][0-9_]*[suf]?", |lex| integer_numeral(lex))]
+    #[regex("[0-9][0-9_]*[suf]?", |lex| integer_numeral(lex))]
     Numeral(Numeral),
 
     #[regex(
-        "[\t\u{000B}\u{000C}\r \u{0085}\u{200E}\u{200F}\u{2028}\u{2029}]+",
+        "[\t\u{000B}\u{000C}\r \u{0085}\u{200E}\u{200F}\u{2028}\u{2029}\n]+",
         logos::skip
     )]
     #[error]
@@ -245,6 +247,13 @@ pub fn tokens(
     let lex = Token::lexer_with_extras(source, (file_id, Arc::clone(&gcx)));
     let gcx2 = Arc::clone(&gcx);
     lex.spanned()
+        .map(|(tok, span)| {
+            (
+                tok,
+                u32::try_from(span.start).expect("span.start <= u32::MAX")
+                    ..u32::try_from(span.end).expect("span.end <= u32::MAX"),
+            )
+        })
         .map(Spanned::from)
         .map(|x| (x, false))
         .coalesce(move |a, mut b| {

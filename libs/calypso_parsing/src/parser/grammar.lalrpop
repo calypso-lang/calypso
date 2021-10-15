@@ -2,14 +2,16 @@
 #![allow(warnings)]
 use calypso_diagnostic::prelude::*;
 use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind, Radix, Suffix, Numeral};
+use calypso_ast::stmt::{Stmt};
 use calypso_base::symbol::{kw::Keyword, Symbol};
+use calypso_base::span::Spanned;
 
 use crate::lexer::{Token, IdentLike};
 
 grammar<'input>(source_id: usize);
 
 extern {
-    type Location = usize;
+    type Location = u32;
     type Error = CalError;
 
     enum Token {
@@ -42,10 +44,13 @@ extern {
         "<=" => Token::LtEq,
         ">=" => Token::GtEq,
 
+        "=" => Token::Eq,
+
         "Ident" => Token::IdentLike(IdentLike::Ident(<Symbol>)),
 
         "true"  => Token::IdentLike(IdentLike::Keyword(Keyword::True)),
         "false" => Token::IdentLike(IdentLike::Keyword(Keyword::False)),
+        "let"   => Token::IdentLike(IdentLike::Keyword(Keyword::Let)),
     }
 }
 
@@ -56,11 +61,16 @@ extern {
 // Op: Operator(s) at this level
 // Next: Next level of precedence
 //
-BinOp<Op, Next>: Box<Expr> = {
+BinOp<Op, Next>: Expr = {
     // Parse an expression at the next level of precedence (or higher)
     Next,
     // Parse an expression at this level of precedence (or lower)
-    BinOp<Op, Next> Op Next => Box::new(Expr::BinOp(<>))
+    <lhsl:@L> <lhs:BinOp<Op, Next>> <lhsr:@R>
+        <opl:@L> <op:Op> <opr:@R> <rhsl:@L>
+        <rhs:Next> <rhsr:@R> => Expr::BinOp(
+            (lhsl, Box::new(lhs), lhsr).into(),
+            (opl, op, opr).into(),
+            (rhsl, Box::new(rhs), rhsr).into())
 }
 
 // Right-associative operator
@@ -70,63 +80,91 @@ BinOp<Op, Next>: Box<Expr> = {
 // Op: Operator(s) at this level
 // Next: Next level of precedence
 //
-BinOpR<Op, Next>: Box<Expr> = {
+BinOpR<Op, Next>: Expr = {
     // Parse an expression at the next level of precedence (or higher)
     Next,
     // Parse an expression at this level of precedence (or lower)
-    Next Op BinOpR<Op, Next> => Box::new(Expr::BinOp(<>))
+    <lhsl:@L> <lhs:Next> <lhsr:@R>
+        <opl:@L> <op:Op> <opr:@R>
+        <rhsl:@L> <rhs:BinOpR<Op, Next>> <rhsr:@R> => Expr::BinOp(
+            (lhsl, Box::new(lhs), lhsr).into(),
+            (opl, op, opr).into(),
+            (rhsl, Box::new(rhs), rhsr).into())
 }
 
-pub Expr: Box<Expr> = LogOrExpr;
+// === Statements === //
 
-// infixl (||) : 1
+pub Stmts: Vec<Spanned<Stmt>> = {
+    <mut v:(<@L> <Stmt> <@R>)*> => v.into_iter().map(|x| x.into()).collect()
+}
+
+pub Stmt: Stmt = LetStmt;
+
+// `let <sym> = <expr>`
+LetStmt: Stmt = {
+    "let" <syml:@L> <sym:"Ident"> <symr:@R> "="
+        <exprl:@L> <expr:Expr> <exprr:@R> => Stmt::Let(
+            (syml, sym, symr).into(),
+            (exprl, expr, exprr).into())
+}
+
+// === Expressions === //
+
+// Lowest level of precedence
+pub Expr: Expr = LogOrExpr;
+
+// infixl (||)
 LogOrExpr = BinOp<LogOrOp, LogAndExpr>;
-// infixl (&&) : 2
+// infixl (&&)
 LogAndExpr = BinOp<LogAndOp, BitOrExpr>;
 
-// infixl (|) : 3
+// infixl (|)
 BitOrExpr = BinOp<BitOrOp, BitXorExpr>;
-// infixl (^) : 4
+// infixl (^)
 BitXorExpr = BinOp<BitXorOp, BitAndExpr>;
-// infixl (&) : 5
+// infixl (&)
 BitAndExpr = BinOp<BitAndOp, EqualityExpr>;
 
-// infixl (== | !=) : 6
+// infixl (== | !=)
 EqualityExpr = BinOp<EqualityOp, ComparisonExpr>;
-// infixl (< | <= | > | >=) : 7
+// infixl (< | <= | > | >=)
 ComparisonExpr = BinOp<ComparisonOp, BitShiftExpr>;
 
-// infixl (<< | >>) : 8
+// infixl (<< | >>)
 BitShiftExpr = BinOp<BitShiftOp, AddExpr>;
 
-// infixl (+ | -) : 9
+// infixl (+ | -)
 AddExpr = BinOp<AddOp, MulExpr>;
-// infixl (* | / | %) : 10
+// infixl (* | / | %)
 MulExpr = BinOp<MulOp, PowExpr>;
-// infixr (**): 11
+// infixr (**)
 PowExpr = BinOpR<PowOp, UnaryExpr>;
 
 // unary expressions: 12
 UnaryExpr = {
     Term,
-    <lo:@L> "-" <hi:@R> <op:UnaryExpr> => Box::new(Expr::UnOp((lo, UnOpKind::Negative, hi).into(), op)),
-    <lo:@L> "!" <hi:@R> <op:UnaryExpr> => Box::new(Expr::UnOp((lo, UnOpKind::UnaryNot, hi).into(), op))
+    <opl:@L> "-" <opr:@R> <exprl:@L> <expr:UnaryExpr> <exprr:@R> => Expr::UnOp(
+        (opl, UnOpKind::Negative, opr).into(),
+        (exprl, Box::new(expr), exprr).into()),
+    <opl:@L> "!" <opr:@R> <exprl:@L> <expr:UnaryExpr> <exprr:@R> => Expr::UnOp(
+        (opl, UnOpKind::UnaryNot, opr).into(),
+        (exprl, Box::new(expr), exprr).into())
 }
 
 // terms (primary and grouping): 13
-Term: Box<Expr> = {
+Term: Expr = {
     Primary,
     "(" <Expr> ")"
 }
 
-Primary: Box<Expr> = {
-    "NumberLit" => Box::new(Expr::Primary(Primary::Number(<>))),
+Primary: Expr = {
+    <l:@L> <lit:"NumberLit"> <r:@R> => Expr::Primary((l, Primary::Number(lit), r).into()),
     Bool,
 }
 
-Bool: Box<Expr> = {
-    "true" => Box::new(Expr::Primary(Primary::Bool(true))),
-    "false" => Box::new(Expr::Primary(Primary::Bool(false)))
+Bool: Expr = {
+    <l:@L> "true" <r:@R> => Expr::Primary((l, Primary::Bool(true), r).into()),
+    <l:@L> "false" <r:@R> => Expr::Primary((l, Primary::Bool(false), r).into())
 }
 
 LogOrOp: BinOpKind = {

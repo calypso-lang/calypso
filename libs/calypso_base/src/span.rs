@@ -4,22 +4,22 @@ use std::ops::Range;
 /// The location in a slice in which some object spans.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Span {
-    lo: usize,
-    hi: usize,
+    lo: u32,
+    hi: u32,
 }
 
 impl Span {
     /// Create a new span given the low and high indices.
     #[must_use]
     #[inline]
-    pub fn new(lo: usize, hi: usize) -> Self {
+    pub fn new(lo: u32, hi: u32) -> Self {
         Span { lo, hi }
     }
 
     /// Create a new empty span around an index.
     #[must_use]
     #[inline]
-    pub fn new_shrunk(amount: usize) -> Self {
+    pub fn new_shrunk(amount: u32) -> Self {
         Span {
             lo: amount,
             hi: amount,
@@ -36,28 +36,28 @@ impl Span {
     /// Get the low index of a span.
     #[must_use]
     #[inline]
-    pub fn lo(self) -> usize {
+    pub fn lo(self) -> u32 {
         self.lo
     }
 
     /// Set the low index of a span.
     #[must_use]
     #[inline]
-    pub fn with_lo(self, lo: usize) -> Self {
+    pub fn with_lo(self, lo: u32) -> Self {
         Self { lo, ..self }
     }
 
     /// Get the high index of a span.
     #[must_use]
     #[inline]
-    pub fn hi(self) -> usize {
+    pub fn hi(self) -> u32 {
         self.hi
     }
 
     /// Set the high index of a span.
     #[must_use]
     #[inline]
-    pub fn with_hi(self, hi: usize) -> Self {
+    pub fn with_hi(self, hi: u32) -> Self {
         Self { hi, ..self }
     }
 
@@ -159,36 +159,44 @@ impl Span {
     /// Add the given amount to the high index of a span.
     #[must_use]
     #[inline]
-    pub fn add_hi(self, amount: usize) -> Span {
+    pub fn add_hi(self, amount: u32) -> Span {
         self.with_hi(self.hi + amount)
     }
 
     /// Subtract the given amount from the high index of a span.
     #[must_use]
     #[inline]
-    pub fn sub_hi(self, amount: usize) -> Span {
+    pub fn sub_hi(self, amount: u32) -> Span {
         self.with_hi(self.hi - amount)
     }
 
     /// Add the given amount to the low index of a span.
     #[must_use]
     #[inline]
-    pub fn add_lo(self, amount: usize) -> Span {
+    pub fn add_lo(self, amount: u32) -> Span {
         self.with_lo(self.lo + amount)
     }
 
     /// Subtract the given amount from the low index of a span.
     #[must_use]
     #[inline]
-    pub fn sub_lo(self, amount: usize) -> Span {
+    pub fn sub_lo(self, amount: u32) -> Span {
         self.with_lo(self.lo - amount)
     }
 
     /// Get the length (`hi - lo`) of a span.
     #[must_use]
     #[inline]
-    pub fn len(self) -> usize {
+    pub fn len(self) -> u32 {
         self.hi - self.lo
+    }
+
+    /// Convert to a [`Range`]. (This function present to prevent generics
+    /// hell.)
+    #[must_use]
+    #[inline]
+    pub fn into_range(self) -> Range<usize> {
+        self.into()
     }
 }
 
@@ -200,12 +208,18 @@ impl Default for Span {
 
 impl From<Span> for Range<usize> {
     fn from(span: Span) -> Self {
+        span.lo as usize..span.hi as usize
+    }
+}
+
+impl From<Span> for Range<u32> {
+    fn from(span: Span) -> Self {
         span.lo..span.hi
     }
 }
 
-impl From<Range<usize>> for Span {
-    fn from(range: Range<usize>) -> Self {
+impl From<Range<u32>> for Span {
+    fn from(range: Range<u32>) -> Self {
         Span::new(range.start, range.end)
     }
 }
@@ -254,21 +268,40 @@ where
     pub fn span(&self) -> Span {
         self.span
     }
+
+    /// Convert a `&'a Spanned<T>` into a `Spanned<&'a T>`.
+    #[must_use]
+    pub fn as_ref(&'_ self) -> Spanned<&'_ T> {
+        Spanned {
+            span: self.span,
+            value: &self.value,
+        }
+    }
+
+    /// Map the value of a `Spanned<T>`.
+    #[must_use]
+    pub fn map<U: Debug>(self, f: impl FnOnce(T) -> U) -> Spanned<U> {
+        Spanned {
+            span: self.span,
+            value: f(self.value),
+        }
+    }
 }
+
 impl<T: PartialEq + Debug> PartialEq<T> for Spanned<T> {
     fn eq(&self, other: &T) -> bool {
         self.value.eq(other)
     }
 }
 
-impl<T: Debug> From<(usize, T, usize)> for Spanned<T> {
-    fn from((lo, val, hi): (usize, T, usize)) -> Self {
+impl<T: Debug> From<(u32, T, u32)> for Spanned<T> {
+    fn from((lo, val, hi): (u32, T, u32)) -> Self {
         Spanned::new(Span::new(lo, hi), val)
     }
 }
 
-impl<T: Debug> From<(T, Range<usize>)> for Spanned<T> {
-    fn from((val, range): (T, Range<usize>)) -> Self {
+impl<T: Debug> From<(T, Range<u32>)> for Spanned<T> {
+    fn from((val, range): (T, Range<u32>)) -> Self {
         Spanned::new(Span::from(range), val)
     }
 }

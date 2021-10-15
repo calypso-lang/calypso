@@ -5,4 +5,5 @@
 //   add span information to AST and parser
 pub mod expr;
 pub mod pretty;
+pub mod stmt;
 pub mod traverse;

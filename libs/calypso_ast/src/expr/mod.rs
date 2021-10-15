@@ -2,11 +2,11 @@ use std::fmt::{self, Display};
 
 use calypso_base::span::Spanned;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expr {
-    BinOp(Box<Expr>, BinOpKind, Box<Expr>),
-    UnOp(Spanned<UnOpKind>, Box<Expr>),
-    Primary(Primary),
+    BinOp(Spanned<Box<Expr>>, Spanned<BinOpKind>, Spanned<Box<Expr>>),
+    UnOp(Spanned<UnOpKind>, Spanned<Box<Expr>>),
+    Primary(Spanned<Primary>),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -73,7 +73,7 @@ impl Display for UnOpKind {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Primary {
     Number(Numeral),
     Bool(bool),
