@@ -140,7 +140,7 @@ MulExpr = BinOp<MulOp, PowExpr>;
 // infixr (**)
 PowExpr = BinOpR<PowOp, UnaryExpr>;
 
-// unary expressions: 12
+// unary expressions
 UnaryExpr = {
     Term,
     <opl:@L> "-" <opr:@R> <exprl:@L> <expr:UnaryExpr> <exprr:@R> => Expr::UnOp(
@@ -151,7 +151,7 @@ UnaryExpr = {
         (exprl, Box::new(expr), exprr).into())
 }
 
-// terms (primary and grouping): 13
+// terms (primary and grouping)
 Term: Expr = {
     Primary,
     "(" <Expr> ")"
