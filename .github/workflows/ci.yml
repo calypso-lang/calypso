@@ -140,3 +140,4 @@ jobs:
         jekyll: false
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
+      continue-on-error: true
