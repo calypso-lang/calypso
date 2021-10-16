@@ -71,10 +71,28 @@ impl Visitor for PrettyPrinter {
         Ok(())
     }
 
-    fn visit_ty<'src>(&mut self, _src: &'src str, x: Spanned<&crate::ty::Ty>) -> CalResult<()> {
+    fn visit_ty<'src>(&mut self, src: &'src str, x: Spanned<&Ty>) -> CalResult<()> {
         match x.value() {
             Ty::Symbol(sym) => {
                 write!(self.0, "{}", sym.value())?;
+            }
+            Ty::IndefArray(ty) => {
+                write!(self.0, "(indef-arr ")?;
+                self.visit_ty(src, ty.as_ref().map(AsRef::as_ref))?;
+                write!(self.0, ")")?;
+            }
+            Ty::DefArray(ty, num) => {
+                write!(self.0, "(def-arr ")?;
+                self.visit_ty(src, ty.as_ref().map(AsRef::as_ref))?;
+                write!(self.0, " {})", &src[num.span().into_range()])?;
+            }
+            Ty::Tuple(tys) => {
+                write!(self.0, "(tuple")?;
+                for ty in tys {
+                    write!(self.0, " ")?;
+                    self.visit_ty(src, ty.as_ref())?;
+                }
+                write!(self.0, ")")?;
             }
         }
         Ok(())

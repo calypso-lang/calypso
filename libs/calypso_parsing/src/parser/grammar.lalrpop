@@ -36,6 +36,8 @@ extern {
 
         "(" => Token::LParen,
         ")" => Token::RParen,
+        "[" => Token::LBracket,
+        "]" => Token::RBracket,
 
         "==" => Token::EqEq,
         "!=" => Token::BangEq,
@@ -47,6 +49,7 @@ extern {
         "=" => Token::Eq,
         ";" => Token::Semi,
         ":" => Token::Colon,
+        "," => Token::Comma,
 
         "Ident" => Token::IdentLike(IdentLike::Ident(<Symbol>)),
 
@@ -100,8 +103,8 @@ BinOpR<Op, Next>: Expr = {
 
 // === Expressions === //
 
-pub Exprs: Vec<Spanned<Expr>> = { // (1)
-    <mut v:(<@L> <Expr> <@R> ";")*> <e:(<@L> <Expr> <@R>)?> => match e { // (2)
+pub Exprs: Vec<Spanned<Expr>> = {
+    <mut v:(<@L> <Expr> <@R> ";")*> <e:(<@L> <Expr> <@R>)?> => match e {
         None => v.into_iter().map(|x| x.into()).collect(),
         Some(e) => {
             let mut v: Vec<Spanned<Expr>> = v.into_iter().map(|x| x.into()).collect();
@@ -250,5 +253,19 @@ ComparisonOp: BinOpKind = {
 // === Types === //
 
 pub Ty: Ty = {
-    <l:@L> <sym:"Ident"> <r:@R> => Ty::Symbol((l, sym, r).into())
+    <l:@L> <sym:"Ident"> <r:@R> => Ty::Symbol((l, sym, r).into()),
+    "[" <l:@L> <ty:Ty> <r:@R> "]" => Ty::IndefArray((l, Box::new(ty), r).into()),
+    "[" <tyl:@L> <ty:Ty> <tyr:@R> ";" 
+        <numl:@L> <num:"NumberLit"> <numr:@R> "]" => Ty::DefArray(
+            (tyl, Box::new(ty), tyr).into(),
+            (numl, num, numr).into()
+        ),
+    "(" <mut v:(<@L> <Ty> <@R> ",")*> <e:(<@L> <Ty> <@R>)?> ")" => match e {
+        None => Ty::Tuple(v.into_iter().map(|x| x.into()).collect()),
+        Some(e) => {
+            let mut v: Vec<Spanned<Ty>> = v.into_iter().map(|x| x.into()).collect();
+            v.push(e.into());
+            Ty::Tuple(v)
+        }
+    }
 }
