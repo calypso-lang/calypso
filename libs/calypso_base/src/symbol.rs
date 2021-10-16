@@ -45,16 +45,16 @@ impl Symbol {
         get_interner().resolve(&self.0)
     }
 
-    /// Check if a symbol is equal to [`static@kw::EMPTY`].
+    /// Check if a symbol is the empty string.
     #[must_use]
     pub fn is_empty(self) -> bool {
-        self == kw::EMPTY
+        self.as_str().is_empty()
     }
 
     /// Check if a symbol is a keyword.
     #[must_use]
     pub fn is_keyword(self) -> bool {
-        self == kw::TRUE || self == kw::FALSE
+        kw::is(self)
     }
 }
 
@@ -191,15 +191,26 @@ macro_rules! intern_static {
                 }
                 impl Eq for $static_ident {}
             )*
+
+            /// Check if the given symbol is one of the statically interned
+            /// members in this module.
+            #[must_use]
+            pub fn is(sym: $crate::symbol::Symbol) -> bool {
+                $(
+                    sym == $crate::symbol::Symbol::from($name::$enum_ident)
+                )||*
+            }
         }
 
     }
 }
 
 intern_static! {kw, "Keywords", Keyword => {
-    Empty; EMPTY: ""; "Empty string (`\"\"`)",
-
     True; TRUE: "true"; "True (`true`)",
     False; FALSE: "false"; "False (`false`)",
-    Let; LET: "let"; "Let (`let`)"
+    Let; LET: "let"; "Let (`let`)",
+    Mut; MUT: "mut"; "Mut (`mut`)",
+    Do; DO: "do"; "Do (`do`)",
+    End; END: "end"; "End (`end`)",
+    In; IN: "in"; "In (`in`)",
 }}

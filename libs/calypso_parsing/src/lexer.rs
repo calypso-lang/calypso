@@ -119,6 +119,8 @@ pub enum Token {
     Comma,
     #[token(":")]
     Colon,
+    #[token(";")]
+    Semi,
     #[token("_")]
     Under,
     #[token(".")]

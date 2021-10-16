@@ -5,7 +5,7 @@ use calypso_common::gcx::GlobalCtxt;
 use calypso_diagnostic::prelude::*;
 use calypso_parsing::{
     lexer::{self, Token},
-    parser::grammar::StmtsParser,
+    parser::grammar::ExprsParser,
 };
 
 pub fn run_parser(gcx: &Arc<GlobalCtxt>, file_name: String, contents: String) -> CalResult<()> {
@@ -44,17 +44,17 @@ pub fn run_parser(gcx: &Arc<GlobalCtxt>, file_name: String, contents: String) ->
     // }
     // drop(grcx_read);
 
-    let parser = StmtsParser::new();
+    let parser = ExprsParser::new();
 
     loop {
         if tokens.peek().is_none() {
             break;
         }
         match parser.parse(file_id, &mut tokens) {
-            Ok(stmts) => {
-                for stmt in stmts {
+            Ok(exprs) => {
+                for expr in exprs {
                     let mut printer = PrettyPrinter::default();
-                    printer.visit_stmt(source, stmt.as_ref())?;
+                    printer.visit_expr(source, expr.as_ref())?;
                     println!("{}", printer);
                 }
             }

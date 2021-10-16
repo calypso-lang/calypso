@@ -1,12 +1,20 @@
 use std::fmt::{self, Display};
 
-use calypso_base::span::Spanned;
+use calypso_base::{span::Spanned, symbol::Symbol};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Expr {
     BinOp(Spanned<Box<Expr>>, Spanned<BinOpKind>, Spanned<Box<Expr>>),
     UnOp(Spanned<UnOpKind>, Spanned<Box<Expr>>),
     Primary(Spanned<Primary>),
+    Block(Vec<Spanned<Expr>>),
+    Let(Mutability, Spanned<Symbol>, Spanned<Box<Expr>>, Spanned<Box<Expr>>)
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Mutability {
+    Mut,
+    Immut,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -77,6 +85,7 @@ impl Display for UnOpKind {
 pub enum Primary {
     Number(Numeral),
     Bool(bool),
+    Var(Symbol),
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]

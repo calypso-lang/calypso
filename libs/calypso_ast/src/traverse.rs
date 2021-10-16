@@ -1,20 +1,10 @@
 use crate::{
     expr::{Expr, Primary},
-    stmt::Stmt,
 };
 use calypso_base::span::Spanned;
 use calypso_error::CalResult;
 
 pub trait Visitor {
-    /// Visit a statement.
-    ///
-    /// # Errors
-    ///
-    /// This funciton may arbitrarily error depending on its implementation.]
-    fn visit_stmt<'src>(&mut self, _src: &'src str, _stmt: Spanned<&Stmt>) -> CalResult<()> {
-        Ok(())
-    }
-
     /// Visit an expression.
     ///
     /// # Errors

@@ -1,8 +1,7 @@
 #![allow(clippy::all)]
 #![allow(warnings)]
 use calypso_diagnostic::prelude::*;
-use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind, Radix, Suffix, Numeral};
-use calypso_ast::stmt::{Stmt};
+use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind, Radix, Suffix, Numeral, Mutability};
 use calypso_base::symbol::{kw::Keyword, Symbol};
 use calypso_base::span::Spanned;
 
@@ -45,12 +44,17 @@ extern {
         ">=" => Token::GtEq,
 
         "=" => Token::Eq,
+        ";" => Token::Semi,
 
         "Ident" => Token::IdentLike(IdentLike::Ident(<Symbol>)),
 
         "true"  => Token::IdentLike(IdentLike::Keyword(Keyword::True)),
         "false" => Token::IdentLike(IdentLike::Keyword(Keyword::False)),
         "let"   => Token::IdentLike(IdentLike::Keyword(Keyword::Let)),
+        "mut"   => Token::IdentLike(IdentLike::Keyword(Keyword::Mut)),
+        "do"    => Token::IdentLike(IdentLike::Keyword(Keyword::Do)),
+        "end"   => Token::IdentLike(IdentLike::Keyword(Keyword::End)),
+        "in"    => Token::IdentLike(IdentLike::Keyword(Keyword::In)),
     }
 }
 
@@ -92,26 +96,40 @@ BinOpR<Op, Next>: Expr = {
             (rhsl, Box::new(rhs), rhsr).into())
 }
 
-// === Statements === //
-
-pub Stmts: Vec<Spanned<Stmt>> = {
-    <mut v:(<@L> <Stmt> <@R>)*> => v.into_iter().map(|x| x.into()).collect()
-}
-
-pub Stmt: Stmt = LetStmt;
-
-// `let <sym> = <expr>`
-LetStmt: Stmt = {
-    "let" <syml:@L> <sym:"Ident"> <symr:@R> "="
-        <exprl:@L> <expr:Expr> <exprr:@R> => Stmt::Let(
-            (syml, sym, symr).into(),
-            (exprl, expr, exprr).into())
-}
-
 // === Expressions === //
 
+pub Exprs: Vec<Spanned<Expr>> = { // (1)
+    <mut v:(<@L> <Expr> <@R> ";")*> <e:(<@L> <Expr> <@R>)?> => match e { // (2)
+        None => v.into_iter().map(|x| x.into()).collect(),
+        Some(e) => {
+            let mut v: Vec<Spanned<Expr>> = v.into_iter().map(|x| x.into()).collect();
+            v.push(e.into());
+            v
+        }
+    }
+};
+
 // Lowest level of precedence
-pub Expr: Expr = LogOrExpr;
+pub Expr: Expr = LetExpr;
+
+LetExpr: Expr = {
+    LogOrExpr,
+    // `let <mut?> <sym> = <expr> in <expr>`
+    "let" <is_mut:"mut"?> <syml:@L> <sym:"Ident"> <symr:@R> "="
+        <exprvl:@L> <exprv:LogOrExpr> <exprvr:@R> "in"
+        <expril:@L> <expri:LetExpr> <exprir:@R> => {
+            let kind = match is_mut {
+                Some(_) => Mutability::Mut,
+                None => Mutability::Immut,
+            };
+            Expr::Let(
+                kind,
+                (syml, sym, symr).into(),
+                (exprvl, Box::new(exprv), exprvr).into(),
+                (expril, Box::new(expri), exprir).into()
+            )
+        },
+}
 
 // infixl (||)
 LogOrExpr = BinOp<LogOrOp, LogAndExpr>;
@@ -154,11 +172,13 @@ UnaryExpr = {
 // terms (primary and grouping)
 Term: Expr = {
     Primary,
-    "(" <Expr> ")"
+    "(" <Expr> ")",
+    "do" <Exprs> "end" => Expr::Block(<>)
 }
 
 Primary: Expr = {
     <l:@L> <lit:"NumberLit"> <r:@R> => Expr::Primary((l, Primary::Number(lit), r).into()),
+    <l:@L> <sym:"Ident"> <r:@R> => Expr::Primary((l, Primary::Var(sym), r).into()),
     Bool,
 }
 
