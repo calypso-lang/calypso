@@ -1,5 +1,6 @@
 use crate::{
     expr::{Expr, Primary},
+    ty::Ty,
 };
 use calypso_base::span::Spanned;
 use calypso_error::CalResult;
@@ -24,6 +25,15 @@ pub trait Visitor {
         _src: &'src str,
         _primary: Spanned<&Primary>,
     ) -> CalResult<()> {
+        Ok(())
+    }
+
+    /// Visit a type.
+    ///
+    /// # Errors
+    ///
+    /// This function may arbitrarily error depending on its implementation.
+    fn visit_ty<'src>(&mut self, _src: &'src str, _ty: Spanned<&Ty>) -> CalResult<()> {
         Ok(())
     }
 }

@@ -2,6 +2,7 @@
 #![allow(warnings)]
 use calypso_diagnostic::prelude::*;
 use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind, Radix, Suffix, Numeral, Mutability};
+use calypso_ast::ty::Ty;
 use calypso_base::symbol::{kw::Keyword, Symbol};
 use calypso_base::span::Spanned;
 
@@ -45,6 +46,7 @@ extern {
 
         "=" => Token::Eq,
         ";" => Token::Semi,
+        ":" => Token::Colon,
 
         "Ident" => Token::IdentLike(IdentLike::Ident(<Symbol>)),
 
@@ -112,10 +114,15 @@ pub Exprs: Vec<Spanned<Expr>> = { // (1)
 // Lowest level of precedence
 pub Expr: Expr = LetExpr;
 
+Ann: Spanned<Ty> = {
+    ":" <l:@L> <ty:Ty> <r:@R> => (l, ty, r).into()
+}
+
 LetExpr: Expr = {
     LogOrExpr,
-    // `let <mut?> <sym> = <expr> in <expr>`
-    "let" <is_mut:"mut"?> <syml:@L> <sym:"Ident"> <symr:@R> "="
+    // `let <mut?> <sym> <(: <ty>)?> = <expr> in <expr>`
+    "let" <is_mut:"mut"?>
+        <syml:@L> <sym:"Ident"> <symr:@R> <ann:Ann?> "="
         <exprvl:@L> <exprv:LogOrExpr> <exprvr:@R> "in"
         <expril:@L> <expri:LetExpr> <exprir:@R> => {
             let kind = match is_mut {
@@ -125,6 +132,7 @@ LetExpr: Expr = {
             Expr::Let(
                 kind,
                 (syml, sym, symr).into(),
+                ann,
                 (exprvl, Box::new(exprv), exprvr).into(),
                 (expril, Box::new(expri), exprir).into()
             )
@@ -178,7 +186,7 @@ Term: Expr = {
 
 Primary: Expr = {
     <l:@L> <lit:"NumberLit"> <r:@R> => Expr::Primary((l, Primary::Number(lit), r).into()),
-    <l:@L> <sym:"Ident"> <r:@R> => Expr::Primary((l, Primary::Var(sym), r).into()),
+    <l:@L> <sym:"Ident"> <r:@R> => Expr::Primary((l, Primary::Symbol(sym), r).into()),
     Bool,
 }
 
@@ -237,4 +245,10 @@ ComparisonOp: BinOpKind = {
     ">" => BinOpKind::Gt,
     "<=" => BinOpKind::LtEq,
     ">=" => BinOpKind::GtEq,
+}
+
+// === Types === //
+
+pub Ty: Ty = {
+    <l:@L> <sym:"Ident"> <r:@R> => Ty::Symbol((l, sym, r).into())
 }
