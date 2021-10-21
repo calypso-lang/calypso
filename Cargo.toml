@@ -33,7 +33,7 @@ default = ["mimalloc", "mimalloc/secure"]
 exclude = ["libs/sublib_skeleton"]
 
 [build-dependencies]
-vergen = { version = "5.1.15", default-features = false, features = ["build", "cargo", "git", "rustc"] }
+vergen = { version = "5.1.16", default-features = false, features = ["build", "cargo", "git", "rustc"] }
 
 # Do not enable with real builds, for benchmarking and debugging only.
 # [profile.release]
