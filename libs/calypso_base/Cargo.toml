@@ -2,12 +2,13 @@
 name = "calypso_base"
 version = "0.1.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
-edition = "2018"
+edition = "2021"
 description = "Base types and utilities for Calypso that don't require any other Calypso crates (excluding calypso_error)"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_base"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
+rust-version = "1.56"
 
 [dependencies]
 lasso = { version = "0.6.0", features = ["multi-threaded"], optional = true }
@@ -23,7 +24,7 @@ calypso_error = { path = "../calypso_error", version = "1.0.2" }
 default = ["span", "stream", "symbol", "ui"]
 span = []
 stream = []
-symbol = ["lazy_static", "once_cell", "lasso"]
+symbol = ["lazy_static", "once_cell", "lasso", "span"]
 ui = ["termcolor", "atty"]
 
 

@@ -2,12 +2,13 @@
 name = "saturnvm_builder"
 version = "0.1.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
-edition = "2018"
+edition = "2021"
 description = "Bytecode and IR builders for SaturnVM"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/saturnvm_builder"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
+rust-version = "1.56"
 
 [dependencies]
 

@@ -2,12 +2,13 @@
 name = "saturnvm_macros"
 version = "0.1.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
-edition = "2018"
+edition = "2021"
 description = "Procedural macros for SaturnVM's implementation"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/saturnvm_macros"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
+rust-version = "1.56"
 
 [dependencies]
 saturnvm_macros_impl = { path = "../saturnvm_macros_impl", version = "0.1.0" }

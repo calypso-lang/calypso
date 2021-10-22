@@ -2,7 +2,7 @@
 name = "calypso"
 version = "0.1.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
-edition = "2018"
+edition = "2021"
 description = "Calypso is a mostly imperative language with some functional influences that is focused on flexibility and simplicity."
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/"
@@ -11,6 +11,7 @@ license = "MIT OR Apache-2.0"
 keywords = ["interpreter"]
 categories = ["development-tools", "parser-implementations"]
 build = "build.rs"
+rust-version = "1.56"
 
 [dependencies]
 mimalloc = { version = "0.1.26", optional = true }
