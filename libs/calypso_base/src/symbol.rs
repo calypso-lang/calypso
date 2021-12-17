@@ -26,7 +26,7 @@ impl Symbol {
     }
 
     #[must_use]
-    #[doc(hide)]
+    #[doc(hidden)]
     pub fn intern_static_2(string: &'static str) -> Self {
         Self(
             GLOBAL_INTERNER
@@ -52,11 +52,12 @@ impl Symbol {
     /// Check if a symbol is the empty string.
     #[must_use]
     pub fn is_empty(self) -> bool {
-        self.as_str().is_empty()
+        self == special::EMPTY
     }
 
     /// Check if a symbol is a keyword.
     #[must_use]
+    #[cfg(feature = "calypso_interns")]
     pub fn is_keyword(self) -> bool {
         kw::is(self)
     }
@@ -143,6 +144,7 @@ pub fn get_interner() -> &'static ThreadedRodeo {
     {
         kw::init();
     }
+    special::init();
     int
 }
 
@@ -234,4 +236,8 @@ intern_static! {kw, "Keywords", Keyword => {
     Do; DO: "do"; "Do (`do`)",
     End; END: "end"; "End (`end`)",
     In; IN: "in"; "In (`in`)",
+}}
+
+intern_static! {special, "Special strings", Special => {
+    Empty; EMPTY: ""; "Empty string"
 }}
