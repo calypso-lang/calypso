@@ -4,6 +4,8 @@ use std::fmt::{self, Debug, Display};
 use lasso::{Key, Spur, ThreadedRodeo};
 use once_cell::sync::OnceCell;
 
+use super::span::Span;
+
 pub use lasso;
 
 /// An interned string.
@@ -23,7 +25,9 @@ impl Symbol {
         Self(get_interner().get_or_intern_static(string))
     }
 
-    fn intern_static_2(string: &'static str) -> Self {
+    #[must_use]
+    #[doc(hide)]
+    pub fn intern_static_2(string: &'static str) -> Self {
         Self(
             GLOBAL_INTERNER
                 .get_or_init(ThreadedRodeo::new)
@@ -67,6 +71,20 @@ impl Debug for Symbol {
 impl Display for Symbol {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Ident {
+    pub symbol: Symbol,
+    pub span: Span,
+}
+
+impl std::ops::Deref for Ident {
+    type Target = Symbol;
+
+    fn deref(&self) -> &Self::Target {
+        &self.symbol
     }
 }
 
@@ -121,7 +139,10 @@ static GLOBAL_INTERNER: OnceCell<ThreadedRodeo> = OnceCell::new();
 /// Get the global interner.
 pub fn get_interner() -> &'static ThreadedRodeo {
     let int = GLOBAL_INTERNER.get_or_init(ThreadedRodeo::new);
-    kw::init();
+    #[cfg(feature = "calypso_interns")]
+    {
+        kw::init();
+    }
     int
 }
 

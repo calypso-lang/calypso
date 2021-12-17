@@ -21,11 +21,12 @@ tracing = "0.1.29"
 calypso_error = { path = "../calypso_error", version = "1.0.2" }
 
 [features]
-default = ["span", "stream", "symbol", "ui"]
+default = ["span", "stream", "symbol", "ui", "calypso_interns"]
 span = []
 stream = []
 symbol = ["lazy_static", "once_cell", "lasso", "span"]
 ui = ["termcolor", "atty"]
+calypso_interns = ["symbol"]
 
 
 # [dev-dependencies]
