@@ -11,5 +11,5 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.56"
 
 [dependencies]
-rustyline = "9.1.1"
+rustyline = "9.1.2"
 regex = "1.5.4"
