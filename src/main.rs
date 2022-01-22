@@ -1,14 +1,11 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso/index.html")]
 #![warn(clippy::pedantic)]
 
-#[macro_use]
-extern crate structopt;
-
 use std::panic;
 use std::sync::Arc;
 
+use clap::StructOpt;
 use once_cell::sync::OnceCell;
-use structopt::StructOpt;
 use tracing_subscriber::EnvFilter;
 
 use calypso_base::ui::Emitters;

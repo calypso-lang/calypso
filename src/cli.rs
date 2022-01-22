@@ -1,3 +1,4 @@
+use clap::StructOpt;
 use std::{
     fmt::{self, Display},
     path::PathBuf,
@@ -164,5 +165,16 @@ fn parse_log_format(s: &str) -> LogFormat {
         "compact" => LogFormat::Compat,
         "json" => LogFormat::Json,
         _ => unreachable!(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verify_app() {
+        use clap::IntoApp;
+        Args::into_app().debug_assert()
     }
 }
