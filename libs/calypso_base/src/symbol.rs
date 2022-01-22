@@ -4,6 +4,8 @@ use std::fmt::{self, Debug, Display};
 use lasso::{Key, Spur, ThreadedRodeo};
 use once_cell::sync::OnceCell;
 
+use super::span::Span;
+
 pub use lasso;
 
 /// An interned string.
@@ -23,7 +25,9 @@ impl Symbol {
         Self(get_interner().get_or_intern_static(string))
     }
 
-    fn intern_static_2(string: &'static str) -> Self {
+    #[must_use]
+    #[doc(hidden)]
+    pub fn intern_static_2(string: &'static str) -> Self {
         Self(
             GLOBAL_INTERNER
                 .get_or_init(ThreadedRodeo::new)
@@ -45,16 +49,17 @@ impl Symbol {
         get_interner().resolve(&self.0)
     }
 
-    /// Check if a symbol is equal to [`static@kw::EMPTY`].
+    /// Check if a symbol is the empty string.
     #[must_use]
     pub fn is_empty(self) -> bool {
-        self == kw::EMPTY
+        self == special::EMPTY
     }
 
     /// Check if a symbol is a keyword.
     #[must_use]
+    #[cfg(feature = "calypso_interns")]
     pub fn is_keyword(self) -> bool {
-        self == kw::TRUE || self == kw::FALSE
+        kw::is(self)
     }
 }
 
@@ -67,6 +72,20 @@ impl Debug for Symbol {
 impl Display for Symbol {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Ident {
+    pub symbol: Symbol,
+    pub span: Span,
+}
+
+impl std::ops::Deref for Ident {
+    type Target = Symbol;
+
+    fn deref(&self) -> &Self::Target {
+        &self.symbol
     }
 }
 
@@ -121,7 +140,11 @@ static GLOBAL_INTERNER: OnceCell<ThreadedRodeo> = OnceCell::new();
 /// Get the global interner.
 pub fn get_interner() -> &'static ThreadedRodeo {
     let int = GLOBAL_INTERNER.get_or_init(ThreadedRodeo::new);
-    kw::init();
+    #[cfg(feature = "calypso_interns")]
+    {
+        kw::init();
+    }
+    special::init();
     int
 }
 
@@ -152,14 +175,16 @@ macro_rules! intern_static {
                 )*
             }
 
-            impl From<$crate::symbol::Symbol> for $name {
-                fn from(sym: $crate::symbol::Symbol) -> Self {
+            impl ::std::convert::TryFrom<$crate::symbol::Symbol> for $name {
+                type Error = $crate::symbol::Symbol;
+
+                fn try_from(sym: $crate::symbol::Symbol) -> Result<Self, Self::Error> {
                     $(
                         if sym == $static_ident {
-                            return Self::$enum_ident;
+                            return Ok(Self::$enum_ident);
                         }
                     )*
-                    unreachable!()
+                    return Err(sym);
                 }
             }
             impl From<$name> for $crate::symbol::Symbol {
@@ -189,15 +214,30 @@ macro_rules! intern_static {
                 }
                 impl Eq for $static_ident {}
             )*
+
+            /// Check if the given symbol is one of the statically interned
+            /// members in this module.
+            #[must_use]
+            pub fn is(sym: $crate::symbol::Symbol) -> bool {
+                $(
+                    sym == $crate::symbol::Symbol::from($name::$enum_ident)
+                )||*
+            }
         }
 
     }
 }
 
 intern_static! {kw, "Keywords", Keyword => {
-    Empty; EMPTY: ""; "Empty string (`\"\"`)",
-    Under; UNDERSCORE: "_"; "Underscore (`_`)",
-
     True; TRUE: "true"; "True (`true`)",
-    False; FALSE: "false"; "False (`false`)"
+    False; FALSE: "false"; "False (`false`)",
+    Let; LET: "let"; "Let (`let`)",
+    Mut; MUT: "mut"; "Mut (`mut`)",
+    Do; DO: "do"; "Do (`do`)",
+    End; END: "end"; "End (`end`)",
+    In; IN: "in"; "In (`in`)",
+}}
+
+intern_static! {special, "Special strings", Special => {
+    Empty; EMPTY: ""; "Empty string"
 }}

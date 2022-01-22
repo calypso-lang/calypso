@@ -2,15 +2,16 @@
 name = "calypso_common"
 version = "0.1.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
-edition = "2018"
+edition = "2021"
 description = "Common data definitions and structures for Calypso."
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_common"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
+rust-version = "1.56"
 
 [dependencies]
-parking_lot = "0.11.1"
+parking_lot = "0.11.2"
 
 [dependencies.calypso_base]
 path = "../calypso_base"

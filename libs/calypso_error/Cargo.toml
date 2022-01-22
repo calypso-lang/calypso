@@ -2,12 +2,13 @@
 name = "calypso_error"
 version = "1.0.2"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
-edition = "2018"
+edition = "2021"
 description = "Error-handling utilities for use within Calypso"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_error"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
+rust-version = "1.56"
 
 [dependencies]
 thiserror = "1.0.24"

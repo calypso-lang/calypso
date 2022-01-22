@@ -6,3 +6,4 @@
 pub mod expr;
 pub mod pretty;
 pub mod traverse;
+pub mod ty;

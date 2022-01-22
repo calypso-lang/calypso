@@ -23,6 +23,7 @@ pub use codespan_reporting::diagnostic::{LabelStyle, Severity};
 pub type SourceMgr = SimpleFiles<String, String>;
 
 /// A diagnostic.
+#[derive(Debug)]
 pub struct Diagnostic(CodespanDiag<usize>);
 
 impl Diagnostic {
@@ -42,7 +43,7 @@ impl Diagnostic {
         let def_config = Config::default();
         let config = config.unwrap_or(&def_config);
 
-        term::emit(buf, &config, sourcemgr, &self.0).map_err(DiagnosticError::from)?;
+        term::emit(buf, config, sourcemgr, &self.0).map_err(DiagnosticError::from)?;
         writeln!(buf)?;
 
         Ok(())
@@ -52,6 +53,7 @@ impl Diagnostic {
 /// One or more diagnostics in a specific order, in order to form an "ensemble
 /// diagnostic" which is emitted all at once.
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
 pub enum EnsembleDiagnostic {
     /// One diagnostic
     One(Diagnostic),
@@ -67,6 +69,8 @@ impl EnsembleDiagnostic {
     ///
     /// This function will error if rendering the diagnostic or writing to the
     /// buffer failed.
+    // TODO(@ThePuzzlemaker: diag|cli): use compact displaystyle for syntax
+    //   errors, add "force rich error" CLI arg for syntax errors
     pub fn render<'gcx>(
         &self,
         buf: &mut Buffer,

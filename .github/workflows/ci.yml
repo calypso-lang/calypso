@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        rust: [stable, 1.48.0, nightly]
+        rust: [stable, 1.56, nightly]
       fail-fast: false
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 
@@ -140,3 +140,4 @@ jobs:
         jekyll: false
       env:
         GH_PAT: ${{ secrets.GH_PAT }}
+      continue-on-error: true

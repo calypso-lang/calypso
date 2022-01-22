@@ -2,13 +2,14 @@
 name = "calypso_parsing"
 version = "0.1.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
-edition = "2018"
+edition = "2021"
 description = "Parsing for Calypso"
 readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_parsing"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
 build = "build.rs"
+rust-version = "1.56"
 
 [dependencies]
 calypso_util = { path = "../calypso_util", version = "0.1.0" }
@@ -17,12 +18,10 @@ calypso_base = { path = "../calypso_base", version = "0.1.0" }
 calypso_common = { path = "../calypso_common", version = "0.1.0" }
 calypso_ast = { path = "../calypso_ast", version = "0.1.0" }
 lazy_static = "1.4.0"
-lalrpop-util = "0.19.5"
-anyhow = "1.0.40"
+lalrpop-util = "0.19.7"
+anyhow = "1.0.52"
+logos = "0.12.0"
+itertools = "0.10.3"
 
 [build-dependencies]
-lalrpop = "0.19.5"
-
-[[example]]
-name = "expr_parser"
-path = "examples/expr_parser.rs"
+lalrpop = "0.19.7"

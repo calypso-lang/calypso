@@ -33,10 +33,10 @@ fn foo() {
 
 ## Compatibility
 
-The MSRV (Minimum Supported Rust Version) is currently Rust 1.48.0.
+The MSRV (Minimum Supported Rust Version) is currently Rust 1.52.1.
 
 Calypso is automatically tested on:
-- x86_64 linux, Rust 1.48.0
+- x86_64 linux, Rust 1.52.1
 - x86_64 linux, latest stable
 - x86_64 linux, latest nightly
 

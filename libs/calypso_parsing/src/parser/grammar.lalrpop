@@ -1,107 +1,201 @@
 #![allow(clippy::all)]
 #![allow(warnings)]
 use calypso_diagnostic::prelude::*;
-use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind, Radix, Suffix};
-use calypso_base::symbol::{kw::Keyword, Symbol, PotentiallyInterned};
+use calypso_ast::expr::{Expr, Primary, BinOpKind, UnOpKind, Radix, Suffix, Numeral, Mutability};
+use calypso_ast::ty::Ty;
+use calypso_base::symbol::{kw::Keyword, Symbol};
+use calypso_base::span::Spanned;
 
-use crate::parser::tokens::Tok;
-use crate::lexer::{TokenType};
+use crate::lexer::{Token, IdentLike};
 
 grammar<'input>(source_id: usize);
 
 extern {
-    type Location = usize;
+    type Location = u32;
     type Error = CalError;
 
-    enum Tok<'input> {
-        "NumberLit" => Tok::Number( <&'input str>, <Radix>, <Option<Suffix>> ),
+    enum Token {
+        "NumberLit" => Token::Numeral(<Numeral>),
 
-        "+"  => Tok::Unprocessed( TokenType::Plus     ),
-        "-"  => Tok::Unprocessed( TokenType::Minus    ),
-        "*"  => Tok::Unprocessed( TokenType::Star     ),
-        "/"  => Tok::Unprocessed( TokenType::Slash    ),
-        "%"  => Tok::Unprocessed( TokenType::Percent  ),
-        "**" => Tok::Unprocessed( TokenType::StarStar ),
+        "+"  => Token::Plus,
+        "-"  => Token::Minus,
+        "*"  => Token::Star,
+        "/"  => Token::Slash,
+        "%"  => Token::Percent,
+        "**" => Token::StarStar,
 
-        "&&" => Tok::Unprocessed( TokenType::AndAnd   ),
-        "||" => Tok::Unprocessed( TokenType::PipePipe ),
-        "!"  => Tok::Unprocessed( TokenType::Bang     ),
+        "&&" => Token::AndAnd,
+        "||" => Token::PipePipe,
+        "!"  => Token::Bang,
 
-        "&"  => Tok::Unprocessed( TokenType::And   ),
-        "^"  => Tok::Unprocessed( TokenType::Caret ),
-        "|"  => Tok::Unprocessed( TokenType::Pipe  ),
-        ">>" => Tok::Unprocessed( TokenType::GtGt  ),
-        "<<" => Tok::Unprocessed( TokenType::LtLt  ),
+        "&"  => Token::And,
+        "^"  => Token::Caret,
+        "|"  => Token::Pipe,
+        ">>" => Token::GtGt,
+        "<<" => Token::LtLt,
 
-        "(" => Tok::Unprocessed( TokenType::LParen ),
-        ")" => Tok::Unprocessed( TokenType::RParen ),
+        "(" => Token::LParen,
+        ")" => Token::RParen,
+        "[" => Token::LBracket,
+        "]" => Token::RBracket,
 
-        "==" => Tok::Unprocessed( TokenType::EqEq   ),
-        "!=" => Tok::Unprocessed( TokenType::BangEq ),
-        "<"  => Tok::Unprocessed( TokenType::Lt     ),
-        ">"  => Tok::Unprocessed( TokenType::Gt     ),
-        "<=" => Tok::Unprocessed( TokenType::LtEq   ),
-        ">=" => Tok::Unprocessed( TokenType::GtEq   ),
+        "==" => Token::EqEq,
+        "!=" => Token::BangEq,
+        "<"  => Token::Lt,
+        ">"  => Token::Gt,
+        "<=" => Token::LtEq,
+        ">=" => Token::GtEq,
 
-        "Ident"     => Tok::Ident(  <Symbol>                      ),
-        "StringLit" => Tok::String( <PotentiallyInterned<'input>> ),
+        "=" => Token::Eq,
+        ";" => Token::Semi,
+        ":" => Token::Colon,
+        "," => Token::Comma,
 
-        "true"    => Tok::Keyword( Keyword::True  ),
-        "false"   => Tok::Keyword( Keyword::False ),
+        "Ident" => Token::IdentLike(IdentLike::Ident(<Symbol>)),
+
+        "true"  => Token::IdentLike(IdentLike::Keyword(Keyword::True)),
+        "false" => Token::IdentLike(IdentLike::Keyword(Keyword::False)),
+        "let"   => Token::IdentLike(IdentLike::Keyword(Keyword::Let)),
+        "mut"   => Token::IdentLike(IdentLike::Keyword(Keyword::Mut)),
+        "do"    => Token::IdentLike(IdentLike::Keyword(Keyword::Do)),
+        "end"   => Token::IdentLike(IdentLike::Keyword(Keyword::End)),
+        "in"    => Token::IdentLike(IdentLike::Keyword(Keyword::In)),
     }
 }
 
-BinOp<Left, Op, Right>: Box<Expr<'input>> = {
-    Right,
-    Left Op Right => Box::new(Expr::BinOp(<>))
+// Left-associative operator
+//
+// # Arguments
+//
+// Op: Operator(s) at this level
+// Next: Next level of precedence
+//
+BinOp<Op, Next>: Expr = {
+    // Parse an expression at the next level of precedence (or higher)
+    Next,
+    // Parse an expression at this level of precedence (or lower)
+    <lhsl:@L> <lhs:BinOp<Op, Next>> <lhsr:@R>
+        <opl:@L> <op:Op> <opr:@R> <rhsl:@L>
+        <rhs:Next> <rhsr:@R> => Expr::BinOp(
+            (lhsl, Box::new(lhs), lhsr).into(),
+            (opl, op, opr).into(),
+            (rhsl, Box::new(rhs), rhsr).into())
 }
-BinOpR<Left, Op, Right>: Box<Expr<'input>> = {
-    Left,
-    Left Op Right => Box::new(Expr::BinOp(<>))
+
+// Right-associative operator
+//
+// # Arguments
+//
+// Op: Operator(s) at this level
+// Next: Next level of precedence
+//
+BinOpR<Op, Next>: Expr = {
+    // Parse an expression at the next level of precedence (or higher)
+    Next,
+    // Parse an expression at this level of precedence (or lower)
+    <lhsl:@L> <lhs:Next> <lhsr:@R>
+        <opl:@L> <op:Op> <opr:@R>
+        <rhsl:@L> <rhs:BinOpR<Op, Next>> <rhsr:@R> => Expr::BinOp(
+            (lhsl, Box::new(lhs), lhsr).into(),
+            (opl, op, opr).into(),
+            (rhsl, Box::new(rhs), rhsr).into())
 }
 
-pub Expr: Box<Expr<'input>> = LogOrExpr;
+// === Expressions === //
 
-LogOrExpr = BinOp<LogOrExpr, LogOrOp, LogAndExpr>;
-LogAndExpr = BinOp<LogAndExpr, LogAndOp, BitOrExpr>;
+pub Exprs: Vec<Spanned<Expr>> = {
+    <mut v:(<@L> <Expr> <@R> ";")*> <e:(<@L> <Expr> <@R>)?> => match e {
+        None => v.into_iter().map(|x| x.into()).collect(),
+        Some(e) => {
+            let mut v: Vec<Spanned<Expr>> = v.into_iter().map(|x| x.into()).collect();
+            v.push(e.into());
+            v
+        }
+    }
+};
 
-BitOrExpr = BinOp<BitOrExpr, BitOrOp, BitXorExpr>;
-BitXorExpr = BinOp<BitXorExpr, BitXorOp, BitAndExpr>;
-BitAndExpr = BinOp<BitAndExpr, BitAndOp, EqualityExpr>;
+// Lowest level of precedence
+pub Expr: Expr = LetExpr;
 
-EqualityExpr = BinOp<EqualityExpr, EqualityOp, ComparisonExpr>;
-ComparisonExpr = BinOp<ComparisonExpr, ComparisonOp, BitShiftExpr>;
+Ann: Spanned<Ty> = {
+    ":" <l:@L> <ty:Ty> <r:@R> => (l, ty, r).into()
+}
 
-BitShiftExpr = BinOp<BitShiftExpr, BitShiftOp, AddExpr>;
+LetExpr: Expr = {
+    LogOrExpr,
+    // `let <mut?> <sym> <(: <ty>)?> = <expr> in <expr>`
+    "let" <is_mut:"mut"?>
+        <syml:@L> <sym:"Ident"> <symr:@R> <ann:Ann?> "="
+        <exprvl:@L> <exprv:LogOrExpr> <exprvr:@R> "in"
+        <expril:@L> <expri:LetExpr> <exprir:@R> => {
+            let kind = match is_mut {
+                Some(_) => Mutability::Mut,
+                None => Mutability::Immut,
+            };
+            Expr::Let(
+                kind,
+                (syml, sym, symr).into(),
+                ann,
+                (exprvl, Box::new(exprv), exprvr).into(),
+                (expril, Box::new(expri), exprir).into()
+            )
+        },
+}
 
-AddExpr = BinOp<AddExpr, AddOp, MulExpr>;
-MulExpr = BinOp<MulExpr, MulOp, PowExpr>;
-PowExpr = BinOpR<UnaryExpr, PowOp, PowExpr>;
+// infixl (||)
+LogOrExpr = BinOp<LogOrOp, LogAndExpr>;
+// infixl (&&)
+LogAndExpr = BinOp<LogAndOp, BitOrExpr>;
 
+// infixl (|)
+BitOrExpr = BinOp<BitOrOp, BitXorExpr>;
+// infixl (^)
+BitXorExpr = BinOp<BitXorOp, BitAndExpr>;
+// infixl (&)
+BitAndExpr = BinOp<BitAndOp, EqualityExpr>;
+
+// infixl (== | !=)
+EqualityExpr = BinOp<EqualityOp, ComparisonExpr>;
+// infixl (< | <= | > | >=)
+ComparisonExpr = BinOp<ComparisonOp, BitShiftExpr>;
+
+// infixl (<< | >>)
+BitShiftExpr = BinOp<BitShiftOp, AddExpr>;
+
+// infixl (+ | -)
+AddExpr = BinOp<AddOp, MulExpr>;
+// infixl (* | / | %)
+MulExpr = BinOp<MulOp, PowExpr>;
+// infixr (**)
+PowExpr = BinOpR<PowOp, UnaryExpr>;
+
+// unary expressions
 UnaryExpr = {
     Term,
-    <lo:@L> "-" <hi:@R> <op:UnaryExpr> => Box::new(Expr::UnOp((lo, UnOpKind::Negative, hi).into(), op)),
-    <lo:@L> "!" <hi:@R> <op:UnaryExpr> => Box::new(Expr::UnOp((lo, UnOpKind::UnaryNot, hi).into(), op))
+    <opl:@L> "-" <opr:@R> <exprl:@L> <expr:UnaryExpr> <exprr:@R> => Expr::UnOp(
+        (opl, UnOpKind::Negative, opr).into(),
+        (exprl, Box::new(expr), exprr).into()),
+    <opl:@L> "!" <opr:@R> <exprl:@L> <expr:UnaryExpr> <exprr:@R> => Expr::UnOp(
+        (opl, UnOpKind::UnaryNot, opr).into(),
+        (exprl, Box::new(expr), exprr).into())
 }
 
-Term: Box<Expr<'input>> = {
+// terms (primary and grouping)
+Term: Expr = {
     Primary,
-    "(" <Expr> ")"
+    "(" <Expr> ")",
+    "do" <Exprs> "end" => Expr::Block(<>)
 }
 
-Primary: Box<Expr<'input>> = {
-    "NumberLit" => Box::new(Expr::Primary(Primary::detuple_number(<>))),
+Primary: Expr = {
+    <l:@L> <lit:"NumberLit"> <r:@R> => Expr::Primary((l, Primary::Number(lit), r).into()),
+    <l:@L> <sym:"Ident"> <r:@R> => Expr::Primary((l, Primary::Symbol(sym), r).into()),
     Bool,
 }
 
-Bool: Box<Expr<'input>> = {
-    "true" => Box::new(Expr::Primary(Primary::Bool(true))),
-    "false" => Box::new(Expr::Primary(Primary::Bool(false)))
-}
-
-Keyword: Keyword = {
-    "true" => Keyword::True,
-    "false" => Keyword::False
+Bool: Expr = {
+    <l:@L> "true" <r:@R> => Expr::Primary((l, Primary::Bool(true), r).into()),
+    <l:@L> "false" <r:@R> => Expr::Primary((l, Primary::Bool(false), r).into())
 }
 
 LogOrOp: BinOpKind = {
@@ -154,4 +248,24 @@ ComparisonOp: BinOpKind = {
     ">" => BinOpKind::Gt,
     "<=" => BinOpKind::LtEq,
     ">=" => BinOpKind::GtEq,
+}
+
+// === Types === //
+
+pub Ty: Ty = {
+    <l:@L> <sym:"Ident"> <r:@R> => Ty::Symbol((l, sym, r).into()),
+    "[" <l:@L> <ty:Ty> <r:@R> "]" => Ty::IndefArray((l, Box::new(ty), r).into()),
+    "[" <tyl:@L> <ty:Ty> <tyr:@R> ";" 
+        <numl:@L> <num:"NumberLit"> <numr:@R> "]" => Ty::DefArray(
+            (tyl, Box::new(ty), tyr).into(),
+            (numl, num, numr).into()
+        ),
+    "(" <mut v:(<@L> <Ty> <@R> ",")*> <e:(<@L> <Ty> <@R>)?> ")" => match e {
+        None => Ty::Tuple(v.into_iter().map(|x| x.into()).collect()),
+        Some(e) => {
+            let mut v: Vec<Spanned<Ty>> = v.into_iter().map(|x| x.into()).collect();
+            v.push(e.into());
+            Ty::Tuple(v)
+        }
+    }
 }

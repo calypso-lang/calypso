@@ -14,7 +14,8 @@ pub mod types;
 /// Re-exports used for diagnostics.
 pub mod prelude {
     pub use super::calypso_error::{CalError, CalResult};
-    pub use super::diagnostic;
+    pub use super::diagnostic::{self, EnsembleBuilder, LabelStyle};
     pub use super::err;
     pub use super::error::DiagnosticError;
+    pub use super::reporting::files::Files;
 }

@@ -1,13 +1,10 @@
 use std::sync::Arc;
 
-use clap::ArgMatches;
-
 use calypso_common::gcx::GlobalCtxt;
 use calypso_diagnostic::prelude::*;
 use calypso_diagnostic::types;
 
-pub fn explain(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
-    let error_code = matches.value_of("EXXXX").unwrap();
+pub fn explain(gcx: &Arc<GlobalCtxt>, error_code: &str) -> CalResult<()> {
     if let Some(diagnostic) = types::DIAGNOSTICS.get(error_code) {
         if let Some(information) = diagnostic {
             print!("{}", information);
@@ -19,7 +16,8 @@ pub fn explain(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
                 None,
                 "no extended information for error code",
                 Some(&format!("`{}`", error_code)),
-            )?;
+            )?
+            .flush()?;
         }
     } else {
         let mut emit = gcx.emit.write();
@@ -29,7 +27,8 @@ pub fn explain(gcx: &Arc<GlobalCtxt>, matches: &ArgMatches) -> CalResult<()> {
             None,
             "error code is invalid",
             Some(&format!("`{}`", error_code)),
-        )?;
+        )?
+        .flush()?;
     }
     Ok(())
 }

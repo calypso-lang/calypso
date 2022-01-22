@@ -204,7 +204,7 @@ mod tests {
         assert_eq!(
             format!("{:?}", err),
             "Other(invalid magic bytes `[cc, fa]`)"
-        )
+        );
     }
 
     #[test]
@@ -247,6 +247,6 @@ mod tests {
         assert_eq!(
             format!("{:?}", err),
             "Other(invalid magic bytes `[cc, fa]`)"
-        )
+        );
     }
 }

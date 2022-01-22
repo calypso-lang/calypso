@@ -8,7 +8,7 @@ def main():
     res = subprocess.run(["cargo", "check", "--workspace", "--all-features", "--all-targets"])
     if res.returncode != 0:
         print("Failure while building code.\nCommit aborted.")
-        return
+        sys.exit(-1)
     
     print("Running `cargo test --workspace --all-features`...")
     res = subprocess.run(["cargo", "test", "--workspace", "--all-features"])

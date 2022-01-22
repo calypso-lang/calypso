@@ -1,0 +1,17 @@
+status = [
+    "stable-x86_64-unknown-linux-gnu",
+    "1.52.1-x86_64-unknown-linux-gnu",
+    "nightly-x86_64-unknown-linux-gnu",
+    "Build documentation and books"
+]
+pr_status = [
+    "stable-x86_64-unknown-linux-gnu",
+    "1.52.1-x86_64-unknown-linux-gnu",
+    "nightly-x86_64-unknown-linux-gnu",
+    "Build documentation and books"
+]
+required_approvals = 0
+delete_merged_branches = false
+use_codeowners = false
+use_squash_merge = false
+commit_title = "Auto merge of ${PR_REFS}"
