@@ -3,7 +3,7 @@
 # Calypso
 
 [![CI Status][b3]][l3] [![License][b4]][l4] [![Discord](https://img.shields.io/discord/822290196057948171?style=flat-square&color=blue)](https://discord.gg/26X6ChQQcG) ![Lines of Code][b2] <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-blue.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Calypso is a mostly imperative language with some functional influences that is focused on flexibility and simplicity.
@@ -156,7 +156,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tr>
     <td align="center"><a href="https://github.com/HTG-YT"><img src="https://avatars.githubusercontent.com/u/39023054?v=4?s=100" width="100px;" alt=""/><br /><sub><b>HTG-YT</b></sub></a><br /><a href="https://github.com/calypso-lang/calypso/commits?author=HTG-YT" title="Documentation">📖</a> <a href="#tutorial-HTG-YT" title="Tutorials">✅</a></td>
-    <td align="center"><a href="https://www.mbiz.co.id/"><img src="https://avatars.githubusercontent.com/u/17718201?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Reza</b></sub></a><br /><a href="https://github.com/calypso-lang/calypso/issues?q=author%3Atbmreza" title="Bug reports">🐛</a> <a href="https://github.com/calypso-lang/calypso/commits?author=tbmreza" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://www.mbiz.co.id/"><img src="https://avatars.githubusercontent.com/u/17718201?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Reza</b></sub></a><br /><a href="https://github.com/calypso-lang/calypso/issues?q=author%3Atbmreza" title="Bug reports">🐛</a> <a href="https://github.com/calypso-lang/calypso/commits?author=tbmreza" title="Tests">⚠️</a> <a href="#maintenance-tbmreza" title="Maintenance">🚧</a></td>
   </tr>
 </table>
 
