@@ -81,7 +81,7 @@ fn report_ice(gcx: &GlobalCtxt, info: &panic::PanicInfo<'_>, report_url: &str) -
 }
 
 fn main() {
-    let args = Args::from_args();
+    let args = Args::parse();
 
     let gcx = Arc::new(GlobalCtxt {
         emit: RwLock::new(Emitters::new(args.color.0, args.color.1)),

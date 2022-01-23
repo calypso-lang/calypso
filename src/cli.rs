@@ -1,4 +1,4 @@
-use clap::StructOpt;
+use clap::{Parser, Subcommand};
 use std::{
     fmt::{self, Display},
     path::PathBuf,
@@ -6,7 +6,7 @@ use std::{
 
 use calypso_base::ui::{self, atty::Stream, termcolor::ColorChoice};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct Args {
     /// Set how color is displayed, if at all. By default this is set to
     /// `auto`.
@@ -21,7 +21,7 @@ pub struct Args {
     /// - `auto`: Use color if stdout/stderr is a TTY, don't if it is not.
     ///
     /// - `never`: Never use color, even if stdout/stderr is a TTY.
-    #[structopt(
+    #[clap(
         long,
         parse(from_str = parse_color_prefs),
         possible_values = &[
@@ -39,7 +39,7 @@ pub struct Args {
     /// See tracing-subscriber's EnvFilter type for an explanation of the format:
     ///
     /// https://docs.rs/tracing-subscriber/*/tracing_subscriber/filter/struct.EnvFilter.html
-    #[structopt(long, env = "CALYPSO_LOG")]
+    #[clap(long, env = "CALYPSO_LOG")]
     pub log: Option<String>,
 
     /// The logging format to use.
@@ -52,7 +52,7 @@ pub struct Args {
     ///
     /// - `json`: Intended for machine interpretation.
     /// (see https://docs.rs/tracing-subscriber/*/tracing_subscriber/fmt/format/struct.Json.html)
-    #[structopt(
+    #[clap(
         long,
         env = "CALYPSO_LOG_FORMAT",
         possible_values = &[
@@ -65,43 +65,43 @@ pub struct Args {
     )]
     pub log_format: LogFormat,
 
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub cmd: Command,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 pub enum Command {
     /// Explain an error that has detailed information on troubleshooting.
-    #[structopt(visible_aliases = &["expl", "exp", "ex"])]
+    #[clap(visible_aliases = &["expl", "exp", "ex"])]
     Explain {
         /// The error to get information for. This must be the error code of
         /// the error, which is of the form `EXXXX` (e.g. E0591).
-        #[structopt(name = "EXXXX")]
+        #[clap(name = "EXXXX")]
         ecode: String,
     },
     /// Commands used for debugging Calypso's internals and implementation.
-    #[structopt(visible_alias = "int")]
+    #[clap(visible_alias = "int")]
     Internal {
-        #[structopt(subcommand)]
+        #[clap(subcommand)]
         cmd: InternalCmd,
     },
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Subcommand)]
 pub enum InternalCmd {
     /// Show information about the environment where this executable was built.
-    #[structopt(visible_aliases = &["bi", "buildinfo"])]
+    #[clap(visible_aliases = &["bi", "buildinfo"])]
     BuildInfo,
     /// Intentionally panic in order to test out handling of ICEs (internal
     /// compiler errors).
     Panic,
     /// Run analyses on Calypso source files and return the result in an
     /// "unpretty" format, e.g. AST (abstract syntax tree) or token list.
-    #[structopt(visible_alias = "up")]
+    #[clap(visible_alias = "up")]
     Unpretty {
         /// Use a REPL-like interface when using standard input. This does not
         /// affect behaviour when using file input.
-        #[structopt(short, long)]
+        #[clap(short, long)]
         repl: bool,
         /// The "unpretty" format to output.
         ///
@@ -110,14 +110,14 @@ pub enum InternalCmd {
         /// - `toks`: Token list
         ///
         /// - `ast`: Abstract syntax tree (AST)
-        #[structopt(possible_values = &[
+        #[clap(possible_values = &[
             "toks",
             "ast"
         ], parse(from_str = parse_unpretty))]
         format: UnprettyFormat,
         /// The input file to run transformations on. Use the file name `-`
         /// (without backticks) to use standard input.
-        #[structopt(parse(from_os_str))]
+        #[clap(parse(from_os_str))]
         input: PathBuf,
     },
 }
@@ -175,6 +175,6 @@ mod tests {
     #[test]
     fn verify_app() {
         use clap::IntoApp;
-        Args::into_app().debug_assert()
+        Args::into_app().debug_assert();
     }
 }
