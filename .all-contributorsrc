@@ -27,9 +27,11 @@
       "profile": "https://www.mbiz.co.id/",
       "contributions": [
         "bug",
-        "test"
+        "test",
+        "maintenance"
       ]
     }
   ],
-  "contributorsPerLine": 7
+  "contributorsPerLine": 7,
+  "skipCi": true
 }
