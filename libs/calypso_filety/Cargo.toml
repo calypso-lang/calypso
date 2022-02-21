@@ -13,7 +13,7 @@ rust-version = "1.56"
 [dependencies]
 calypso_base = { path = "../calypso_base", default-features = false, features = ["symbol"] }
 calypso_error = { path = "../calypso_error", version = "1.0.2" }
-anyhow = "1.0.53"
+anyhow = "1.0.54"
 serde = { version = "1.0.136", features = ["derive"] }
 bincode = "1.3.3"
 nom = "7.1.0"
