@@ -54,10 +54,6 @@ def verify_short(line):
     if len(line.strip()) == 0:
         # We can't verify anything about the short message if it's empty.
         return ["The short message of a commit should not be empty."]
-        
-
-    if not line[0].isupper():
-        errors.append("The short message of a commit should start with a capital letter.")
 
     if line.strip()[-1] == ".":
         errors.append("The short message of a commit should not end with a period.")
