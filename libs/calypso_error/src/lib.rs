@@ -7,8 +7,11 @@ use std::fmt::{Debug, Display};
 
 use thiserror::Error;
 
+pub use eyre;
+
 /// The Calypso error type.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum CalError {
     /// IO errors
     #[error("i/o error")]
@@ -19,9 +22,9 @@ pub enum CalError {
     /// Formatting errors
     #[error("formatting error")]
     Fmt(#[from] std::fmt::Error),
-    /// Any other error, using [`anyhow`]
+    /// Any other error, using [`eyre`]
     #[error(transparent)]
-    Other(#[from] anyhow::Error),
+    Other(#[from] eyre::Report),
 }
 
 impl CalError {

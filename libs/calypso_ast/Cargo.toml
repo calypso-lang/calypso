@@ -11,5 +11,5 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.56"
 
 [dependencies]
-calypso_error = { path = "../calypso_error", version = "1.0.2" }
+calypso_error = { path = "../calypso_error", version = "2.0.0" }
 calypso_base = { path = "../calypso_base", version = "0.1.0" }

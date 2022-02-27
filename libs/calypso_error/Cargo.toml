@@ -1,6 +1,6 @@
 [package]
 name = "calypso_error"
-version = "1.0.2"
+version = "2.0.0"
 authors = ["ThePuzzlemaker <tpzker@thepuzzlemaker.info>"]
 edition = "2021"
 description = "Error-handling utilities for use within Calypso"
@@ -12,4 +12,4 @@ rust-version = "1.56"
 
 [dependencies]
 thiserror = "1.0.24"
-anyhow = "1.0.40"
+eyre = "0.6.7"

@@ -3,10 +3,12 @@ use std::io::prelude::*;
 use std::io::SeekFrom;
 use std::io::{Error as IOError, ErrorKind as IOErrorKind};
 
-use anyhow::{anyhow, Error};
 use serde::{Deserialize, Serialize};
 
-use calypso_error::{CalError, CalResult};
+use calypso_error::{
+    eyre::{eyre, Report},
+    CalError, CalResult,
+};
 
 /// The header for a CCFF file
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -47,11 +49,11 @@ impl CcffHeader {
     /// This function will return an error if the data could not be read,
     /// could not be deserialized, or if the magic bytes are invalid.
     pub fn read<I: Read>(input: &mut I) -> CalResult<Self> {
-        let header: Self = bincode::deserialize_from(input).map_err(Error::from)?;
+        let header: Self = bincode::deserialize_from(input).map_err(Report::from)?;
         if &header.magic == b"\xCC\xFF" {
             Ok(header)
         } else {
-            Err(anyhow!("invalid magic bytes `{:x?}`", &header.magic).into())
+            Err(eyre!("invalid magic bytes `{:x?}`", &header.magic).into())
         }
     }
 
@@ -64,10 +66,10 @@ impl CcffHeader {
     pub fn write<O: Write>(&self, input: &mut O) -> CalResult<()> {
         if &self.magic == b"\xCC\xFF" {
             bincode::serialize_into(input, self)
-                .map_err(Error::from)
+                .map_err(Report::from)
                 .map_err(CalError::from)
         } else {
-            Err(anyhow!("invalid magic bytes `{:x?}`", &self.magic).into())
+            Err(eyre!("invalid magic bytes `{:x?}`", &self.magic).into())
         }
     }
 
@@ -203,7 +205,7 @@ mod tests {
         let err = CcffHeader::read(&mut cursor).unwrap_err();
         assert_eq!(
             format!("{:?}", err),
-            "Other(invalid magic bytes `[cc, fa]`)"
+            "Other(invalid magic bytes `[cc, fa]`\n\nLocation:\n    libs/calypso_filety/src/ccff/ll.rs:56:17)"
         );
     }
 
@@ -246,7 +248,7 @@ mod tests {
         let err = hdr.write(&mut cursor).unwrap_err();
         assert_eq!(
             format!("{:?}", err),
-            "Other(invalid magic bytes `[cc, fa]`)"
+            "Other(invalid magic bytes `[cc, fa]`\n\nLocation:\n    libs/calypso_filety/src/ccff/ll.rs:72:17)"
         );
     }
 }
