@@ -12,6 +12,7 @@ keywords = ["interpreter"]
 categories = ["development-tools", "parser-implementations"]
 build = "build.rs"
 rust-version = "1.56"
+include = ["LICENSE-MIT", "LICENSE-APACHE"]
 
 [dependencies]
 mimalloc = { version = "0.1.28", optional = true }

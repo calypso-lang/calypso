@@ -9,6 +9,7 @@ homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_commo
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
 rust-version = "1.56"
+include = ["LICENSE-MIT", "LICENSE-APACHE"]
 
 [dependencies]
 parking_lot = "0.12.0"
