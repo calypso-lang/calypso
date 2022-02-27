@@ -9,7 +9,6 @@ homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/saturnvm_buil
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
 rust-version = "1.56"
-include = ["LICENSE-MIT", "LICENSE-APACHE"]
 
 [dependencies]
 
