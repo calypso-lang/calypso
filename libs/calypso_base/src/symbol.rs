@@ -75,9 +75,12 @@ impl Display for Symbol {
     }
 }
 
+/// An identifier, i.e. a combination of a symbol and a span.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Ident {
+    /// The symbol associated with this identifier
     pub symbol: Symbol,
+    /// The span associated with this identifier
     pub span: Span,
 }
 
