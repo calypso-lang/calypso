@@ -33,27 +33,16 @@ fn foo() {
 
 ## Compatibility
 
-The MSRV (Minimum Supported Rust Version) is currently Rust 1.52.1.
-
-Calypso is automatically tested on:
-- x86_64 linux, Rust 1.52.1
-- x86_64 linux, latest stable
-- x86_64 linux, latest nightly
-
-as well as manually tested on x86_64 linux with the latest stable build of Rust
-
-Calypso is developed and tested on these platforms:
-- Arch Linux, latest stable
-- I'd hope there's more in the future...but I don't currently have the infra to test those :(
+For compatibility information please see the [corresponding section of Calypso's README](https://github.com/calypso-lang/calypso/#compatibility). 
 
 ## License
 
 Licensed under either of
 
  * Apache License, Version 2.0
-   ([LICENSE-APACHE](../../LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+   ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
  * MIT license
-   ([LICENSE-MIT](../../LICENSE-MIT) or http://opensource.org/licenses/MIT)
+   ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
 
@@ -71,16 +60,16 @@ I'm currently holding various crates related to SaturnVM. These will actually be
 
 | Crate Name             | Version                                | [docs.rs][docs.rs] Status                  |
 |:----------------------:|:--------------------------------------:|:------------------------------------------:|
-| `saturnvm`             | [![saturnvm][ody_bc]][ody_lc]          | [![saturnvm][ody_bd]][ody_ld]              |
+| `saturnvm`             | [![saturnvm][svm_bc]][svm_lc]          | [![saturnvm][svm_bd]][svm_ld]              |
 
-[ody_bc]: https://img.shields.io/crates/v/saturnvm
-[ody_bd]: https://docs.rs/calypso/badge.svg
-[ody_lc]: https://crates.io/crates/saturnvm
-[ody_ld]: https://docs.rs/saturnvm/*
+[svm_bc]: https://img.shields.io/crates/v/saturnvm
+[svm_bd]: https://docs.rs/calypso/badge.svg
+[svm_lc]: https://crates.io/crates/saturnvm
+[svm_ld]: https://docs.rs/saturnvm/*
 
 ## Contributors
 
-The list of contributors made using the all-contributors specification can be found on the [main README for Calypso](/README.md).
+The list of contributors made using the all-contributors specification can be found on the [main README for Calypso](https://github.com/calypso-lang/calypso/#compatibility).
 
 [b2]: https://img.shields.io/tokei/lines/github/calypso-lang/calypso?style=flat-square
 
