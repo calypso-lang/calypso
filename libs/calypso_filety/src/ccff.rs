@@ -194,7 +194,7 @@ impl ContainerFile {
         buf.extend(data);
     }
 
-    // Encode this container file to a newly allocated buffer.
+    /// Encode this container file to a newly allocated buffer.
     #[must_use]
     pub fn encode(self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(self.size());
