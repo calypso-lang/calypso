@@ -1,7 +1,7 @@
 use std::{fs::File, io::Write};
 
 use calypso_base::symbol::Symbol;
-use calypso_filety::ccff_new::*;
+use calypso_filety::ccff::{ContainerFile, Section};
 
 fn main() {
     let mut file = File::create("simple.ccff").expect("Failed to open CCFF file");

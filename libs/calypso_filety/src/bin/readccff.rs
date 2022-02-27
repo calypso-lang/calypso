@@ -1,23 +1,15 @@
 use std::env;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::SeekFrom;
+use std::fs;
 
 use pretty_hex::{config_hex, HexConfig};
 
-use calypso_filety::ccff;
-use ccff::{hl::*, ll::CcffHeader};
+use calypso_filety::ccff::ContainerFile;
 
 fn main() {
     let mut args = env::args();
     if let Some(file) = args.nth(1) {
-        let mut file = File::open(file).expect("Failed to open file");
-        let mut container =
-            ContainerFile::decode(CcffHeader::read(&mut file).expect("Failed to load CCFF file"));
-        file.seek(SeekFrom::Start(0)).expect("Failed to seek file");
-        container
-            .read_all(&mut file)
-            .expect("Failed to read CCFF section data");
+        let buf = fs::read(file).expect("Failed to open file");
+        let container = ContainerFile::decode(&buf).expect("Failed to load CCFF file");
         dump_cc(container);
     } else {
         eprintln!("usage: readccff <FILE>");
@@ -26,10 +18,10 @@ fn main() {
 
 fn dump_cc(container: ContainerFile) {
     println!("=== metadata ===");
-    println!("=> ABI version: {}", container.get_abi());
+    println!("=> ABI version: {}", container.get_abiver());
     println!("=> File type:   {}", container.get_filety());
     println!("=== sections ===");
-    for (idx, section) in container.sections().enumerate() {
+    for (idx, (name, section)) in container.sections().enumerate() {
         let config = HexConfig {
             title: false,
             ascii: true,
@@ -38,17 +30,11 @@ fn dump_cc(container: ContainerFile) {
             ..HexConfig::simple()
         };
         println!(":: idx {}", idx);
-        println!("  => name:         {}", section.get_name());
-        println!("  => type:         0x{:x}", section.get_stype());
+        println!("  => name:         {}", name);
+        println!("  => type:         0x{:x}", section.get_type());
         println!("  => flags:        0x{:x}", section.get_flags());
         println!("  => offset:       0x{:x}", section.get_offset().unwrap());
-        println!(
-            "  => size:         0x{:x}",
-            section.get_data().unwrap().len()
-        );
-        println!(
-            "  => hexdump:\n{}",
-            config_hex(&section.get_data().unwrap(), config)
-        );
+        println!("  => size:         0x{:x}", section.get_data().len());
+        println!("  => hexdump:\n{}", config_hex(&section.get_data(), config));
     }
 }

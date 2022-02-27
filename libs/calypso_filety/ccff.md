@@ -28,5 +28,5 @@ The offsets provided in this table are from the start of the `SectionHdr`. No pa
 |     `0x05`     |     `0x04`     |    `offset`    | `u32` | The byte offset of this section's data from the start of the file, including the magic bytes. |
 |     `0x09`     |     `0x04`     |     `size`     | `u32` | The byte size of this section's data.                        |
 |     `0x0d`     |     `0x01`     | `sizeof(name)` | `u8`  | The byte size of the section name.                           |
-|     `0x0e`     | `sizeof(name)` |     `name`     | `str` | ASCII-encoded section name. Must contain only the characters `A-Za-z0-9_` and must be unique. |
+|     `0x0e`     | `sizeof(name)` |     `name`     | `str` | ASCII-encoded section name. This name must be unique throughout the entire file and must consist of only characters between `0x21` (`!`) up to and including `0x7E` (`~`), i.e. non-control, non-whitespace characters. |
 
