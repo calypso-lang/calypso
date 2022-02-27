@@ -11,13 +11,14 @@ mod parse;
 ///
 /// This will contain all the sections of data (somewhat
 /// similar in theory to ELF sections) as well as some basic metadata about the
-/// file: its [ABI version](ContainerFile::set_abiver) and
-/// [file type](ContainerFile::set_filety), both of which are user-defined.
+/// file: its [ABI version](Self::set_abiver) and
+/// [file type](Self::set_filety), both of which are user-defined.
 ///
 /// It also stores a list of [`Section`]s, which can be accessed and modified
-/// via methods on this structure such as [`get_section`] and [`add_section`].
-/// The order of these sections is stored, however this is not guaranteed or
-/// required and may be changed in the future.
+/// via methods on this structure such as [`get_section`][Self::get_section]
+/// and [`add_section`][Self::add_section]. The order of these sections is
+/// stored, however this is not guaranteed or required and may be changed in
+/// the future.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContainerFile {
     abiver: u16,
@@ -129,8 +130,9 @@ impl ContainerFile {
     ///
     /// # Errors
     ///
-    /// This function will return an error (specifically, a [`nom::Error`]
-    /// boxed in an [`eyre::Report`]) when the input fails to parse.
+    /// This function will return an error (specifically, a [`nom::Err`] boxed
+    /// in an [`eyre::Report`][calypso_error::eyre::Report]) if the input fails
+    /// to parse.
     pub fn decode(buf: &'_ [u8]) -> CalResult<Self> {
         Ok(parse::container_file(buf)
             .map_err(
@@ -216,8 +218,9 @@ impl IntoIterator for ContainerFile {
 ///
 /// It stores some basic metadata: a [section type](Section::set_type) and
 /// [flags](Section::set_flags), both of which are user-defined. The data can
-/// be accessed and modified via the [`get_data`], [`get_data_mut`], and
-/// [`set_data`] functions.
+/// be accessed and modified via the [`get_data`](Self::get_data),
+/// [`get_data_mut`](Self::get_data_mut), and [`set_data`](Self::set_data)
+/// functions.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Section {
     stype: u8,
