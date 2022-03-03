@@ -26,31 +26,33 @@ jobs:
       with:
         submodules: false
 
-    - name: Setup caching
-      uses: actions/cache@v2
-      with:
-        path: |
-          target
-          ~/.cargo
-          ~/.rustup
-        key: rust-${{ matrix.rust }}-cache
-
     - name: Install toolchain (${{ matrix.rust }})
       uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ matrix.rust }}
         override: true
+        components: clippy
+        default: true
+
+    - name: Setup caching
+      uses: Swatinem/rust-cache@v1
 
     - name: Build
-      run: cargo build --verbose --workspace --all-features --all-targets
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --verbose --workspace --all-features --all-targets
 
     - name: Run tests
-      run: cargo test --verbose --workspace --all-features
-  
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --verbose --workspace --all-features --all-targets
+
   docs:
     runs-on: ubuntu-latest
     name: Build documentation and books
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -67,31 +69,27 @@ jobs:
       uses: actions/cache@v2
       with:
         path: |
-          target
           docs/out/gui
           docs/out/ref
-          ~/.cargo
-          ~/.rustup
           docs/site/.svelte-kit
           docs/site/node_modules
           docs/site/build
         key: rust-cache-docs
 
-    - name: Install latest nightly
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-    
     - name: Install latest stable
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
-    
+        toolchain: nightly
+        components: rustdoc
+
+    - name: Setup caching
+      uses: Swatinem/rust-cache@v1
+
     - name: Install NodeJS v16
       uses: actions/setup-node@v2
       with:
         node-version: '16'
-        
+
     - name: Install mdBook
       uses: peaceiris/actions-mdbook@v1
       with:
@@ -101,29 +99,34 @@ jobs:
       run: |
         mdbook build -d ../out/gui docs/guide
         mdbook test -d ../out/gui docs/guide
-    
+
     - name: Build The Calypso Reference
       run: |
         mdbook build -d ../out/ref docs/reference
         mdbook test -d ../out/ref docs/reference
-        
+
     - name: Build rustdocs
-      run: |
-        cargo +nightly doc --verbose --workspace --document-private-items
-        mv -f target/doc docs/out/rustdoc
-    
+      uses: actions-rs/cargo@v1
+      with:
+        toolchain: nightly
+        command: doc
+        args: --verbose --workspace --document-private-items
+
+    - name: Copy rustdocs
+      run: mv -f target/doc docs/out/rustdoc
+
     - name: Install dependencies for site
       run: |
         yarn --cwd docs/site install
-    
+
     - name: Build site
       run: |
         yarn --cwd docs/site build
-        
+
     - name: Copy site to out directory
       run: |
         cp -r docs/site/build/* docs/out
-      
+
     - name: Check GitHub Pages status
       uses: crazy-max/ghaction-github-status@v2
       with:
