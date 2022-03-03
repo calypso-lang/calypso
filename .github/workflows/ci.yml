@@ -76,11 +76,10 @@ jobs:
           docs/site/build
         key: rust-cache-docs
 
-    - name: Install latest stable
+    - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:
         toolchain: nightly
-        components: rustdoc
 
     - name: Setup caching
       uses: Swatinem/rust-cache@v1
