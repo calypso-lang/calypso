@@ -21,7 +21,7 @@ calypso_repl = { path = "libs/calypso_repl", version = "0.1.0" }
 calypso_base = { path = "libs/calypso_base", version = "0.1.0", default-features = false, features = ["ui"] }
 saturnvm = { path = "libs/saturnvm", version = "0.1.0" }
 tracing-subscriber = { version = "0.3.9", features = ["parking_lot", "env-filter", "json"] }
-once_cell = "1.9.0"
+once_cell = "1.10.0"
 calypso_common = { path = "libs/calypso_common", version = "0.1.0" }
 calypso_filety = { path = "libs/calypso_filety", version = "2.0.0" }
 calypso_ast = { path = "libs/calypso_ast", version = "0.1.0" }
