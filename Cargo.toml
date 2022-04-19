@@ -26,7 +26,7 @@ calypso_common = { path = "libs/calypso_common", version = "0.1.0" }
 calypso_filety = { path = "libs/calypso_filety", version = "2.0.0" }
 calypso_ast = { path = "libs/calypso_ast", version = "0.1.0" }
 trycmd = "0.13.3"
-clap = { version = "3.1.8", features = ["derive", "env"] }
+clap = { version = "3.1.10", features = ["derive", "env"] }
 
 [features]
 default = ["mimalloc", "mimalloc/secure"]
