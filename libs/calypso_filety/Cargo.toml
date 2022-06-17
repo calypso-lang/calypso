@@ -14,7 +14,7 @@ rust-version = "1.56"
 calypso_base = { path = "../calypso_base", default-features = false, features = ["symbol"], version = "0.1.0" }
 calypso_error = { path = "../calypso_error", version = "2.0.0" }
 nom = "7.1.1"
-indexmap = "1.8.2"
+indexmap = "1.9.0"
 
 # Dependencies for readccff; optional as they're not
 # required for the main library.
