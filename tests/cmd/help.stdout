@@ -42,8 +42,8 @@ OPTIONS:
             
             - `compact`: Less verbose, but still readable.
             
-            - `json`: Intended for machine interpretation. (see https://docs.rs/tracing-
-            subscriber/*/tracing_subscriber/fmt/format/struct.Json.html)
+            - `json`: Intended for machine interpretation. (see
+            https://docs.rs/tracing-subscriber/*/tracing_subscriber/fmt/format/struct.Json.html)
             
             [env: CALYPSO_LOG_FORMAT=]
             [default: compact]
