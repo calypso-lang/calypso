@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_base"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
-rust-version = "1.56"
+rust-version = "1.57.0"
 
 [dependencies]
 lasso = { version = "0.6.0", features = ["multi-threaded"], optional = true }

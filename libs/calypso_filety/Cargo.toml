@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/calypso_filety"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
-rust-version = "1.56"
+rust-version = "1.57.0"
 
 [dependencies]
 calypso_base = { path = "../calypso_base", default-features = false, features = ["symbol"], version = "0.1.0" }
