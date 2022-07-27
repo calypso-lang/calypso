@@ -40,7 +40,7 @@ pub struct Repl<Ctx> {
 
 impl<Ctx> Repl<Ctx> {
     pub fn new(eval: Eval<Ctx>, ctx: Ctx) -> Self {
-        let mut editor = Editor::new();
+        let mut editor = Editor::new().expect("Failed to create REPL");
         editor.set_auto_add_history(true);
         editor.set_tab_stop(4);
         editor.set_history_ignore_space(false);
