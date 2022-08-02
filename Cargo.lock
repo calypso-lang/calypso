@@ -1377,9 +1377,9 @@ checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
 
 [[package]]
 name = "snapbox"
-version = "0.2.10"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "767a1d5da232b6959cd1bd5c9e8db8a7cce09c3038e89deedb49a549a2aefd93"
+checksum = "66d4355087ea08e14a158774fa17a0949bd62823dda475f83d4e97901d5203f3"
 dependencies = [
  "concolor",
  "content_inspector",
@@ -1397,9 +1397,9 @@ dependencies = [
 
 [[package]]
 name = "snapbox-macros"
-version = "0.2.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c01dea7e04cbb27ef4c86e9922184608185f7cd95c1763bc30d727cda4a5e930"
+checksum = "8a253e6f894cfa440cba00600a249fa90869d8e0ec45ab274a456e043a0ce8f2"
 
 [[package]]
 name = "str-buf"
@@ -1631,9 +1631,9 @@ dependencies = [
 
 [[package]]
 name = "trycmd"
-version = "0.13.4"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffb4185126cc904642173a54c185083f410c86d1202ada6761aacf7c40829f13"
+checksum = "62a09d4fff814904dc04bf60dc19fd7ed41715e3e00dd423eb1c5636a942e2a4"
 dependencies = [
  "glob",
  "humantime",
