@@ -13,6 +13,6 @@ rust-version = "1.57.0"
 [dependencies]
 calypso_base = { path = "../calypso_base", version = "0.1.0" }
 calypso_error = { path = "../calypso_error", version = "2.0.0" }
-thiserror = "1.0.31"
+thiserror = "1.0.32"
 lazy_static = "1.4.0"
 codespan-reporting = "0.11.1"
