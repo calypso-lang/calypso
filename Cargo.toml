@@ -25,7 +25,7 @@ once_cell = "1.15.0"
 calypso_common = { path = "libs/calypso_common", version = "0.1.0" }
 calypso_filety = { path = "libs/calypso_filety", version = "2.0.0" }
 calypso_ast = { path = "libs/calypso_ast", version = "0.1.0" }
-trycmd = "0.13.6"
+trycmd = "0.14.5"
 clap = { version = "3.2.22", features = ["derive", "env"] }
 
 [features]
