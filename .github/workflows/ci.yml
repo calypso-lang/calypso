@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        rust: [stable, 1.57.0, nightly]
+        rust: [stable, 1.66.1, nightly]
       fail-fast: false
     continue-on-error: ${{ matrix.rust == 'nightly' }}
 

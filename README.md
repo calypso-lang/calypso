@@ -39,10 +39,10 @@ fn fizzbuzz(max: uint): [string] ->
 
 ## Compatibility
 
-The MSRV (Minimum Supported Rust Version) is currently Rust 1.57.0.
+The MSRV (Minimum Supported Rust Version) is currently Rust 1.66.1.
 
 Calypso is automatically tested on:
-- x86_64 linux, Rust 1.57.0
+- x86_64 linux, Rust 1.66.1
 - x86_64 linux, latest stable
 - x86_64 linux, latest nightly
 

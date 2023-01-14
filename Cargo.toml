@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 keywords = ["interpreter"]
 categories = ["development-tools", "parser-implementations"]
 build = "build.rs"
-rust-version = "1.57.0"
+rust-version = "1.66.1"
 
 [dependencies]
 mimalloc = { version = "0.1.31", optional = true }
