@@ -168,7 +168,6 @@ dependencies = [
  "calypso_base",
  "calypso_common",
  "calypso_diagnostic",
- "calypso_util",
  "itertools",
  "lalrpop",
  "lalrpop-util",
@@ -182,14 +181,6 @@ version = "0.1.0"
 dependencies = [
  "regex",
  "rustyline",
-]
-
-[[package]]
-name = "calypso_util"
-version = "0.1.0"
-dependencies = [
- "calypso_base",
- "calypso_diagnostic",
 ]
 
 [[package]]

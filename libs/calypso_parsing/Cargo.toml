@@ -12,7 +12,6 @@ build = "build.rs"
 rust-version = "1.66.1"
 
 [dependencies]
-calypso_util = { path = "../calypso_util", version = "0.1.0" }
 calypso_diagnostic = { path = "../calypso_diagnostic", version = "0.1.0" }
 calypso_base = { path = "../calypso_base", version = "0.1.0" }
 calypso_common = { path = "../calypso_common", version = "0.1.0" }
