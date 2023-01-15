@@ -1,9 +1,6 @@
-use std::mem;
-
-use calypso_base::symbol::Symbol;
-
-use calypso_error::{eyre::Report, CalResult};
 use indexmap::{map::IntoIter, IndexMap};
+
+use std::mem;
 
 mod parse;
 
@@ -23,8 +20,10 @@ mod parse;
 pub struct ContainerFile {
     abiver: u16,
     filety: u8,
-    sections: IndexMap<Symbol, Section>,
+    sections: IndexMap<String, Section>,
 }
+
+type NomError = nom::Err<nom::error::Error<Vec<u8>>>;
 
 impl ContainerFile {
     /// Create a new container file. The ABI version (`abiver`) and file type
@@ -71,7 +70,7 @@ impl ContainerFile {
     /// characters, if the name of the section contained non-printable ASCII
     /// characters (less than `0x21` or greater than `0x7E`), or if there were
     /// already 255 sections in the container file.
-    pub fn add_section(&mut self, name: Symbol, section: Section) -> Option<Section> {
+    pub fn add_section(&mut self, name: String, section: Section) -> Option<Section> {
         let name_as_str = name.as_str();
         assert!(
             name_as_str.len() <= 255,
@@ -90,28 +89,28 @@ impl ContainerFile {
 
     /// Remove a section from the container file. The removed section, if any,
     /// will be returned.
-    pub fn remove_section(&mut self, name: Symbol) -> Option<Section> {
-        self.sections.shift_remove(&name)
+    pub fn remove_section(&mut self, name: &str) -> Option<Section> {
+        self.sections.shift_remove(name)
     }
 
     /// Get a reference to a section in the container file.
     #[must_use]
-    pub fn get_section(&self, name: Symbol) -> Option<&Section> {
-        self.sections.get(&name)
+    pub fn get_section(&self, name: &str) -> Option<&Section> {
+        self.sections.get(name)
     }
 
     /// Get a mutable reference to a section in the container file.
-    pub fn get_section_mut(&mut self, name: Symbol) -> Option<&mut Section> {
-        self.sections.get_mut(&name)
+    pub fn get_section_mut(&mut self, name: &str) -> Option<&mut Section> {
+        self.sections.get_mut(name)
     }
 
     /// Iterate over the sections in the container file.
-    pub fn sections(&self) -> impl Iterator<Item = (&Symbol, &Section)> {
+    pub fn sections(&self) -> impl Iterator<Item = (&String, &Section)> {
         self.sections.iter()
     }
 
     /// Iterate mutably over the sections in the container file.
-    pub fn sections_mut(&mut self) -> impl Iterator<Item = (&Symbol, &mut Section)> {
+    pub fn sections_mut(&mut self) -> impl Iterator<Item = (&String, &mut Section)> {
         self.sections.iter_mut()
     }
 
@@ -122,7 +121,7 @@ impl ContainerFile {
         + mem::size_of::<u16>() // abiver
         + mem::size_of::<u8>() // filety
         + mem::size_of::<u8>() // len(sections)
-        + self.sections().map(|(name, _)| Section::sizeof(*name)).sum::<usize>()
+        + self.sections().map(|(name, _)| Section::sizeof(name)).sum::<usize>()
         + self.sections().map(|(_, section)| section.get_data().len()).sum::<usize>()
     }
 
@@ -130,17 +129,15 @@ impl ContainerFile {
     ///
     /// # Errors
     ///
-    /// This function will return an error (specifically, a [`nom::Err`] boxed
-    /// in an [`eyre::Report`][calypso_error::eyre::Report]) if the input fails
-    /// to parse.
-    pub fn decode(buf: &'_ [u8]) -> CalResult<Self> {
+    /// This function will return an error if the input fails to
+    /// parse.
+    pub fn decode(buf: &'_ [u8]) -> Result<Self, NomError> {
         Ok(parse::container_file(buf)
             .map_err(
                 // This appears to be erroneously triggering here.
                 #[allow(clippy::redundant_closure_for_method_calls)]
                 |e| e.to_owned(),
-            )
-            .map_err(Report::from)?
+            )?
             .1)
     }
 
@@ -158,13 +155,13 @@ impl ContainerFile {
     #[allow(clippy::cast_possible_truncation)]
     pub fn encode_to(self, buf: &mut Vec<u8>) {
         buf.extend(b"CCFF");
-        buf.extend(&self.abiver.to_le_bytes());
+        buf.extend(self.abiver.to_le_bytes());
         buf.push(self.filety);
         buf.push(self.sections.len() as u8);
 
         let shdrs_size = self
             .sections()
-            .map(|(name, _)| Section::sizeof(*name))
+            .map(|(name, _)| Section::sizeof(name))
             .sum::<usize>();
 
         let mut data = Vec::with_capacity(
@@ -184,9 +181,9 @@ impl ContainerFile {
                 let name = name.as_str();
                 data.extend(section.data);
                 buf.push(section.stype);
-                buf.extend(&section.flags.to_le_bytes());
-                buf.extend(&data_offset.to_le_bytes());
-                buf.extend(&(data_size as u32).to_le_bytes());
+                buf.extend(section.flags.to_le_bytes());
+                buf.extend(data_offset.to_le_bytes());
+                buf.extend((data_size as u32).to_le_bytes());
                 buf.push(name.len() as u8);
                 buf.extend(name.as_bytes());
 
@@ -206,8 +203,8 @@ impl ContainerFile {
 }
 
 impl IntoIterator for ContainerFile {
-    type IntoIter = IntoIter<Symbol, Section>;
-    type Item = (Symbol, Section);
+    type IntoIter = IntoIter<String, Section>;
+    type Item = (String, Section);
 
     fn into_iter(self) -> Self::IntoIter {
         self.sections.into_iter()
@@ -291,12 +288,12 @@ impl Section {
         self.offset
     }
 
-    fn sizeof(name: Symbol) -> usize {
+    fn sizeof(name: &str) -> usize {
         mem::size_of::<u8>() // type
             + mem::size_of::<u32>() // flags
             + mem::size_of::<u32>() // offset
             + mem::size_of::<u32>() // size
             + mem::size_of::<u8>() // sizeof(name)
-            + name.as_str().len() // name
+            + name.len() // name
     }
 }

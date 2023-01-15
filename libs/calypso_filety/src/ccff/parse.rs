@@ -1,5 +1,3 @@
-use calypso_base::symbol::Symbol;
-
 use indexmap::IndexMap;
 use nom::{
     bytes::complete::{tag, take},
@@ -54,7 +52,7 @@ pub fn container_file(b: &[u8]) -> IResult<&[u8], ContainerFile> {
     Ok((rest, cf))
 }
 
-fn section_header(b: &[u8]) -> IResult<&[u8], (Symbol, Section)> {
+fn section_header(b: &[u8]) -> IResult<&[u8], (String, Section)> {
     let (rest, (stype, flags, offset, size, name_len)) =
         tuple((le_u8, le_u32, le_u32, le_u32, le_u8))(b)?;
 
@@ -88,7 +86,7 @@ fn section_header(b: &[u8]) -> IResult<&[u8], (Symbol, Section)> {
         |s: &str| s.chars().all(|c| c.is_ascii_graphic()),
     )(rest)?;
 
-    Ok((rest, (Symbol::intern(&name), section)))
+    Ok((rest, (name, section)))
 }
 
 // TODO(@ThePuzzlemaker: filety|test): Add some tests here.
