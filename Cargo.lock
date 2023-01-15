@@ -152,10 +152,8 @@ dependencies = [
 
 [[package]]
 name = "calypso_filety"
-version = "2.0.2"
+version = "3.0.0"
 dependencies = [
- "calypso_base",
- "calypso_error",
  "indexmap",
  "nom",
  "pretty-hex",
