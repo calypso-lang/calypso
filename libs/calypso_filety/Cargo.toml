@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.66.1"
 
 [dependencies]
-nom = "7.1.1"
+nom = "7.1.3"
 indexmap = "1.9.2"
 
 # Dependencies for readccff; optional as they're not
