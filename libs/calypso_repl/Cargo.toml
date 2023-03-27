@@ -12,4 +12,4 @@ rust-version = "1.66.1"
 
 [dependencies]
 rustyline = "10.0.0"
-regex = "1.7.0"
+regex = "1.7.3"
