@@ -5,11 +5,10 @@ use std::{
     sync::Arc,
 };
 
-use calypso_common::gcx::GlobalCtxt;
-use calypso_diagnostic::prelude::*;
+use calypso::{ctxt::GlobalCtxt, error::CalResult, symbol::Symbol};
 use calypso_repl::Repl;
 
-use crate::{buildinfo::BUILD_INFO, cli::UnprettyFormat};
+use crate::cli::UnprettyFormat;
 
 pub mod ast;
 pub mod toks;
@@ -33,7 +32,7 @@ pub fn unpretty(
                 .write()
                 .err
                 .error(None, "while reading from stdin:", None)?
-                .error(None, &format!("{}", err), None)?
+                .error(None, &format!("{err}"), None)?
                 .flush()?;
             return Ok(());
         }
@@ -55,7 +54,7 @@ pub fn unpretty(
 
         (
             path.display().to_string(),
-            match fs::read_to_string(&path) {
+            match fs::read_to_string(path) {
                 Ok(v) => v,
                 Err(err) => {
                     gcx.emit
@@ -66,7 +65,7 @@ pub fn unpretty(
                             "while reading file",
                             Some(&format!("`{}`:", path.display())),
                         )?
-                        .error(None, &format!("{}", err), None)?
+                        .error(None, &format!("{err}"), None)?
                         .flush()?;
                     return Ok(());
                 }
@@ -75,9 +74,11 @@ pub fn unpretty(
     };
 
     match format {
-        UnprettyFormat::Ast => ast::run_parser(gcx, file_name, contents),
-        UnprettyFormat::TokenList => toks::run_lexer(gcx, file_name, contents),
+        UnprettyFormat::Ast => println!("todo: ast::run_parser"), // ast::run_parser(gcx, file_name, contents),
+        UnprettyFormat::TokenList => toks::run_lexer(gcx, Symbol::intern(&file_name), &contents)?,
     }
+
+    Ok(())
 }
 
 pub fn run_repl(gcx: &Arc<GlobalCtxt>, format: UnprettyFormat) {
@@ -90,16 +91,21 @@ pub fn run_repl(gcx: &Arc<GlobalCtxt>, format: UnprettyFormat) {
         Box::new(move |rcx: &mut ReplCtx, contents| {
             let res = match format {
                 UnprettyFormat::Ast => {
-                    ast::run_parser(&repl_gcx, format!("<repl:{}>", rcx.line), contents)
+                    println!("todo: ast::run_parser");
+
+                    //ast::run_parser(&repl_gcx, format!("<repl:{}>", rcx.line), contents)
+                    Ok(())
                 }
-                UnprettyFormat::TokenList => {
-                    toks::run_lexer(&repl_gcx, format!("<repl:{}>", rcx.line), contents)
-                }
+                UnprettyFormat::TokenList => toks::run_lexer(
+                    &repl_gcx,
+                    Symbol::intern(&format!("<repl:{}>", rcx.line)),
+                    &contents,
+                ),
             }
             .ok()
             .map(|_| String::new());
             rcx.line += 1;
-            repl_gcx.grcx.write().clear();
+            repl_gcx.diag.write().clear();
             res
         }),
         ReplCtx { line: 1 },
@@ -108,8 +114,8 @@ pub fn run_repl(gcx: &Arc<GlobalCtxt>, format: UnprettyFormat) {
     repl.run(
         &format!(
             "Calypso CLI v{} - unpretty: {}",
-            BUILD_INFO.version,
-            format.to_string()
+            env!("CARGO_PKG_VERSION"),
+            format
         ),
         |rcx| format!("[{}]: ", rcx.line),
     )

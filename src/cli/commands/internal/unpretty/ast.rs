@@ -55,13 +55,13 @@ pub fn run_parser(gcx: &Arc<GlobalCtxt>, file_name: String, contents: String) ->
                 for expr in exprs {
                     let mut printer = PrettyPrinter::default();
                     printer.visit_expr(source, expr.as_ref())?;
-                    println!("{}", printer);
+                    println!("{printer}");
                 }
             }
             Err(err) => {
                 let mut emit = gcx.emit.write();
                 emit.err
-                    .error(None, "Parse error", Some(&format!("{:#?}", err)))?
+                    .error(None, "Parse error", Some(&format!("{err:#?}")))?
                     .flush()?;
                 break;
             }

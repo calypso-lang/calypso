@@ -12,7 +12,6 @@ use rustyline::{config::Configurer, error::ReadlineError, Cmd, Editor, KeyEvent,
 todo(@ThePuzzlemaker: repl): Color!
 todo(@ThePuzzlemaker: repl): Clean this code up
 todo(@ThePuzzlemaker: repl): Find if any helpful Rustyline key bindings are missing
-todo(@ThePuzzlemaker: repl): Re-implement with actix
 */
 
 /// A struct for doing REPL-like activities.
@@ -246,88 +245,3 @@ impl<Ctx> Command<Ctx> {
         self
     }
 }
-
-/*
-pub extern crate actix;
-pub extern crate actix_rt;
-use actix::prelude::*;
-use futures::executor::block_on;
-use std::time::Duration;
-
-/// An Actix message to evaulate an input. For commands, this is given the
-/// arguments to the command (if none, then just an empty string), minus the
-/// space at the beginning. For the main evaluator, this is given the input to
-/// the REPL.
-#[derive(Message)]
-#[rtype(result = "String")]
-pub struct Evaluate(pub String);
-
-/// A marker trait for an evaluator actor. These either handle evaluating
-/// commands or the main input from the REPL. It must implement `Actor`
-/// and `Handler<Evaluate>`. It is automatically implemented for all types
-/// that meet these requirements.
-pub trait Evaluator: Actor + Handler<Evaluate> {}
-
-impl<T> Evaluator for T where T: Actor + Handler<Evaluate> {}
-
-/// An Actix message to load code or a commmand. This is sent to the control
-/// thread so that it can decide where to route it.
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct Load(pub String);
-
-/// An Actix message to tell the REPL to quit. This is sent to the control
-/// thread to tell the REPL to quit.
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct Quit;
-
-/// An internal Actix message telling the User actor to start accepting input.
-#[derive(Message)]
-#[rtype(result = "()")]
-struct StartUserInput(Addr<Control>);
-
-pub struct User {
-    pub rl: Editor<()>,
-}
-
-impl Actor for User {
-    type Context = SyncContext<Self>;
-}
-
-impl Handler<StartUserInput> for User {
-    type Result = ();
-    fn handle(&mut self, msg: StartUserInput, _ctx: &mut Self::Context) -> Self::Result {
-        for _ in 0..10 {
-            msg.0.do_send(Load("a".to_string()));
-            std::thread::sleep(Duration::from_secs(1));
-        }
-    }
-}
-
-#[derive(Default)]
-pub struct Control;
-
-impl Actor for Control {
-    type Context = Context<Self>;
-}
-
-impl Supervised for Control {}
-
-impl ArbiterService for Control {
-    fn service_started(&mut self, ctx: &mut Context<Self>) {
-        let addr = SyncArbiter::start(1, || User {
-            rl: Editor::<()>::new(),
-        });
-        addr.do_send(StartUserInput(ctx.address()));
-        // Arbiter::set_item(addr);
-    }
-}
-
-impl Handler<Load> for Control {
-    type Result = ();
-
-    fn handle(&mut self, msg: Load, _ctx: &mut Context<Self>) {
-        println!("{}", msg.0);
-    }
-}*/

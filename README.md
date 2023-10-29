@@ -19,13 +19,10 @@ The following example is an implementation of [FizzBuzz](https://en.wikipedia.or
 import standard.process.Args
 
 fn main(args: Args) ->
-    args
-    |> _.get(0)
-    |> _.unwrap_or("100")
-    |> uint.from_string
-    |> _.unwrap_or(100)
-    |> fizzbuzz
-    |> _.each(&println("{}", &1))
+	let max = args.get(0)
+	              .map(uint.from_string)
+				  .unwrap_or(100)
+	fizzbuzz(max).each(&println("{}", &1)
 
 fn fizzbuzz(max: uint): [string] ->
   1.to_incl(max).map(fn n ->
@@ -33,8 +30,8 @@ fn fizzbuzz(max: uint): [string] ->
       15.divides(n) -> "FizzBuzz",
       3.divides(n)  -> "Fizz",
       5.divides(n)  -> "Buzz",
-      _             -> n.to_string
-    end)
+      _             -> n.to_string()
+    end).collect()
 ```
 
 ## Compatibility

@@ -4,7 +4,9 @@ use std::{
     path::PathBuf,
 };
 
-use calypso_base::ui::{self, atty::Stream, termcolor::ColorChoice};
+use calypso::ui::{self, atty::Stream, termcolor::ColorChoice};
+
+pub mod commands;
 
 #[derive(Debug, Parser)]
 pub struct Args {
@@ -89,9 +91,6 @@ pub enum Command {
 
 #[derive(Debug, Subcommand)]
 pub enum InternalCmd {
-    /// Show information about the environment where this executable was built.
-    #[clap(visible_aliases = &["bi", "buildinfo"])]
-    BuildInfo,
     /// Intentionally panic in order to test out handling of ICEs (internal
     /// compiler errors).
     Panic,
