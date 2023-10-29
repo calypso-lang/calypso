@@ -27,3 +27,5 @@ libs/calypso_parsing/src/parser/grammar.rs
 # code coverage profiling data
 *.profdata
 *.profraw
+
+.*~
