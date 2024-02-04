@@ -2,7 +2,7 @@ use crate::{error::CalResult, parse::lexer::Lexeme, symbol::Symbol};
 
 use super::Printer;
 
-impl Printer {
+impl<'gcx> Printer<'gcx> {
     /// Print a token
     ///
     /// # Errors
@@ -14,7 +14,7 @@ impl Printer {
         let lo = span.lo();
         let hi = span.hi();
 
-        let cache = self.gcx.source_cache.read();
+        let cache = self.gcx.source_cache.borrow();
         let (_, lo_line, lo_col) = cache
             .get(file)
             .expect("failed to fetch file")

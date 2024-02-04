@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
 use calypso::{ctxt::GlobalCtxt, diagnostic::types, error::CalResult};
 
-pub fn explain(gcx: &Arc<GlobalCtxt>, error_code: &str) -> CalResult<()> {
+pub fn explain(gcx: &GlobalCtxt, error_code: &str) -> CalResult<()> {
     if let Some(information) = types::DIAGNOSTICS.get(error_code) {
         print!("{information}");
     } else {
-        let mut emit = gcx.emit.write();
+        let mut emit = gcx.emit.borrow_mut();
         let err = &mut emit.err;
 
         err.error(

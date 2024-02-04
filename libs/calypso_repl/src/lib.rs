@@ -20,13 +20,13 @@ todo(@ThePuzzlemaker: repl): Find if any helpful Rustyline key bindings are miss
 /// The `Ctx` type parameter can be any type of REPL-global context, e.g. a parser context or perhaps an environment structure.
 ///
 /// The command `help`, with aliases `['h', '?']` is reserved.
-pub struct Repl<Ctx> {
+pub struct Repl<'a, Ctx> {
     /// A closure that evaluates the input and returns something implementing `Display`
-    eval: Eval<Ctx>,
+    eval: Eval<'a, Ctx>,
     /// Meta-command definitions. This is a `Vec` as you may want to dynamically initialize commands.
-    cmds: Vec<Arc<Command<Ctx>>>,
+    cmds: Vec<Arc<Command<'a, Ctx>>>,
     /// A HashMap containing references to the commands. This is cached to allow faster command execution.
-    cache: HashMap<String, Arc<Command<Ctx>>>,
+    cache: HashMap<String, Arc<Command<'a, Ctx>>>,
     /// The Rustyline context
     editor: Editor<()>,
     /// The context
@@ -37,14 +37,14 @@ pub struct Repl<Ctx> {
     cmd_regex: Regex,
 }
 
-impl<Ctx> Repl<Ctx> {
+impl<'a, Ctx> Repl<'a, Ctx> {
     /// Create a new `Repl`.
     ///
     /// # Panics
     ///
     /// This function will panic if it failed to create the
     /// [`rustyline::Editor`].
-    pub fn new(eval: Eval<Ctx>, ctx: Ctx) -> Self {
+    pub fn new(eval: Eval<'a, Ctx>, ctx: Ctx) -> Self {
         let mut editor = Editor::new().expect("Failed to create REPL");
         editor.set_auto_add_history(true);
         editor.set_tab_stop(4);
@@ -76,7 +76,7 @@ impl<Ctx> Repl<Ctx> {
 
     /// Extend the commands vector
     #[must_use]
-    pub fn commands(mut self, commands: Vec<Arc<Command<Ctx>>>) -> Self {
+    pub fn commands(mut self, commands: Vec<Arc<Command<'a, Ctx>>>) -> Self {
         for command in &commands {
             self.cache_command(command);
         }
@@ -86,7 +86,7 @@ impl<Ctx> Repl<Ctx> {
 
     /// Add a command
     #[must_use]
-    pub fn command(mut self, command: Command<Ctx>) -> Self {
+    pub fn command(mut self, command: Command<'a, Ctx>) -> Self {
         let arc = Arc::new(command);
         self.cache_command(&Arc::clone(&arc));
         self.cmds.push(arc);
@@ -193,7 +193,7 @@ impl<Ctx> Repl<Ctx> {
         Ok(())
     }
 
-    fn cache_command(&mut self, command: &Arc<Command<Ctx>>) {
+    fn cache_command(&mut self, command: &Arc<Command<'a, Ctx>>) {
         assert!(
             !self.cache.contains_key(&command.name) && &command.name != "help",
             "adding command would overwrite existing an command named `{}`",
@@ -213,9 +213,9 @@ impl<Ctx> Repl<Ctx> {
 /// A closure that evaluates some input with some context type,
 /// and returns either `Some(String)` or `None`. `None` indicates to the
 /// REPL handler that it should break the loop.
-pub type Eval<Ctx> = Box<dyn Fn(&mut Ctx, String) -> Option<String>>;
+pub type Eval<'a, Ctx> = Box<dyn Fn(&mut Ctx, String) -> Option<String> + 'a>;
 
-pub struct Command<Ctx> {
+pub struct Command<'a, Ctx> {
     /// The command's name
     name: String,
     /// The description of the command
@@ -225,12 +225,12 @@ pub struct Command<Ctx> {
     /// Aliases for this command
     aliases: Vec<String>,
     /// A closure that evaluates the command's input (excluding the command name and leading space) and returns something implementing `Display`.
-    eval: Eval<Ctx>,
+    eval: Eval<'a, Ctx>,
 }
 
-impl<Ctx> Command<Ctx> {
+impl<'a, Ctx> Command<'a, Ctx> {
     #[must_use]
-    pub fn new(name: String, description: String, help: String, eval: Eval<Ctx>) -> Self {
+    pub fn new(name: String, description: String, help: String, eval: Eval<'a, Ctx>) -> Self {
         Self {
             name,
             description,

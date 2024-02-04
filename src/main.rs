@@ -1,13 +1,13 @@
 #![doc(html_root_url = "https://calypso-lang.github.io/rustdoc/calypso/index.html")]
 #![warn(clippy::pedantic)]
 
+use std::cell::RefCell;
 use std::panic;
-use std::sync::Arc;
 
 use calypso::error::CalResult;
 use calypso::{ctxt::GlobalArenas, diagnostic::DiagReportCtxt};
 use clap::StructOpt;
-use parking_lot::RwLock;
+use termcolor::ColorChoice;
 use tracing_subscriber::EnvFilter;
 
 use calypso::{ctxt::GlobalCtxt, ui::Emitters};
@@ -26,18 +26,17 @@ static GLOBAL: MiMalloc = MiMalloc;
 const BUG_REPORT_URL: &str = "https://glithub.com/calypso-lang/calypso/issues/new\
     ?assignees=&labels=C-bug&template=bug-report.md&title=bug%3A+";
 
-fn init_panic_hook(gcx: &Arc<GlobalCtxt>) {
-    let gcx = Arc::clone(gcx);
+fn init_panic_hook(color_choices: (ColorChoice, ColorChoice)) {
     let hook = panic::take_hook();
     panic::set_hook(Box::new(move |info| {
-        report_ice(&hook, &gcx, info, BUG_REPORT_URL).unwrap();
+        report_ice(color_choices, &hook, info, BUG_REPORT_URL).unwrap();
     }));
 }
 
 type PanicHook = Box<dyn Fn(&panic::PanicInfo<'_>) + Send + Sync + 'static>;
 fn report_ice(
+    color_choices: (ColorChoice, ColorChoice),
     hook: &PanicHook,
-    gcx: &Arc<GlobalCtxt>,
     info: &panic::PanicInfo<'_>,
     report_url: &str,
 ) -> CalResult<()> {
@@ -45,9 +44,9 @@ fn report_ice(
     // optionally a backtrace
     hook(info);
 
-    gcx.emit
-        .write()
-        .err
+    let mut emit = Emitters::new(color_choices.0, color_choices.1);
+
+    emit.err
         .newline()?
         .error(
             None,
@@ -63,14 +62,14 @@ fn report_ice(
 fn main() {
     let args = Args::parse();
 
-    let gcx = Arc::new(GlobalCtxt {
-        emit: RwLock::new(Emitters::new(args.color.0, args.color.1)),
-        diag: RwLock::new(DiagReportCtxt::new()),
-        source_cache: RwLock::default(),
+    let gcx = GlobalCtxt {
+        emit: RefCell::new(Emitters::new(args.color.0, args.color.1)),
+        diag: RefCell::new(DiagReportCtxt::new()),
+        source_cache: RefCell::default(),
         arenas: GlobalArenas::default(),
-    });
+    };
 
-    init_panic_hook(&gcx);
+    init_panic_hook(args.color);
     let mut trace = tracing_subscriber::fmt::fmt().with_env_filter(EnvFilter::default());
 
     if let Some(log) = args.log {
@@ -95,7 +94,7 @@ fn main() {
     };
     if let Err(e) = res {
         gcx.emit
-            .write()
+            .borrow_mut()
             .err
             .error(None, &e.to_string(), None)
             .unwrap()

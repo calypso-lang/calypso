@@ -1,18 +1,16 @@
-use std::sync::Arc;
-
 use crate::ctxt::GlobalCtxt;
 
 pub mod ast;
 pub mod lexer;
 
 // note(@ThePuzzlemaker: frame): This may be changed into a visitor API once I get an AST working.
-pub struct Printer {
-    gcx: Arc<GlobalCtxt>,
+pub struct Printer<'gcx> {
+    gcx: &'gcx GlobalCtxt,
 }
 
-impl Printer {
+impl<'gcx> Printer<'gcx> {
     #[must_use]
-    pub fn new(gcx: Arc<GlobalCtxt>) -> Self {
+    pub fn new(gcx: &'gcx GlobalCtxt) -> Self {
         Self { gcx }
     }
 }

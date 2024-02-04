@@ -1,14 +1,10 @@
 use std::{
+    cell::{Cell, RefCell},
     collections::HashMap,
     fmt::{self, Display},
-    sync::{
-        atomic::{AtomicU32, Ordering},
-        Arc,
-    },
 };
 
 use id_arena::{Arena, Id};
-use parking_lot::RwLock;
 
 use crate::{
     ctxt::GlobalCtxt,
@@ -35,9 +31,14 @@ pub struct Expr {
 }
 
 impl Expr {
-    pub fn new(gcx: &Arc<GlobalCtxt>, kind: ExprKind, span: Span) -> Id<Expr> {
+    pub fn new(gcx: &GlobalCtxt, kind: ExprKind, span: Span) -> Id<Expr> {
         let id = gcx.arenas.ast.next_ast_id();
-        let expr = gcx.arenas.ast.expr.write().alloc(Expr { id, kind, span });
+        let expr = gcx
+            .arenas
+            .ast
+            .expr
+            .borrow_mut()
+            .alloc(Expr { id, kind, span });
         gcx.arenas.ast.insert_node(id, Node::Expr(expr));
         expr
     }
@@ -75,9 +76,9 @@ pub struct Ty {
 }
 
 impl Ty {
-    pub fn new(gcx: &Arc<GlobalCtxt>, kind: TyKind, span: Span) -> Id<Ty> {
+    pub fn new(gcx: &GlobalCtxt, kind: TyKind, span: Span) -> Id<Ty> {
         let id = gcx.arenas.ast.next_ast_id();
-        let ty = gcx.arenas.ast.ty.write().alloc(Ty { id, kind, span });
+        let ty = gcx.arenas.ast.ty.borrow_mut().alloc(Ty { id, kind, span });
         gcx.arenas.ast.insert_node(id, Node::Ty(ty));
         ty
     }
@@ -124,45 +125,46 @@ pub struct Parentage {
 
 #[derive(Debug)]
 pub struct AstArenas {
-    pub expr: RwLock<Arena<Expr>>,
-    pub ty: RwLock<Arena<Ty>>,
-    pub parentage: RwLock<Parentage>,
-    next_ast_id: AtomicU32,
-    ast_id_to_node: RwLock<HashMap<AstId, Node>>,
+    pub expr: RefCell<Arena<Expr>>,
+    pub ty: RefCell<Arena<Ty>>,
+    pub parentage: RefCell<Parentage>,
+    next_ast_id: Cell<u32>,
+    ast_id_to_node: RefCell<HashMap<AstId, Node>>,
 }
 
 impl AstArenas {
     pub fn clear(&self) {
-        self.next_ast_id.store(1, Ordering::Relaxed);
-        self.ast_id_to_node.write().clear();
-        self.parentage.write().map.clear();
+        self.next_ast_id.set(1);
+        self.ast_id_to_node.borrow_mut().clear();
+        self.parentage.borrow_mut().map.clear();
     }
 
     pub fn expr(&self, id: Id<Expr>) -> Expr {
-        self.expr.read()[id].clone()
+        self.expr.borrow()[id].clone()
     }
 
     pub fn ty(&self, id: Id<Ty>) -> Ty {
-        self.ty.read()[id].clone()
+        self.ty.borrow()[id].clone()
     }
 
     pub fn next_ast_id(&self) -> AstId {
-        let id = self.next_ast_id.fetch_add(1, Ordering::Relaxed);
+        let id = self.next_ast_id.get();
         assert!(id < u32::MAX);
+        self.next_ast_id.set(id + 1);
         AstId::from_raw(id)
     }
 
     pub fn get_node_by_id(&self, id: AstId) -> Option<Node> {
-        self.ast_id_to_node.read().get(&id).copied()
+        self.ast_id_to_node.borrow().get(&id).copied()
     }
 
     pub fn into_iter_nodes(&self) -> impl Iterator<Item = Node> {
-        let v = self.ast_id_to_node.read();
+        let v = self.ast_id_to_node.borrow();
         v.values().copied().collect::<Vec<_>>().into_iter()
     }
 
     fn insert_node(&self, id: AstId, node: Node) {
-        self.ast_id_to_node.write().insert(id, node);
+        self.ast_id_to_node.borrow_mut().insert(id, node);
     }
 }
 
@@ -172,7 +174,7 @@ impl Default for AstArenas {
             expr: Default::default(),
             ty: Default::default(),
             parentage: Default::default(),
-            next_ast_id: AtomicU32::new(1),
+            next_ast_id: Cell::new(1),
             ast_id_to_node: Default::default(),
         }
     }

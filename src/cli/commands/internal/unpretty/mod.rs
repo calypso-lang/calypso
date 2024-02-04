@@ -2,7 +2,6 @@ use std::{
     fs,
     io::{self, prelude::*},
     path::Path,
-    sync::Arc,
 };
 
 use calypso::{ctxt::GlobalCtxt, error::CalResult, symbol::Symbol};
@@ -14,7 +13,7 @@ pub mod ast;
 pub mod toks;
 
 pub fn unpretty(
-    gcx: &Arc<GlobalCtxt>,
+    gcx: &GlobalCtxt,
     format: UnprettyFormat,
     path: &Path,
     repl: bool,
@@ -29,7 +28,7 @@ pub fn unpretty(
         let mut contents = String::new();
         if let Err(err) = stdin.lock().read_to_string(&mut contents) {
             gcx.emit
-                .write()
+                .borrow_mut()
                 .err
                 .error(None, "while reading from stdin:", None)?
                 .error(None, &format!("{err}"), None)?
@@ -41,7 +40,7 @@ pub fn unpretty(
     } else {
         if !path.exists() {
             gcx.emit
-                .write()
+                .borrow_mut()
                 .err
                 .error(
                     None,
@@ -58,7 +57,7 @@ pub fn unpretty(
                 Ok(v) => v,
                 Err(err) => {
                     gcx.emit
-                        .write()
+                        .borrow_mut()
                         .err
                         .error(
                             None,
@@ -81,22 +80,21 @@ pub fn unpretty(
     Ok(())
 }
 
-pub fn run_repl(gcx: &Arc<GlobalCtxt>, format: UnprettyFormat) {
+pub fn run_repl(gcx: &GlobalCtxt, format: UnprettyFormat) {
     struct ReplCtx {
         line: usize,
     }
 
-    let repl_gcx = Arc::clone(gcx);
     let mut repl = Repl::new(
         Box::new(move |rcx: &mut ReplCtx, contents| {
             let res = match format {
                 UnprettyFormat::Ast => ast::run_parser(
-                    &repl_gcx,
+                    gcx,
                     Symbol::intern(&format!("<repl:{}>", rcx.line)),
                     &contents,
                 ),
                 UnprettyFormat::TokenList => toks::run_lexer(
-                    &repl_gcx,
+                    gcx,
                     Symbol::intern(&format!("<repl:{}>", rcx.line)),
                     &contents,
                 ),
@@ -104,8 +102,8 @@ pub fn run_repl(gcx: &Arc<GlobalCtxt>, format: UnprettyFormat) {
             .ok()
             .map(|()| String::new());
             rcx.line += 1;
-            repl_gcx.diag.write().clear();
-            repl_gcx.arenas.ast.clear();
+            gcx.diag.borrow_mut().clear();
+            gcx.arenas.ast.clear();
             res
         }),
         ReplCtx { line: 1 },

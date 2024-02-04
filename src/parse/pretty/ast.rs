@@ -5,7 +5,7 @@ use crate::ast::{BinOpKind, Expr, ExprKind, Numeral, Primitive, Ty, TyKind};
 
 use super::Printer;
 
-impl Printer {
+impl<'gcx> Printer<'gcx> {
     pub fn print_expr(&self, expr: Id<Expr>) -> BoxDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.expr(expr).kind {

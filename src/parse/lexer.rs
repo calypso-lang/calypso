@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, ops::Range, sync::Arc};
+use std::{convert::TryFrom, ops::Range};
 
 use ariadne::{Color, Label, ReportKind};
 use itertools::Itertools;
@@ -16,7 +16,7 @@ use super::Spanned;
 pub type Lexeme<'lex> = Spanned<(Token, &'lex str)>;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Logos)]
-#[logos(extras = (Symbol, Arc<GlobalCtxt>))]
+#[logos(extras = Symbol)]
 pub enum Token {
     #[token("<<=")]
     LtLtEq,
@@ -324,13 +324,12 @@ fn integer_numeral(lex: &mut Lexer<Token>) -> Numeral {
 }
 
 #[allow(clippy::missing_panics_doc)]
-pub fn tokens(
-    source: &'_ str,
+pub fn tokens<'gcx, 'src: 'gcx>(
+    source: &'src str,
     name: Symbol,
-    gcx: Arc<GlobalCtxt>,
-) -> impl Iterator<Item = Lexeme<'_>> {
-    let lex = Token::lexer_with_extras(source, (name, Arc::clone(&gcx)));
-    let gcx2 = Arc::clone(&gcx);
+    gcx: &'gcx GlobalCtxt,
+) -> impl Iterator<Item = Lexeme<'src>> + 'gcx {
+    let lex = Token::lexer_with_extras(source, name);
     lex.spanned()
         .map(|(tok, span)| {
             (
@@ -353,7 +352,7 @@ pub fn tokens(
                     .get(Range::<usize>::from(a.0.span()))
                     .map_or(false, |x: &str| x == "\'" || x == "\"")
                 {
-                    gcx2.diag.write().report_fatal(
+                    gcx.diag.borrow_mut().report_fatal(
                         Diagnostic::build(ReportKind::Error, name, a.0.span().lo() as usize)
                             .with_code("E0001")
                             .with_message("A syntax error was encountered.")
@@ -366,7 +365,7 @@ pub fn tokens(
 
                 // Don't coalesce if there is a fatal error, and mark when it happened
                 // (and when was after it happened, so we know where to stop)
-                if gcx2.diag.read().fatal().is_some() {
+                if gcx.diag.borrow().fatal().is_some() {
                     b.1 = true;
                     return Err((a, b));
                 }
@@ -382,7 +381,7 @@ pub fn tokens(
         .map(move |(x, end)| {
             if x.value() == &Token::Error && !end {
                 // Report non-fatal syntax errors
-                gcx.diag.write().report_syncd(
+                gcx.diag.borrow_mut().report_syncd(
                     Diagnostic::build(ReportKind::Error, name, x.span().lo() as usize)
                         .with_code("E0001")
                         .with_message("A syntax error was encountered.")

@@ -1,6 +1,6 @@
 //! The global context of the Calypso compiler.
 
-use parking_lot::RwLock;
+use std::cell::RefCell;
 
 use crate::{
     ast::AstArenas,
@@ -8,15 +8,14 @@ use crate::{
     ui::Emitters,
 };
 
-/// The global context of the Calypso compiler. Usually held in a
-/// [`std::sync::Arc`].
+/// The global context of the Calypso compiler.
 pub struct GlobalCtxt {
     /// Terminal emitters
-    pub emit: RwLock<Emitters>,
+    pub emit: RefCell<Emitters>,
     /// Global diagnostic reporting context
-    pub diag: RwLock<DiagReportCtxt>,
+    pub diag: RefCell<DiagReportCtxt>,
     /// Source cache
-    pub source_cache: RwLock<SourceCache>,
+    pub source_cache: RefCell<SourceCache>,
     /// Arenas
     pub arenas: GlobalArenas,
 }

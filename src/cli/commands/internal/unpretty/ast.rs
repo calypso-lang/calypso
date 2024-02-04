@@ -1,4 +1,4 @@
-use std::{borrow::Cow, sync::Arc};
+use std::borrow::Cow;
 
 use ariadne::{Color, Fmt, Label, Report, ReportBuilder, ReportKind};
 use calypso::{
@@ -14,10 +14,10 @@ use calypso::{
 use chumsky::{error::RichReason, input::Stream, prelude::Input, primitive::end, Parser};
 
 #[allow(dead_code)]
-pub fn run_parser(gcx: &Arc<GlobalCtxt>, file_name: Symbol, contents: &str) -> CalResult<()> {
-    gcx.source_cache.write().add(file_name, contents);
+pub fn run_parser(mut gcx: &GlobalCtxt, file_name: Symbol, contents: &str) -> CalResult<()> {
+    gcx.source_cache.borrow_mut().add(file_name, contents);
 
-    let tokens = lexer::tokens(contents, file_name, Arc::clone(gcx))
+    let tokens = lexer::tokens(contents, file_name, gcx)
         .filter_map(|x| {
             if matches!(x.value().0, Token::Comment(_)) {
                 None
@@ -28,11 +28,11 @@ pub fn run_parser(gcx: &Arc<GlobalCtxt>, file_name: Symbol, contents: &str) -> C
         .peekable()
         .collect::<Vec<_>>();
 
-    let diag_read = gcx.diag.read();
+    let diag_read = gcx.diag.borrow();
     if let Some(fatal) = diag_read.fatal() {
-        let mut emit = gcx.emit.write();
+        let mut emit = gcx.emit.borrow_mut();
         let mut buf = emit.err.buffer();
-        let mut cache = gcx.source_cache.write();
+        let mut cache = gcx.source_cache.borrow_mut();
         fatal.write(&mut *cache, &mut buf)?;
         emit.err.emit(&buf)?.flush()?;
     } else {
@@ -40,14 +40,14 @@ pub fn run_parser(gcx: &Arc<GlobalCtxt>, file_name: Symbol, contents: &str) -> C
             .errors()
             .iter()
             .try_for_each(|e| -> CalResult<()> {
-                let mut emit = gcx.emit.write();
+                let mut emit = gcx.emit.borrow_mut();
                 let mut buf = emit.err.buffer();
-                let mut cache = gcx.source_cache.write();
+                let mut cache = gcx.source_cache.borrow_mut();
                 e.write(&mut *cache, &mut buf)?;
                 emit.err.emit(&buf)?;
                 Ok(())
             })?;
-        gcx.emit.write().err.flush()?;
+        gcx.emit.borrow_mut().err.flush()?;
     }
     drop(diag_read);
 
@@ -56,7 +56,7 @@ pub fn run_parser(gcx: &Arc<GlobalCtxt>, file_name: Symbol, contents: &str) -> C
     let stream = stream.spanned(Span::new(srclen, srclen));
     let (expr, parse_errs) = calypso::parse::parser::expr()
         .then_ignore(end())
-        .parse_with_state(stream, &mut Arc::clone(gcx))
+        .parse_with_state(stream, &mut gcx)
         .into_output_errors();
 
     for e in parse_errs {
@@ -64,12 +64,12 @@ pub fn run_parser(gcx: &Arc<GlobalCtxt>, file_name: Symbol, contents: &str) -> C
 
         report = render_diagnostic(e.reason(), *e.span(), file_name, report);
 
-        let mut source_cache = gcx.source_cache.write();
+        let mut source_cache = gcx.source_cache.borrow_mut();
         report.finish().eprint(&mut *source_cache).unwrap();
     }
 
     if let Some(expr) = expr {
-        let printer = Printer::new(gcx.clone());
+        let printer = Printer::new(gcx);
         let mut w = Vec::new();
         printer.print_expr(expr).render(15, &mut w).unwrap();
         println!("{}", String::from_utf8(w).unwrap());

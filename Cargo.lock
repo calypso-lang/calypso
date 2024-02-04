@@ -167,7 +167,6 @@ dependencies = [
  "logos",
  "mimalloc",
  "once_cell",
- "parking_lot",
  "pretty",
  "saturnvm",
  "termcolor",

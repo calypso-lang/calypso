@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use calypso::{
     ctxt::GlobalCtxt,
     error::CalResult,
@@ -7,17 +5,17 @@ use calypso::{
     symbol::Symbol,
 };
 
-pub fn run_lexer(gcx: &Arc<GlobalCtxt>, name: Symbol, contents: &str) -> CalResult<()> {
-    gcx.source_cache.write().add(name, contents);
+pub fn run_lexer(gcx: &GlobalCtxt, name: Symbol, contents: &str) -> CalResult<()> {
+    gcx.source_cache.borrow_mut().add(name, contents);
 
-    let mut printer = Printer::new(Arc::clone(gcx));
-    let tokens = lexer::tokens(contents, name, Arc::clone(gcx)).collect::<Vec<_>>();
+    let mut printer = Printer::new(gcx);
+    let tokens = lexer::tokens(contents, name, gcx).collect::<Vec<_>>();
 
-    let diag_read = gcx.diag.read();
+    let diag_read = gcx.diag.borrow();
     if let Some(fatal) = diag_read.fatal() {
-        let mut emit = gcx.emit.write();
+        let mut emit = gcx.emit.borrow_mut();
         let mut buf = emit.err.buffer();
-        let mut cache = gcx.source_cache.write();
+        let mut cache = gcx.source_cache.borrow_mut();
         fatal.write(&mut *cache, &mut buf)?;
         emit.err.emit(&buf)?.flush()?;
     } else {
@@ -25,14 +23,14 @@ pub fn run_lexer(gcx: &Arc<GlobalCtxt>, name: Symbol, contents: &str) -> CalResu
             .errors()
             .iter()
             .try_for_each(|e| -> CalResult<()> {
-                let mut emit = gcx.emit.write();
+                let mut emit = gcx.emit.borrow_mut();
                 let mut buf = emit.err.buffer();
-                let mut cache = gcx.source_cache.write();
+                let mut cache = gcx.source_cache.borrow_mut();
                 e.write(&mut *cache, &mut buf)?;
                 emit.err.emit(&buf)?;
                 Ok(())
             })?;
-        gcx.emit.write().err.flush()?;
+        gcx.emit.borrow_mut().err.flush()?;
     }
     drop(diag_read);
 
@@ -44,7 +42,7 @@ pub fn run_lexer(gcx: &Arc<GlobalCtxt>, name: Symbol, contents: &str) -> CalResu
         Ok(tokens) => println!("{}", tokens.join("\n")),
         Err(err) => {
             gcx.emit
-                .write()
+                .borrow_mut()
                 .err
                 .error(None, "while pretty-printing tokens:", None)?
                 .error(None, &format!("{err}"), None)?;
