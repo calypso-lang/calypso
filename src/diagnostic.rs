@@ -4,7 +4,7 @@ use std::fmt;
 
 use crate::parse::SpanWithFile;
 
-pub type Diagnostic = ariadne::Report<SpanWithFile>;
+pub type Diagnostic = ariadne::Report<'static, SpanWithFile>;
 
 pub mod sourcemgr;
 pub mod types;

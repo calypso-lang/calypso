@@ -1,86 +1,140 @@
-// A few ways to do factorial
+;; // A few ways to do factorial
 
-/*
-pub fn factorial(n: uint): uint ->
-    case n do
-        0 -> 1,
-        n -> n * factorial(n - 1)
-    end
+;; /*
+;; pub fn factorial(n: uint): uint ->
+;;     case n do
+;;         0 -> 1,
+;;         n -> n * factorial(n - 1)
+;;     end
 
-pub fn factorial_tail(n: uint, acc: uint \\ 1): uint ->
-    case n, acc do
-        0, acc -> acc
-        n, acc -> factorial_tail(n - 1, n * acc)
-    end
+;; pub fn factorial_tail(n: uint, acc: uint \\ 1): uint ->
+;;     case n, acc do
+;;         0, acc -> acc
+;;         n, acc -> factorial_tail(n - 1, n * acc)
+;;     end
 
-pub fn factorial_iter(n: uint): uint ->
-    1.to(n).product()
+;; pub fn factorial_iter(n: uint): uint ->
+;;     1.to(n).product()
 
-pub fn factorial_iter_loop(n: uint): uint -> do
-    let mut res = 1
+;; pub fn factorial_iter_loop(n: uint): uint -> do
+;;     let mut res = 1
 
-    if n == 0 -> ret 1
+;;     if n == 0 -> ret 1
     
-    for i in 1.to(n) -> res *= i
+;;     for i in 1.to(n) -> res *= i
 
-    res
-end
-*/
+;;     res
+;; end
+;; */
 
-// asm
+;;// asm
 (module
     (name "factorial")
-    (fn "factorial" (arg uint) (ret uint) (block 0
-        (register %n (ty const uint))
-        (args.load %n 0)
-        (uint.eq (ty uint) %n (uint.const 0))
-        (jump_if (block 1) (block 2))
-    ) (block 1
-        (ret (uint.const 1))
-    ) (block 2
-        (register %0 (ty const uint))
-        (register %1 (ty const uint))
-        (register %2 (ty const uint))
-        (uint.sub (ty uint) %0 %n (uint.const 1))
-        (call (fn "factorial" 1) (block 0) %1 %0)
-        (drop %0)
-        (uint.mul (ty uint) %2 %n %1)
-        (drop %1 %n)
-        (ret %2)
-    ))
-)
+    (fn "factorial" (arg uint) (ret uint)
+	(block 0
+	  (register %n (ty const uint))
+          (args.load %n 0)
+          (uint.eq (ty uint) %n (uint.const 0))
+          (jump_if (block 1) (block 2)))
+	(block 1
+          (ret (uint.const 1)))
+	(block 2
+          (register %0 (ty const uint))
+          (register %1 (ty const uint))
+          (register %2 (ty const uint))
+          (uint.sub (ty uint) %0 %n (uint.const 1))
+          (call (fn "factorial" 1) (block 0) %1 %0)
+          (drop %0)
+          (uint.mul (ty uint) %2 %n %1)
+          (drop %1 %n)
+          (ret %2)))
+    )
 
-/*
+([
+ 0: uint.eqi    r0, f0, 0  ;; r0 = (f0 == 0)
+    br          r0, 1, 2   ;; branch to 1 if f0!=0, 2 if f0=0
+ 1: uint.load   f0, 1      ;; f0 = 1
+    ret                    ;; return f0
+ 2: mv          r0, f0     ;; r0 = f0
+    uint.addi   f0, f0, -1 ;; f0 -= 1
+    call &factorial/1      ;; factorial(f0) => f0
+    uint.mul    f0, r0, f0 ;; f0 = r0 * f0
+    ret                    ;; return f0
+    ])
 
-fn main() ->
-    1 + 2 - 3 * 4 / 5
+;; /*
 
-*/
+;; fn main() ->
+;;     1 + 2 - 3 * 4 / 5
 
-(module ; define module
-    (name "hello_simpler") ; this module's name is "hello_simpler"
-    (fn "main" (ret (ty unit)) (bb 0 ; define `fn main(): unit`, start basic block 0
-        ; 1 + 2 - 3 * 4 / 5
-        ;   == ((1 + 2) - ((3 * 4) / 5))
-        ;   == (- (+ 1 2) (/ (* 3 4) 5))
+;; */
 
-        (registers
-            (%0 (ty uint))  ; let %0: uint
-            (%1 (ty uint))  ; let %1: uint
-            (%2 (ty uint))) ; let %2: uint
+(module			       ; define module
+ (name "hello_simpler")	       ; this module's name is "hello_simpler"
+ (fn "main" (ret (ty unit))
+     (bb 0	       ; define `fn main(): unit`, start basic block 0
+					; 1 + 2 - 3 * 4 / 5
+					;   == ((1 + 2) - ((3 * 4) / 5))
+					;   == (- (+ 1 2) (/ (* 3 4) 5))
+	    
+         (registers
+          (%0 (ty uint))		; let %0: uint
+          (%1 (ty uint))		; let %1: uint
+          (%2 (ty uint)))		; let %2: uint
+	    
+         (uint.load %0 3)	       ; %0 = 3
+         (uint.load %1 4)	       ; %1 = 4
+         (uint.mul (ty uint) %0 %0 %1) ; %0 = %0 * %1 :: (*) = mul<uint, uint>
+         (uint.load %1 5)              ; %1 = 5
+         (uint.div (ty uint) %0 %0 %1) ; %0 = %0 / %1 :: (/) = div<uint, uint>
+         (uint.load %1 1)              ; %1 = 1
+         (uint.load %2 2)              ; %2 = 2
+         (uint.add (ty uint) %1 %1 %2) ; %1 = %1 + %2 :: (+) = add<uint, uint>
+         (uint.sub (ty uint) %0 %1 %0) ; %0 = %1 - %0 :: (-) = sub<uint, uint>
+            
+         (dbg.inspect (ty uint) %0) ; essentially like "print" but more low-level, for debugging
+            
+         (ret)))) ; return
 
-        (uint.load %0 3)              ; %0 = 3
-        (uint.load %1 4)              ; %1 = 4
-        (uint.mul (ty uint) %0 %0 %1) ; %0 = %0 * %1 :: (*) = mul<uint, uint>
-        (uint.load %1 5)              ; %1 = 5
-        (uint.div (ty uint) %0 %0 %1) ; %0 = %0 / %1 :: (/) = div<uint, uint>
-        (uint.load %1 1)              ; %1 = 1
-        (uint.load %2 2)              ; %2 = 2
-        (uint.add (ty uint) %1 %1 %2) ; %1 = %1 + %2 :: (+) = add<uint, uint>
-        (uint.sub (ty uint) %0 %1 %0) ; %0 = %1 - %0 :: (-) = sub<uint, uint>
-        
-        (dbg.inspect (ty uint) %0) ; essentially like "print" but more low-level, for debugging
-        
-        (ret) ; return
-    ))
-)
+([
+ uint.load r0, 3
+ uint.load r1, 4
+ uint.mul  r0, r0, r1
+ uint.load r1, 5
+ uint.div  r0, r0, r1
+ uint.load r1, 1
+ uint.load r2, 2
+ uint.add  r1, r1, r2
+ uint.sub  r0, r1, r0
+ dbg.insp  r0
+ ])
+
+;; let
+;;   x = random(),
+;;   result = if x < 0.5 then
+;;              "heads"
+;;            else
+;;              "tails"
+;;            end
+;;   in ignore(print(result))
+
+(module
+ (name "hello_ebb")
+ (fn "main_ir"
+     (registers %result)
+     (bb 0
+	 (registers %0 %1)
+	 (call "random" [] [%0])
+	 (float.load %1 0.5)
+	 (float.lt %0 %0 %1)
+	 (br %0 1 2 []))
+     (bb 1
+	 (string.load %result 0)
+	 (j 3))
+     (bb 2
+	 (string.load %result 1)
+	 (j 3))
+     (block 3
+       (call "print" [%result] [])))
+
+ (strings "heads" "tails"))

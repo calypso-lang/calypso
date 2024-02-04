@@ -28,4 +28,6 @@ libs/calypso_parsing/src/parser/grammar.rs
 *.profdata
 *.profraw
 
-.*~
+*~
+*#
+.dir-locals.el

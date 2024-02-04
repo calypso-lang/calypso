@@ -6,6 +6,7 @@ struct Ctx {
     line_no: usize,
 }
 
+#[allow(clippy::arc_with_non_send_sync)]
 pub fn main() {
     let mut repl = Repl::<Ctx>::new(
         Box::new(|ctx, input| {

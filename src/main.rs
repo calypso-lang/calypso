@@ -4,8 +4,8 @@
 use std::panic;
 use std::sync::Arc;
 
-use calypso::diagnostic::DiagReportCtxt;
 use calypso::error::CalResult;
+use calypso::{ctxt::GlobalArenas, diagnostic::DiagReportCtxt};
 use clap::StructOpt;
 use parking_lot::RwLock;
 use tracing_subscriber::EnvFilter;
@@ -67,6 +67,7 @@ fn main() {
         emit: RwLock::new(Emitters::new(args.color.0, args.color.1)),
         diag: RwLock::new(DiagReportCtxt::new()),
         source_cache: RwLock::default(),
+        arenas: GlobalArenas::default(),
     });
 
     init_panic_hook(&gcx);

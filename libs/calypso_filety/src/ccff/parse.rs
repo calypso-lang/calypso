@@ -22,7 +22,7 @@ pub fn container_file(b: &[u8]) -> IResult<&[u8], ContainerFile> {
     // this is kinda gross, but it's the best way I can find to do this.
     let sections = RefCell::new(IndexMap::with_capacity(num_sections as usize));
 
-    let (rest, _) = fold_many_m_n(
+    let (rest, ()) = fold_many_m_n(
         num_sections as usize,
         num_sections as usize,
         map_opt(
@@ -38,7 +38,7 @@ pub fn container_file(b: &[u8]) -> IResult<&[u8], ContainerFile> {
             },
         ),
         || (),
-        |_, (sym, sec)| {
+        |(), (sym, sec)| {
             sections.borrow_mut().insert(sym, sec);
         },
     )(rest)?;

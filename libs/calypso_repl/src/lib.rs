@@ -38,6 +38,12 @@ pub struct Repl<Ctx> {
 }
 
 impl<Ctx> Repl<Ctx> {
+    /// Create a new `Repl`.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if it failed to create the
+    /// [`rustyline::Editor`].
     pub fn new(eval: Eval<Ctx>, ctx: Ctx) -> Self {
         let mut editor = Editor::new().expect("Failed to create REPL");
         editor.set_auto_add_history(true);
@@ -55,6 +61,8 @@ impl<Ctx> Repl<Ctx> {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn prefix(mut self, prefix: String) -> Self {
         self.prefix = prefix;
         // We escape the prefix, so it's guaranteed to be valid.
@@ -67,15 +75,17 @@ impl<Ctx> Repl<Ctx> {
     }
 
     /// Extend the commands vector
+    #[must_use]
     pub fn commands(mut self, commands: Vec<Arc<Command<Ctx>>>) -> Self {
         for command in &commands {
-            self.cache_command(&command);
+            self.cache_command(command);
         }
         self.cmds.extend(commands);
         self
     }
 
     /// Add a command
+    #[must_use]
     pub fn command(mut self, command: Command<Ctx>) -> Self {
         let arc = Arc::new(command);
         self.cache_command(&Arc::clone(&arc));
@@ -86,14 +96,17 @@ impl<Ctx> Repl<Ctx> {
     /// Run the REPL.
     ///
     /// # Errors
+    ///
     /// The only errors currently returned by this function are errors from `rustyline`.
+
+    #[allow(clippy::missing_panics_doc)]
     pub fn run(
         &mut self,
         preamble: &str,
         prompt: impl Fn(&mut Ctx) -> String,
     ) -> Result<(), ReadlineError> {
         let rl = &mut self.editor;
-        println!("{}", preamble);
+        println!("{preamble}");
         loop {
             match rl.readline(&(prompt)(&mut self.ctx)) {
                 Ok(line) => {
@@ -116,7 +129,7 @@ impl<Ctx> Repl<Ctx> {
                                             command
                                                 .aliases
                                                 .iter()
-                                                .map(|v| format!("`{}`", v))
+                                                .map(|v| format!("`{v}`"))
                                                 .collect::<Vec<String>>()
                                                 .join(", ")
                                         );
@@ -140,7 +153,7 @@ impl<Ctx> Repl<Ctx> {
                                         command
                                             .aliases
                                             .iter()
-                                            .map(|v| format!("`{}`", v))
+                                            .map(|v| format!("`{v}`"))
                                             .collect::<Vec<String>>()
                                             .join(", ")
                                     );
@@ -161,7 +174,7 @@ impl<Ctx> Repl<Ctx> {
                                 println!("{}", result.unwrap());
                                 continue;
                             }
-                            eprintln!("error: could not find command `{}`", command);
+                            eprintln!("error: could not find command `{command}`");
                             continue;
                         }
                         // If the command didn't match, then it must be valid syntax.
@@ -181,22 +194,18 @@ impl<Ctx> Repl<Ctx> {
     }
 
     fn cache_command(&mut self, command: &Arc<Command<Ctx>>) {
-        if self.cache.contains_key(&command.name) || &command.name == "help" {
-            panic!(
-                "adding command would overwrite existing an command named `{}`",
-                command.name
-            );
-        }
-        self.cache
-            .insert(command.name.clone(), Arc::clone(&command));
+        assert!(
+            !self.cache.contains_key(&command.name) && &command.name != "help",
+            "adding command would overwrite existing an command named `{}`",
+            command.name
+        );
+        self.cache.insert(command.name.clone(), Arc::clone(command));
         for alias in &command.aliases {
-            if self.cache.contains_key(alias) || alias == "?" || alias == "h" {
-                panic!(
-                    "adding command would overwrite existing an command with the alias `{}`",
-                    alias
-                );
-            }
-            self.cache.insert(alias.clone(), Arc::clone(&command));
+            assert!(
+                !(self.cache.contains_key(alias) || alias == "?" || alias == "h"),
+                "adding command would overwrite existing an command with the alias `{alias}`",
+            );
+            self.cache.insert(alias.clone(), Arc::clone(command));
         }
     }
 }

@@ -324,6 +324,29 @@ impl ariadne::Span for Span {
     }
 }
 
+impl chumsky::span::Span for Span {
+    type Context = ();
+
+    type Offset = u32;
+
+    fn new(_context: Self::Context, range: Range<Self::Offset>) -> Self {
+        Self {
+            lo: range.start,
+            hi: range.end,
+        }
+    }
+
+    fn context(&self) -> Self::Context {}
+
+    fn start(&self) -> Self::Offset {
+        self.lo
+    }
+
+    fn end(&self) -> Self::Offset {
+        self.hi
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SpanWithFile(pub Symbol, pub Span);
 
@@ -346,5 +369,33 @@ impl ariadne::Span for SpanWithFile {
 impl From<(Symbol, Span)> for SpanWithFile {
     fn from(value: (Symbol, Span)) -> Self {
         Self(value.0, value.1)
+    }
+}
+
+impl chumsky::span::Span for SpanWithFile {
+    type Context = Symbol;
+
+    type Offset = u32;
+
+    fn new(context: Self::Context, range: Range<Self::Offset>) -> Self {
+        Self(
+            context,
+            Span {
+                lo: range.start,
+                hi: range.end,
+            },
+        )
+    }
+
+    fn context(&self) -> Self::Context {
+        self.0
+    }
+
+    fn start(&self) -> Self::Offset {
+        self.1.lo
+    }
+
+    fn end(&self) -> Self::Offset {
+        self.1.hi
     }
 }

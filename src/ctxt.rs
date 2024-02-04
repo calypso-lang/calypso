@@ -3,6 +3,7 @@
 use parking_lot::RwLock;
 
 use crate::{
+    ast::AstArenas,
     diagnostic::{sourcemgr::SourceCache, DiagReportCtxt},
     ui::Emitters,
 };
@@ -16,4 +17,11 @@ pub struct GlobalCtxt {
     pub diag: RwLock<DiagReportCtxt>,
     /// Source cache
     pub source_cache: RwLock<SourceCache>,
+    /// Arenas
+    pub arenas: GlobalArenas,
+}
+
+#[derive(Default)]
+pub struct GlobalArenas {
+    pub ast: AstArenas,
 }

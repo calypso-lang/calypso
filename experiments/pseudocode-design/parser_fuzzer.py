@@ -48,6 +48,7 @@ def gen_expr(standalone = True):
     expr = gen_unop() + gen_literal() + gen_binop()
     if standalone:
         expr += gen_literal()
+    expr += random.choice(["\n","\n\n",""])
     return expr
 
 def gen_exprs(n_iters = 1024):

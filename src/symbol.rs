@@ -218,6 +218,34 @@ intern_static! {kw, "Keywords", Keyword => {
     In; IN: "in"; "In (`in`)",
 }}
 
+impl kw::Keyword {
+    pub fn description(&self) -> &'static str {
+        match self {
+            kw::Keyword::True => "`true`",
+            kw::Keyword::False => "`false`",
+            kw::Keyword::Let => "`let`",
+            kw::Keyword::Mut => "`mut`",
+            kw::Keyword::Do => "`do`",
+            kw::Keyword::End => "`end`",
+            kw::Keyword::In => "`in`",
+        }
+    }
+}
+
+intern_static! {primitives, "Primitive types", Primitive => {
+    Uint; UINT: "uint"; "Uint (`uint`)",
+    Bool; BOOL: "bool"; "Bool (`bool`)",
+}}
+
+impl primitives::Primitive {
+    pub fn description(&self) -> &'static str {
+        match self {
+            primitives::Primitive::Bool => "`bool`",
+            primitives::Primitive::Uint => "`uint`",
+        }
+    }
+}
+
 intern_static! {special, "Special strings", Special => {
     Empty; EMPTY: ""; "Empty string"
 }}

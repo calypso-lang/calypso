@@ -1,0 +1,255 @@
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+    sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc,
+    },
+};
+
+use id_arena::{Arena, Id};
+use parking_lot::RwLock;
+
+use crate::{
+    ctxt::GlobalCtxt,
+    parse::Span,
+    symbol::{Ident, Symbol},
+};
+
+pub const DUMMY_AST_ID: AstId = AstId { _raw: 0 };
+
+index_vec::define_index_type! {
+    pub struct AstId = u32;
+
+    DISABLE_MAX_INDEX_CHECK = cfg!(not(debug_assertions));
+    DEBUG_FORMAT = "AstId({})";
+    DISPLAY_FORMAT = "{}";
+    IMPL_RAW_CONVERSIONS = true;
+}
+
+#[derive(Clone, Debug)]
+pub struct Expr {
+    pub id: AstId,
+    pub kind: ExprKind,
+    pub span: Span,
+}
+
+impl Expr {
+    pub fn new(gcx: &Arc<GlobalCtxt>, kind: ExprKind, span: Span) -> Id<Expr> {
+        let id = gcx.arenas.ast.next_ast_id();
+        let expr = gcx.arenas.ast.expr.write().alloc(Expr { id, kind, span });
+        gcx.arenas.ast.insert_node(id, Node::Expr(expr));
+        expr
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum ExprKind {
+    Let {
+        is_mut: bool,
+        varlist: im::Vector<(Ident, Option<Id<Ty>>, Id<Expr>)>,
+        in_block: im::Vector<Id<Expr>>,
+    },
+    BinaryOp {
+        left: Id<Expr>,
+        kind: BinOpKind,
+        right: Id<Expr>,
+    },
+    UnaryMinus(Id<Expr>),
+    UnaryNot(Id<Expr>),
+    //Paren(Id<Expr>),
+    Do {
+        exprs: im::Vector<Id<Expr>>,
+    },
+    Numeral(Numeral),
+    Ident(Ident),
+    Bool(bool),
+    Error,
+}
+
+#[derive(Clone, Debug)]
+pub struct Ty {
+    pub id: AstId,
+    pub kind: TyKind,
+    pub span: Span,
+}
+
+impl Ty {
+    pub fn new(gcx: &Arc<GlobalCtxt>, kind: TyKind, span: Span) -> Id<Ty> {
+        let id = gcx.arenas.ast.next_ast_id();
+        let ty = gcx.arenas.ast.ty.write().alloc(Ty { id, kind, span });
+        gcx.arenas.ast.insert_node(id, Node::Ty(ty));
+        ty
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum TyKind {
+    Primitive(Primitive),
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Primitive {
+    Bool,
+    Uint,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum BinOpKind {
+    LogicalOr,
+    LogicalAnd,
+    BitOr,
+    BitAnd,
+    BitXor,
+    Equal,
+    NotEqual,
+    LessThan,
+    GreaterThan,
+    LessEqual,
+    GreaterEqual,
+    BitShiftLeft,
+    BitShiftRight,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    Modulo,
+    Power,
+}
+
+#[derive(Debug, Default)]
+pub struct Parentage {
+    pub map: HashMap<AstId, AstId>,
+}
+
+#[derive(Debug)]
+pub struct AstArenas {
+    pub expr: RwLock<Arena<Expr>>,
+    pub ty: RwLock<Arena<Ty>>,
+    pub parentage: RwLock<Parentage>,
+    next_ast_id: AtomicU32,
+    ast_id_to_node: RwLock<HashMap<AstId, Node>>,
+}
+
+impl AstArenas {
+    pub fn clear(&self) {
+        self.next_ast_id.store(1, Ordering::Relaxed);
+        self.ast_id_to_node.write().clear();
+        self.parentage.write().map.clear();
+    }
+
+    pub fn expr(&self, id: Id<Expr>) -> Expr {
+        self.expr.read()[id].clone()
+    }
+
+    pub fn ty(&self, id: Id<Ty>) -> Ty {
+        self.ty.read()[id].clone()
+    }
+
+    pub fn next_ast_id(&self) -> AstId {
+        let id = self.next_ast_id.fetch_add(1, Ordering::Relaxed);
+        assert!(id < u32::MAX);
+        AstId::from_raw(id)
+    }
+
+    pub fn get_node_by_id(&self, id: AstId) -> Option<Node> {
+        self.ast_id_to_node.read().get(&id).copied()
+    }
+
+    pub fn into_iter_nodes(&self) -> impl Iterator<Item = Node> {
+        let v = self.ast_id_to_node.read();
+        v.values().copied().collect::<Vec<_>>().into_iter()
+    }
+
+    fn insert_node(&self, id: AstId, node: Node) {
+        self.ast_id_to_node.write().insert(id, node);
+    }
+}
+
+impl Default for AstArenas {
+    fn default() -> Self {
+        Self {
+            expr: Default::default(),
+            ty: Default::default(),
+            parentage: Default::default(),
+            next_ast_id: AtomicU32::new(1),
+            ast_id_to_node: Default::default(),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Node {
+    Expr(Id<Expr>),
+    Ty(Id<Ty>),
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+/// Number radixes.
+pub enum Radix {
+    /// No prefix (`0d` by default)
+    None,
+    /// `0d`
+    Decimal,
+    /// `0b`
+    Binary,
+    /// `0o`
+    Octal,
+    /// `0x`
+    Hexadecimal,
+}
+
+impl Radix {
+    #[must_use]
+    pub fn radix(self) -> u32 {
+        match self {
+            Self::None | Self::Decimal => 10,
+            Self::Binary => 2,
+            Self::Octal => 8,
+            Self::Hexadecimal => 16,
+        }
+    }
+}
+
+impl Display for Radix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Decimal => write!(f, "0d"),
+            Self::Binary => write!(f, "0b"),
+            Self::Octal => write!(f, "0o"),
+            Self::Hexadecimal => write!(f, "0x"),
+            Self::None => Ok(()),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+/// Number suffixes.
+pub enum Suffix {
+    /// `u`
+    Uint,
+    /// `s`
+    Sint,
+}
+
+impl Display for Suffix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Uint => write!(f, "u"),
+            Self::Sint => write!(f, "s"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Numeral {
+    Integer {
+        suffix: Option<Suffix>,
+        radix: Radix,
+        sym: Symbol,
+    },
+    Float {
+        from_integer: bool,
+        sym: Symbol,
+    },
+}

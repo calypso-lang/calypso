@@ -74,7 +74,7 @@ pub fn unpretty(
     };
 
     match format {
-        UnprettyFormat::Ast => println!("todo: ast::run_parser"), // ast::run_parser(gcx, file_name, contents),
+        UnprettyFormat::Ast => ast::run_parser(gcx, Symbol::intern(&file_name), &contents)?,
         UnprettyFormat::TokenList => toks::run_lexer(gcx, Symbol::intern(&file_name), &contents)?,
     }
 
@@ -90,12 +90,11 @@ pub fn run_repl(gcx: &Arc<GlobalCtxt>, format: UnprettyFormat) {
     let mut repl = Repl::new(
         Box::new(move |rcx: &mut ReplCtx, contents| {
             let res = match format {
-                UnprettyFormat::Ast => {
-                    println!("todo: ast::run_parser");
-
-                    //ast::run_parser(&repl_gcx, format!("<repl:{}>", rcx.line), contents)
-                    Ok(())
-                }
+                UnprettyFormat::Ast => ast::run_parser(
+                    &repl_gcx,
+                    Symbol::intern(&format!("<repl:{}>", rcx.line)),
+                    &contents,
+                ),
                 UnprettyFormat::TokenList => toks::run_lexer(
                     &repl_gcx,
                     Symbol::intern(&format!("<repl:{}>", rcx.line)),
@@ -103,9 +102,10 @@ pub fn run_repl(gcx: &Arc<GlobalCtxt>, format: UnprettyFormat) {
                 ),
             }
             .ok()
-            .map(|_| String::new());
+            .map(|()| String::new());
             rcx.line += 1;
             repl_gcx.diag.write().clear();
+            repl_gcx.arenas.ast.clear();
             res
         }),
         ReplCtx { line: 1 },

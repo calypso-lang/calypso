@@ -11,5 +11,5 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.66.1"
 
 [dependencies]
-calypso_error = { path = "../calypso_error", version = "2.0.0" }
+num_enum = "0.7.1"
 saturnvm_macros = { path = "../saturnvm_macros", version = "0.1.0" }

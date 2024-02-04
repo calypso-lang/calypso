@@ -1,66 +1,68 @@
-pub enum Option[T] =
-    | Some(T)
-    | None
+// pub enum Option[T] =
+//     | Some(T)
+//     | None
 
-with[T] impl Option[T] {
+// with[T] impl Option[T] {
 
-    pub fn unwrap(self): Self ->
-        case self do
-            None -> panic("Called `Option.unwrap()` on a `None` value"),
-            Some(value) -> value
-        end
+//     pub fn unwrap(self): Self ->
+//         case self do
+//             None -> panic("Called `Option.unwrap()` on a `None` value"),
+//             Some(value) -> value
+//         end
         
-    pub fn unwrap_or(self, default: T): Self ->
-        case self, default do
-            None, default -> default,
-            Some(value), _ -> value
-        end
+//     pub fn unwrap_or(self, default: T): Self ->
+//         case self, default do
+//             None, default -> default,
+//             Some(value), _ -> value
+//         end
     
-    pub fn unwrap_or_else(self, default: fn(): T): Self ->
-        case self, default do
-            None, default -> default(),
-            Some(value), _ -> value
-        end
+//     pub fn unwrap_or_else(self, default: fn(): T): Self ->
+//         case self, default do
+//             None, default -> default(),
+//             Some(value), _ -> value
+//         end
 
-    with[U] pub fn map(self, f: fn(T): U): Option[U] ->
-        case self, f do
-            None, _ -> None,
-            Some(value), f -> Some(f(value))
-        end
+//     with[U] pub fn map(self, f: fn(T): U): Option[U] ->
+//         case self, f do
+//             None, _ -> None,
+//             Some(value), f -> Some(f(value))
+//         end
 
-}
+// }
 
-// some function outside that does some stuff with generic options
-// (in the real stdlib, this function would probably be implemented on option)
+// // some function outside that does some stuff with generic options
+// // (in the real stdlib, this function would probably be implemented on option)
 
-with[T] pub fn option_or(a: Option[T], b: Option[T]): Option[T] ->
-    case a, b do
-        Some(v), _    -> Some(v),
-        None, Some(v) -> Some(v),
-        _             -> None
-    end
+// with[T] pub fn option_or(a: Option[T], b: Option[T]): Option[T] ->
+//     case a, b do
+//         Some(v), _    -> Some(v),
+//         None, Some(v) -> Some(v),
+//         _             -> None
+//     end
 
-pub fn factorial(n: uint): uint ->
+pub fn factorial(n: uint): uint =
     case n do
         0 -> 1,
         n -> n * factorial(n - 1)
     end
 
-pub fn factorial_tail(n: uint, acc: uint \\ 1): uint ->
+pub fn factorial_tail(n: uint, acc: uint \\ 1) -> uint =
     case n, acc do
         0, acc -> acc
         n, acc -> factorial_tail(n - 1, n * acc)
     end
 
-pub fn factorial_iter(n: uint): uint ->
+pub fn factorial_iter(n: uint) -> uint =
     1.to(n).product()
 
-pub fn factorial_iter_loop(n: uint): uint -> do
-    let mut res = 1
+pub fn factorial_iter_loop(n: uint) -> uint =
+    let mut res = 1 in do
+        if n == 0 then
+            return 1
 
-    if n == 0 -> return 1
-
-    for i in 1..n -> res *= i
-
-    res
-end
+    	for i in 1..n do
+	    res *= i
+	end
+    
+ 	res
+    end

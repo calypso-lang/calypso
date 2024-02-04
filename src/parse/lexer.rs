@@ -4,12 +4,11 @@ use ariadne::{Color, Label, ReportKind};
 use itertools::Itertools;
 use logos::{Lexer, Logos};
 
-use calypso_ast::expr::{Numeral, Radix, Suffix};
-
 use crate::{
+    ast::{Numeral, Radix, Suffix},
     ctxt::GlobalCtxt,
     diagnostic::Diagnostic,
-    symbol::{kw::Keyword, Symbol},
+    symbol::{kw::Keyword, primitives::Primitive, Symbol},
 };
 
 use super::Spanned;
@@ -139,6 +138,8 @@ pub enum Token {
 
     // #[regex("[\n]+", |lex| lex.span().len())]
     // Nl(usize),
+    #[regex("[\n]+")]
+    Nl,
 
     // this hurts.
     // cc https://github.com/maciejhirsz/logos/issues/126
@@ -156,32 +157,100 @@ pub enum Token {
     #[regex("0o[0-7][0-7_]*[su]?", |lex| radix_numeral(lex, Radix::Octal))]
     #[regex("0b[01][01_]*[su]?", |lex| radix_numeral(lex, Radix::Binary))]
     #[regex("0d[0-9][0-9_]*[su]?", |lex| radix_numeral(lex, Radix::Decimal))]
-    #[regex("[0-9][0-9_]*\\.[0-9][0-9_]*(e[+-]?[0-9][0-9_]*)?", |_| Numeral::Float { from_integer: false })]
-    #[regex("[0-9][0-9_]*e[+-]?[0-9][0-9_]*", |_| Numeral::Float { from_integer: false })]
+    #[regex("[0-9][0-9_]*\\.[0-9][0-9_]*(e[+-]?[0-9][0-9_]*)?", |lex| Numeral::Float { from_integer: false, sym: Symbol::intern(lex.slice()) })]
+    #[regex("[0-9][0-9_]*e[+-]?[0-9][0-9_]*", |lex| Numeral::Float { from_integer: false, sym: Symbol::intern(lex.slice())  })]
     #[regex("[0-9][0-9_]*[suf]?", |lex| integer_numeral(lex))]
     Numeral(Numeral),
 
     #[regex(
-        "[\t\u{000B}\u{000C}\r \u{0085}\u{200E}\u{200F}\u{2028}\u{2029}\n]+",
+        "[\t\u{000B}\u{000C}\r \u{0085}\u{200E}\u{200F}\u{2028}\u{2029}]+",
         logos::skip
     )]
     #[error]
     Error,
 }
 
+impl Token {
+    pub fn description(&self) -> &'static str {
+        match self {
+            Token::LtLtEq => "`<<=`",
+            Token::LtLt => "`<<`",
+            Token::LtEq => "`<=`",
+            Token::Lt => "`<`",
+            Token::GtGtEq => "`>>=`",
+            Token::GtGt => "`>>`",
+            Token::GtEq => "`>=`",
+            Token::Gt => "`>`",
+            Token::EqEq => "`==`",
+            Token::Eq => "`=`",
+            Token::BangEq => "`!=`",
+            Token::Bang => "`!`",
+            Token::PipePipe => "`||`",
+            Token::PipeEq => "`|=`",
+            Token::Pipe => "`|`",
+            Token::AndAnd => "`&&`",
+            Token::AndEq => "`&=`",
+            Token::And => "`&`",
+            Token::PlusEq => "`+=`",
+            Token::Plus => "`+`",
+            Token::Arrow => "`->`",
+            Token::MinusEq => "`-=`",
+            Token::Minus => "`-",
+            Token::StarStarEq => "`**=`",
+            Token::StarStar => "`**`",
+            Token::StarEq => "`*=`",
+            Token::Star => "`*`",
+            Token::SlashEq => "`/=`",
+            Token::Slash => "`/`",
+            Token::PercentEq => "`%=`",
+            Token::Percent => "`%`",
+            Token::CaretEq => "`^=`",
+            Token::Caret => "`^`",
+            Token::AtBang => "`@!`",
+            Token::At => "`@`",
+            Token::LParen => "`(`",
+            Token::RParen => "`)`",
+            Token::LBrace => "`{`",
+            Token::RBrace => "`}`",
+            Token::LBracket => "`[`",
+            Token::RBracket => "`]`",
+            Token::Comma => "`,`",
+            Token::Colon => "`:`",
+            Token::Semi => "`;`",
+            Token::Under => "`_`",
+            Token::Dot => "`.`",
+            Token::IdentLike(IdentLike::Ident(_)) => "ident",
+            Token::IdentLike(IdentLike::Keyword(kw)) => kw.description(),
+            Token::IdentLike(IdentLike::Primitive(prim)) => prim.description(),
+            Token::Comment(_) => "comment",
+            Token::Nl => "newline",
+            Token::String => "string literal",
+            Token::Char => "char literal",
+            Token::Numeral(_) => "number",
+            Token::Error => "invalid token",
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum IdentLike {
     Ident(Symbol),
     Keyword(Keyword),
+    Primitive(Primitive),
 }
 
 pub fn ident(lex: &mut Lexer<Token>) -> IdentLike {
     let sym = Symbol::intern(lex.slice());
 
-    match Keyword::try_from(sym) {
-        Ok(kw) => IdentLike::Keyword(kw),
-        Err(sym) => IdentLike::Ident(sym),
+    if let Ok(kw) = Keyword::try_from(sym) {
+        return IdentLike::Keyword(kw);
     }
+
+    if let Ok(prim) = Primitive::try_from(sym) {
+        return IdentLike::Primitive(prim);
+    }
+
+    IdentLike::Ident(sym)
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -209,36 +278,47 @@ impl CommentProps {
 }
 
 fn radix_numeral(lex: &mut Lexer<Token>, radix: Radix) -> Numeral {
+    let sym = Symbol::intern(lex.slice());
     match lex.slice().chars().last() {
         Some('s') => Numeral::Integer {
             suffix: Some(Suffix::Sint),
             radix,
+            sym,
         },
         Some('u') => Numeral::Integer {
             suffix: Some(Suffix::Uint),
             radix,
+            sym,
         },
         _ => Numeral::Integer {
             suffix: None,
             radix,
+            sym,
         },
     }
 }
 
 fn integer_numeral(lex: &mut Lexer<Token>) -> Numeral {
+    let sym = Symbol::intern(lex.slice());
     match lex.slice().chars().last() {
         Some('s') => Numeral::Integer {
             suffix: Some(Suffix::Sint),
             radix: Radix::None,
+            sym,
         },
         Some('u') => Numeral::Integer {
             suffix: Some(Suffix::Uint),
             radix: Radix::None,
+            sym,
         },
-        Some('f') => Numeral::Float { from_integer: true },
+        Some('f') => Numeral::Float {
+            from_integer: true,
+            sym,
+        },
         _ => Numeral::Integer {
             suffix: None,
             radix: Radix::None,
+            sym,
         },
     }
 }
