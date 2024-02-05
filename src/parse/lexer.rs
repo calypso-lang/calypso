@@ -195,7 +195,7 @@ impl Token {
             Token::Plus => "`+`",
             Token::Arrow => "`->`",
             Token::MinusEq => "`-=`",
-            Token::Minus => "`-",
+            Token::Minus => "`-`",
             Token::StarStarEq => "`**=`",
             Token::StarStar => "`**`",
             Token::StarEq => "`*=`",

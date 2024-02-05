@@ -54,7 +54,7 @@ pub fn run_parser(mut gcx: &GlobalCtxt, file_name: Symbol, contents: &str) -> Ca
     let srclen = contents.len().try_into().unwrap();
     let stream = Stream::from_iter(tokens).boxed();
     let stream = stream.spanned(Span::new(srclen, srclen));
-    let (expr, parse_errs) = calypso::parse::parser::expr()
+    let (expr, parse_errs) = calypso::parse::parser::stmt()
         .then_ignore(end())
         .parse_with_state(stream, &mut gcx)
         .into_output_errors();

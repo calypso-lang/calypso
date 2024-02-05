@@ -23,7 +23,7 @@ use super::{
 
 pub type SyntaxError<'src> = Rich<'src, Token, Span>;
 pub type CalInput<'src> = SpannedInput<Token, Span, BoxedStream<'src, (Token, Span)>>;
-pub type Extra<'src> = Full<SyntaxError<'src>, &'src GlobalCtxt, ()>;
+pub type Extra<'src> = Full<SyntaxError<'src>, &'src GlobalCtxt, bool>;
 
 fn keyword(kw: Keyword) -> Token {
     Token::IdentLike(IdentLike::Keyword(kw))
@@ -120,9 +120,56 @@ pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty, Extra<'src>> + Clone 
     })
 }
 
-pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Clone + 'src {
-    let expr = recursive(|expr| {
-        let exprs_block = expr
+pub fn stmt<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Clone + 'src {
+    let mut stmt = Recursive::declare();
+    let mut expr = Recursive::declare();
+
+    stmt.define({
+        let let_expr = just(keyword(Keyword::Let))
+            .then_ignore(maybe_nls())
+            .ignore_then(
+                just(keyword(Keyword::Mut))
+                    .then_ignore(maybe_nls())
+                    .or_not()
+                    .map(|x| x.is_some())
+                    .then(ident().or(under_ident()))
+                    .then_ignore(maybe_nls())
+                    .then(
+                        just(Token::Colon)
+                            .then_ignore(maybe_nls())
+                            .ignore_then(ty())
+                            .then_ignore(maybe_nls())
+                            .or_not(),
+                    )
+                    .then_ignore(just(Token::Eq))
+                    .then_ignore(maybe_nls())
+                    // TODO: should this be `pratt`?
+                    .then(expr.clone().with_ctx(false))
+                    .map(|(((is_mut, ident), ty), expr)| (is_mut, ident, ty, expr)),
+            )
+            .map_with(|(is_mut, name, ty, val), extra| {
+                let span = extra.span();
+                Expr::new(
+                    extra.state(),
+                    ExprKind::Let {
+                        is_mut,
+                        name,
+                        ty,
+                        val,
+                    },
+                    span,
+                )
+            });
+
+        let_expr.or(expr.clone().with_ctx(false))
+    });
+
+    expr.define({
+        let nls_with_context = just(Token::Nl)
+            .ignored()
+            .repeated()
+            .configure(|cfg, ctx: &bool| if *ctx { cfg } else { cfg.exactly(0) });
+        let stmts_block = stmt
             .clone()
             .separated_by(choice((
                 just(Token::Semi).ignored(),
@@ -152,13 +199,13 @@ pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
 
         let term = choice((
             primary,
-            expr.clone().delimited_by(
+            expr.clone().with_ctx(true).delimited_by(
                 just(Token::LParen).then_ignore(maybe_nls()),
                 maybe_nls().ignore_then(just(Token::RParen)),
             ),
             just(keyword(Keyword::Do))
                 .ignore_then(maybe_nls())
-                .ignore_then(exprs_block.clone())
+                .ignore_then(stmts_block.clone())
                 .then_ignore(just(keyword(Keyword::End)))
                 .map_with(|exprs, extra| {
                     let span = extra.span();
@@ -178,7 +225,9 @@ pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
                 ),
                 prefix(
                     110,
-                    one_of([Token::Minus, Token::Bang]).delimited_by(maybe_nls(), maybe_nls()),
+                    nls_with_context
+                        .ignore_then(one_of([Token::Minus, Token::Bang]))
+                        .then_ignore(maybe_nls()),
                     |op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         let span = extra.span();
                         Expr::new(
@@ -202,7 +251,9 @@ pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
                 ),
                 infix(
                     left(90),
-                    one_of([Token::Plus, Token::Minus]).delimited_by(maybe_nls(), maybe_nls()),
+                    nls_with_context
+                        .ignore_then(one_of([Token::Plus, Token::Minus]))
+                        .then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
@@ -268,47 +319,8 @@ pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
             .boxed()
             .labelled("expression");
 
-        let let_expr = just(keyword(Keyword::Let))
-            .then_ignore(maybe_nls())
-            .ignore_then(
-                just(keyword(Keyword::Mut))
-                    .then_ignore(maybe_nls())
-                    .or_not()
-                    .map(|x| x.is_some())
-                    .then(ident().or(under_ident()))
-                    .then_ignore(maybe_nls())
-                    .then(
-                        just(Token::Colon)
-                            .then_ignore(maybe_nls())
-                            .ignore_then(ty())
-                            .then_ignore(maybe_nls())
-                            .or_not(),
-                    )
-                    .then_ignore(just(Token::Eq))
-                    .then_ignore(maybe_nls())
-                    // TODO: should this be `pratt`?
-                    .then(expr)
-                    .then_ignore(maybe_nls())
-                    .map(|(((is_mut, ident), ty), expr)| (is_mut, ident, ty, expr))
-                    .separated_by(just(Token::Comma).then_ignore(maybe_nls()))
-                    .at_least(1)
-                    .allow_trailing()
-                    .collect::<Vec<_>>()
-                    .map(im::Vector::from),
-            )
-            .then_ignore(maybe_nls())
-            .then_ignore(just(keyword(Keyword::In)))
-            .then_ignore(maybe_nls())
-            .then(exprs_block)
-            .then_ignore(just(keyword(Keyword::End)))
-            .map_with(|(varlist, in_block), extra| {
-                let span = extra.span();
-                Expr::new(extra.state(), ExprKind::Let { varlist, in_block }, span)
-            })
-            .or(pratt);
-
-        let_expr.labelled("expression")
+        pratt
     });
 
-    expr.then_ignore(maybe_nls())
+    stmt.then_ignore(maybe_nls())
 }

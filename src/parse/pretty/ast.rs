@@ -8,56 +8,52 @@ impl<'gcx> Printer<'gcx> {
     pub fn print_expr(&self, expr: Expr) -> BoxDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.expr(expr).kind {
-            ExprKind::Let { varlist, in_block } => BoxDoc::text("(")
-                .append("let")
-                .append(BoxDoc::space())
-                .append(BoxDoc::text("["))
-                .append(
-                    BoxDoc::intersperse(
-                        varlist.into_iter().map(|(is_mut, var, ty, expr)| {
-                            if is_mut {
-                                BoxDoc::text("(mut").append(BoxDoc::space())
-                            } else {
-                                BoxDoc::nil()
-                            }
-                            .append(BoxDoc::text(var.as_str()))
-                            .append(if is_mut {
-                                BoxDoc::text(")")
-                            } else {
-                                BoxDoc::nil()
-                            })
-                            .append(if let Some(ty) = ty {
-                                BoxDoc::space()
-                                    .append(self.print_ty(ty))
-                                    .nest((var.as_str().len() + 1) as isize)
-                            } else {
-                                BoxDoc::nil()
-                            })
-                            .append(
-                                BoxDoc::space()
-                                    .append(self.print_expr(expr))
-                                    .nest((var.as_str().len() + 1) as isize),
-                            )
-                            .group()
-                        }),
-                        BoxDoc::line(),
-                    )
-                    .nest(6),
-                )
-                .append(BoxDoc::text("]"))
-                .append(
-                    BoxDoc::line()
-                        .append(
-                            BoxDoc::intersperse(
-                                in_block
-                                    .into_iter()
-                                    .map(|expr| self.print_expr(expr).group()),
-                                BoxDoc::line(),
-                            )
-                            .append(BoxDoc::text(")")),
+            ExprKind::Let {
+                is_mut,
+                name,
+                ty,
+                val,
+            } => {
+                // TODO
+                let varlist = vec![(is_mut, name, ty, val)];
+                BoxDoc::text("(")
+                    .append("let")
+                    .append(BoxDoc::space())
+                    .append(BoxDoc::text("["))
+                    .append(
+                        BoxDoc::intersperse(
+                            varlist.into_iter().map(|(is_mut, var, ty, expr)| {
+                                if is_mut {
+                                    BoxDoc::text("(mut").append(BoxDoc::space())
+                                } else {
+                                    BoxDoc::nil()
+                                }
+                                .append(BoxDoc::text(var.as_str()))
+                                .append(if is_mut {
+                                    BoxDoc::text(")")
+                                } else {
+                                    BoxDoc::nil()
+                                })
+                                .append(if let Some(ty) = ty {
+                                    BoxDoc::space()
+                                        .append(self.print_ty(ty))
+                                        .nest((var.as_str().len() + 1) as isize)
+                                } else {
+                                    BoxDoc::nil()
+                                })
+                                .append(
+                                    BoxDoc::space()
+                                        .append(self.print_expr(expr))
+                                        .nest((var.as_str().len() + 1) as isize),
+                                )
+                                .group()
+                            }),
+                            BoxDoc::line(),
                         )
-                        .nest(5),
-                ),
+                        .nest(6),
+                    )
+                    .append(BoxDoc::text("]"))
+            }
             ExprKind::BinaryOp { left, kind, right } => {
                 BoxDoc::text(format!("({}", self.print_binopkind(kind)))
                     .append(

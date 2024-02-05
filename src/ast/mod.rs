@@ -71,8 +71,10 @@ impl Expr {
 #[derive(Clone, Debug)]
 pub enum ExprKind {
     Let {
-        varlist: im::Vector<(bool, Ident, Option<Ty>, Expr)>,
-        in_block: im::Vector<Expr>,
+        is_mut: bool,
+        name: Ident,
+        ty: Option<Ty>,
+        val: Expr,
     },
     BinaryOp {
         left: Expr,
