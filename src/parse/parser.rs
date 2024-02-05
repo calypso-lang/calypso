@@ -218,7 +218,7 @@ pub fn stmt<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
             .pratt((
                 infix(
                     right(120),
-                    just(Token::StarStar).delimited_by(maybe_nls(), maybe_nls()),
+                    just(Token::StarStar).delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
@@ -244,7 +244,7 @@ pub fn stmt<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
                 infix(
                     left(100),
                     one_of([Token::Star, Token::Slash, Token::Percent])
-                        .delimited_by(maybe_nls(), maybe_nls()),
+                        .delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
@@ -260,28 +260,28 @@ pub fn stmt<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
                 ),
                 infix(
                     left(80),
-                    one_of([Token::LtLt, Token::GtGt]).delimited_by(maybe_nls(), maybe_nls()),
+                    one_of([Token::LtLt, Token::GtGt]).delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(70),
-                    just(Token::And).delimited_by(maybe_nls(), maybe_nls()),
+                    just(Token::And).delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(60),
-                    just(Token::Caret).delimited_by(maybe_nls(), maybe_nls()),
+                    just(Token::Caret).delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(50),
-                    just(Token::Pipe).delimited_by(maybe_nls(), maybe_nls()),
+                    just(Token::Pipe).delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
@@ -296,21 +296,21 @@ pub fn stmt<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
                         Token::Gt,
                         Token::GtEq,
                     ])
-                    .delimited_by(maybe_nls(), maybe_nls()),
+                    .delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(30),
-                    just(Token::AndAnd).delimited_by(maybe_nls(), maybe_nls()),
+                    just(Token::AndAnd).delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(20),
-                    just(Token::PipePipe).delimited_by(maybe_nls(), maybe_nls()),
+                    just(Token::PipePipe).delimited_by(nls_with_context, maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
