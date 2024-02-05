@@ -159,9 +159,7 @@ dependencies = [
  "chumsky",
  "clap",
  "eyre",
- "id-arena",
  "im",
- "index_vec",
  "itertools",
  "lasso",
  "logos",
@@ -524,12 +522,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "id-arena"
-version = "2.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25a2bc672d1148e28034f176e01fffebb08b35768468cc954630da77a1449005"
-
-[[package]]
 name = "im"
 version = "15.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -548,12 +540,6 @@ name = "indenter"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
-
-[[package]]
-name = "index_vec"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74086667896a940438f2118212f313abba4aff3831fef6f4b17d02add5c8bb60"
 
 [[package]]
 name = "indexmap"

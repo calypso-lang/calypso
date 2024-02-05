@@ -9,7 +9,6 @@ use chumsky::{
     prelude::*,
     util::MaybeRef,
 };
-use id_arena::Id;
 
 use crate::{
     ast::{self, BinOpKind, Expr, ExprKind, Numeral, Radix, Ty, TyKind},
@@ -57,7 +56,7 @@ fn maybe_nls<'src>() -> impl Parser<'src, CalInput<'src>, (), Extra<'src>> + Clo
     just(Token::Nl).ignored().repeated()
 }
 
-fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Id<Expr>, Extra<'src>> + Clone + 'src {
+fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Clone + 'src {
     any().try_map_with(|tok, extra| {
         let span = extra.span();
         if let Token::Numeral(num) = tok {
@@ -76,7 +75,7 @@ fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Id<Expr>, Extra<'src>> +
     })
 }
 
-fn binop(lhs: Id<Expr>, op: Token, rhs: Id<Expr>, span: Span, gcx: &GlobalCtxt) -> Id<Expr> {
+fn binop(lhs: Expr, op: Token, rhs: Expr, span: Span, gcx: &GlobalCtxt) -> Expr {
     Expr::new(
         gcx,
         ExprKind::BinaryOp {
@@ -111,7 +110,7 @@ fn binop(lhs: Id<Expr>, op: Token, rhs: Id<Expr>, span: Span, gcx: &GlobalCtxt) 
 
 // TODO: check for where recovery should be done
 
-pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Id<Ty>, Extra<'src>> + Clone + 'src {
+pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty, Extra<'src>> + Clone + 'src {
     select! {
 	Token::IdentLike(IdentLike::Primitive(Primitive::Uint)) => TyKind::Primitive(ast::Primitive::Uint),
 	Token::IdentLike(IdentLike::Primitive(Primitive::Bool)) => TyKind::Primitive(ast::Primitive::Bool),
@@ -121,7 +120,7 @@ pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Id<Ty>, Extra<'src>> + Cl
     })
 }
 
-pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Id<Expr>, Extra<'src>> + Clone + 'src {
+pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Clone + 'src {
     let expr = recursive(|expr| {
         let exprs_block = expr
             .clone()
@@ -130,7 +129,7 @@ pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Id<Expr>, Extra<'src>> 
                 just(Token::Nl).repeated().at_least(1).ignored(),
             )))
             .allow_trailing()
-            .collect::<Vec<Id<Expr>>>()
+            .collect::<Vec<Expr>>()
             .map(im::Vector::from);
 
         let primary = choice((
@@ -275,11 +274,8 @@ pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Id<Expr>, Extra<'src>> 
                 just(keyword(Keyword::Mut))
                     .then_ignore(maybe_nls())
                     .or_not()
-                    .map(|x| x.is_some()),
-            )
-            .then(
-                ident()
-                    .or(under_ident())
+                    .map(|x| x.is_some())
+                    .then(ident().or(under_ident()))
                     .then_ignore(maybe_nls())
                     .then(
                         just(Token::Colon)
@@ -293,7 +289,7 @@ pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Id<Expr>, Extra<'src>> 
                     // TODO: should this be `pratt`?
                     .then(expr)
                     .then_ignore(maybe_nls())
-                    .map(|((ident, ty), expr)| (ident, ty, expr))
+                    .map(|(((is_mut, ident), ty), expr)| (is_mut, ident, ty, expr))
                     .separated_by(just(Token::Comma).then_ignore(maybe_nls()))
                     .at_least(1)
                     .allow_trailing()
@@ -305,17 +301,9 @@ pub fn expr<'src>() -> impl Parser<'src, CalInput<'src>, Id<Expr>, Extra<'src>> 
             .then_ignore(maybe_nls())
             .then(exprs_block)
             .then_ignore(just(keyword(Keyword::End)))
-            .map_with(|((is_mut, varlist), in_block), extra| {
+            .map_with(|(varlist, in_block), extra| {
                 let span = extra.span();
-                Expr::new(
-                    extra.state(),
-                    ExprKind::Let {
-                        is_mut,
-                        varlist,
-                        in_block,
-                    },
-                    span,
-                )
+                Expr::new(extra.state(), ExprKind::Let { varlist, in_block }, span)
             })
             .or(pratt);
 

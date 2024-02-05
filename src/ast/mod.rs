@@ -4,41 +4,65 @@ use std::{
     fmt::{self, Display},
 };
 
-use id_arena::{Arena, Id};
-
 use crate::{
+    arena::{Arena, IdLike},
     ctxt::GlobalCtxt,
     parse::Span,
     symbol::{Ident, Symbol},
 };
 
-pub const DUMMY_AST_ID: AstId = AstId { _raw: 0 };
+pub const DUMMY_AST_ID: AstId = AstId(0);
 
-index_vec::define_index_type! {
-    pub struct AstId = u32;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct AstId(u32);
 
-    DISABLE_MAX_INDEX_CHECK = cfg!(not(debug_assertions));
-    DEBUG_FORMAT = "AstId({})";
-    DISPLAY_FORMAT = "{}";
-    IMPL_RAW_CONVERSIONS = true;
+impl AstId {
+    pub fn from_raw(id: u32) -> AstId {
+        AstId(id)
+    }
+
+    pub fn into_raw(self) -> u32 {
+        self.0
+    }
+}
+
+impl Display for AstId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct Expr(usize);
+
+impl IdLike for Expr {
+    fn from_raw(index: usize) -> Self {
+        Self(index)
+    }
+
+    fn into_raw(self) -> usize {
+        self.0
+    }
 }
 
 #[derive(Clone, Debug)]
-pub struct Expr {
+pub struct ExprData {
     pub id: AstId,
     pub kind: ExprKind,
     pub span: Span,
 }
 
 impl Expr {
-    pub fn new(gcx: &GlobalCtxt, kind: ExprKind, span: Span) -> Id<Expr> {
+    pub fn new(gcx: &GlobalCtxt, kind: ExprKind, span: Span) -> Expr {
         let id = gcx.arenas.ast.next_ast_id();
         let expr = gcx
             .arenas
             .ast
             .expr
             .borrow_mut()
-            .alloc(Expr { id, kind, span });
+            .push(ExprData { id, kind, span });
         gcx.arenas.ast.insert_node(id, Node::Expr(expr));
         expr
     }
@@ -47,20 +71,18 @@ impl Expr {
 #[derive(Clone, Debug)]
 pub enum ExprKind {
     Let {
-        is_mut: bool,
-        varlist: im::Vector<(Ident, Option<Id<Ty>>, Id<Expr>)>,
-        in_block: im::Vector<Id<Expr>>,
+        varlist: im::Vector<(bool, Ident, Option<Ty>, Expr)>,
+        in_block: im::Vector<Expr>,
     },
     BinaryOp {
-        left: Id<Expr>,
+        left: Expr,
         kind: BinOpKind,
-        right: Id<Expr>,
+        right: Expr,
     },
-    UnaryMinus(Id<Expr>),
-    UnaryNot(Id<Expr>),
-    //Paren(Id<Expr>),
+    UnaryMinus(Expr),
+    UnaryNot(Expr),
     Do {
-        exprs: im::Vector<Id<Expr>>,
+        exprs: im::Vector<Expr>,
     },
     Numeral(Numeral),
     Ident(Ident),
@@ -68,17 +90,36 @@ pub enum ExprKind {
     Error,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct Ty(usize);
+
+impl IdLike for Ty {
+    fn from_raw(index: usize) -> Self {
+        Self(index)
+    }
+
+    fn into_raw(self) -> usize {
+        self.0
+    }
+}
+
 #[derive(Clone, Debug)]
-pub struct Ty {
+pub struct TyData {
     pub id: AstId,
     pub kind: TyKind,
     pub span: Span,
 }
 
 impl Ty {
-    pub fn new(gcx: &GlobalCtxt, kind: TyKind, span: Span) -> Id<Ty> {
+    pub fn new(gcx: &GlobalCtxt, kind: TyKind, span: Span) -> Ty {
         let id = gcx.arenas.ast.next_ast_id();
-        let ty = gcx.arenas.ast.ty.borrow_mut().alloc(Ty { id, kind, span });
+        let ty = gcx
+            .arenas
+            .ast
+            .ty
+            .borrow_mut()
+            .push(TyData { id, kind, span });
         gcx.arenas.ast.insert_node(id, Node::Ty(ty));
         ty
     }
@@ -125,8 +166,8 @@ pub struct Parentage {
 
 #[derive(Debug)]
 pub struct AstArenas {
-    pub expr: RefCell<Arena<Expr>>,
-    pub ty: RefCell<Arena<Ty>>,
+    pub expr: RefCell<Arena<Expr, ExprData>>,
+    pub ty: RefCell<Arena<Ty, TyData>>,
     pub parentage: RefCell<Parentage>,
     next_ast_id: Cell<u32>,
     ast_id_to_node: RefCell<HashMap<AstId, Node>>,
@@ -139,11 +180,11 @@ impl AstArenas {
         self.parentage.borrow_mut().map.clear();
     }
 
-    pub fn expr(&self, id: Id<Expr>) -> Expr {
+    pub fn expr(&self, id: Expr) -> ExprData {
         self.expr.borrow()[id].clone()
     }
 
-    pub fn ty(&self, id: Id<Ty>) -> Ty {
+    pub fn ty(&self, id: Ty) -> TyData {
         self.ty.borrow()[id].clone()
     }
 
@@ -182,8 +223,8 @@ impl Default for AstArenas {
 
 #[derive(Copy, Clone, Debug)]
 pub enum Node {
-    Expr(Id<Expr>),
-    Ty(Id<Ty>),
+    Expr(Expr),
+    Ty(Ty),
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]

@@ -1,4 +1,3 @@
-use id_arena::Id;
 use pretty::BoxDoc;
 
 use crate::ast::{BinOpKind, Expr, ExprKind, Numeral, Primitive, Ty, TyKind};
@@ -6,42 +5,44 @@ use crate::ast::{BinOpKind, Expr, ExprKind, Numeral, Primitive, Ty, TyKind};
 use super::Printer;
 
 impl<'gcx> Printer<'gcx> {
-    pub fn print_expr(&self, expr: Id<Expr>) -> BoxDoc {
+    pub fn print_expr(&self, expr: Expr) -> BoxDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.expr(expr).kind {
-            ExprKind::Let {
-                is_mut,
-                varlist,
-                in_block,
-            } => BoxDoc::text("(")
-                .append(if is_mut {
-                    BoxDoc::text("let-mut")
-                } else {
-                    BoxDoc::text("let")
-                })
+            ExprKind::Let { varlist, in_block } => BoxDoc::text("(")
+                .append("let")
                 .append(BoxDoc::space())
                 .append(BoxDoc::text("["))
                 .append(
                     BoxDoc::intersperse(
-                        varlist.into_iter().map(|(var, ty, expr)| {
-                            BoxDoc::text(var.as_str())
-                                .append(if let Some(ty) = ty {
-                                    BoxDoc::space()
-                                        .append(self.print_ty(ty))
-                                        .nest((var.as_str().len() + 1) as isize)
-                                } else {
-                                    BoxDoc::nil()
-                                })
-                                .append(
-                                    BoxDoc::space()
-                                        .append(self.print_expr(expr))
-                                        .nest((var.as_str().len() + 1) as isize),
-                                )
-                                .group()
+                        varlist.into_iter().map(|(is_mut, var, ty, expr)| {
+                            if is_mut {
+                                BoxDoc::text("(mut").append(BoxDoc::space())
+                            } else {
+                                BoxDoc::nil()
+                            }
+                            .append(BoxDoc::text(var.as_str()))
+                            .append(if is_mut {
+                                BoxDoc::text(")")
+                            } else {
+                                BoxDoc::nil()
+                            })
+                            .append(if let Some(ty) = ty {
+                                BoxDoc::space()
+                                    .append(self.print_ty(ty))
+                                    .nest((var.as_str().len() + 1) as isize)
+                            } else {
+                                BoxDoc::nil()
+                            })
+                            .append(
+                                BoxDoc::space()
+                                    .append(self.print_expr(expr))
+                                    .nest((var.as_str().len() + 1) as isize),
+                            )
+                            .group()
                         }),
                         BoxDoc::line(),
                     )
-                    .nest(if is_mut { 10 } else { 6 }),
+                    .nest(6),
                 )
                 .append(BoxDoc::text("]"))
                 .append(
@@ -55,7 +56,7 @@ impl<'gcx> Printer<'gcx> {
                             )
                             .append(BoxDoc::text(")")),
                         )
-                        .nest(if is_mut { 9 } else { 5 }),
+                        .nest(5),
                 ),
             ExprKind::BinaryOp { left, kind, right } => {
                 BoxDoc::text(format!("({}", self.print_binopkind(kind)))
@@ -119,7 +120,7 @@ impl<'gcx> Printer<'gcx> {
         }
     }
 
-    pub fn print_ty(&self, ty: Id<Ty>) -> BoxDoc {
+    pub fn print_ty(&self, ty: Ty) -> BoxDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.ty(ty).kind {
             TyKind::Primitive(Primitive::Bool) => BoxDoc::text("bool"),
