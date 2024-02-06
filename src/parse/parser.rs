@@ -12,9 +12,9 @@ use chumsky::{
 };
 
 use crate::{
-    ast::{self, BinOpKind, Expr, ExprKind, Item, ItemKind, Numeral, Radix, Ty, TyKind},
+    ast::{BinOpKind, Expr, ExprKind, Item, ItemKind, Numeral, Radix, Ty, TyKind},
     ctxt::GlobalCtxt,
-    symbol::{kw::Keyword, primitives::Primitive, special::EMPTY, Ident, Symbol},
+    symbol::{kw::Keyword, special::EMPTY, Ident, Symbol},
 };
 
 use super::{
@@ -57,7 +57,7 @@ fn maybe_nls<'src>() -> impl Parser<'src, CalInput<'src>, (), Extra<'src>> + Clo
     just(Token::Nl).ignored().repeated()
 }
 
-fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Expr<Ident>, Extra<'src>> + Clone + 'src {
+fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Clone + 'src {
     any().try_map_with(|tok, extra| {
         let span = extra.span();
         if let Token::Numeral(num) = tok {
@@ -76,13 +76,7 @@ fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Expr<Ident>, Extra<'src>
     })
 }
 
-fn binop(
-    lhs: Expr<Ident>,
-    op: Token,
-    rhs: Expr<Ident>,
-    span: Span,
-    gcx: &GlobalCtxt,
-) -> Expr<Ident> {
+fn binop(lhs: Expr, op: Token, rhs: Expr, span: Span, gcx: &GlobalCtxt) -> Expr {
     Expr::new(
         gcx,
         ExprKind::BinaryOp {
@@ -117,19 +111,11 @@ fn binop(
 
 // TODO: check for where recovery should be done
 
-pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty<Ident>, Extra<'src>> + Clone + 'src {
+pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty, Extra<'src>> + Clone + 'src {
     recursive(|ty| {
-        // TODO: this is janky, why did I do it like this. This should
-        // be handled by resolve, that way errors about clashing type
-        // names are resolve errors, not syntactic errors
-        let primitive = select! {
-	Token::IdentLike(IdentLike::Primitive(Primitive::UInt)) => TyKind::Primitive(ast::Primitive::UInt),
-	    Token::IdentLike(IdentLike::Primitive(Primitive::Bool)) => TyKind::Primitive(ast::Primitive::Bool),
-	    Token::IdentLike(IdentLike::Primitive(Primitive::Int)) => TyKind::Primitive(ast::Primitive::Int),
-    }.map_with(|kind, extra| {
-	let span = extra.span();
-	Ty::new(*extra.state(), kind, span)
-    });
+        let ident = ident()
+            .or(under_ident())
+            .map_with(|ident, extra| Ty::new(*extra.state(), TyKind::Ident(ident), extra.span()));
 
         let func = just(keyword(Keyword::Fn))
             .then_ignore(maybe_nls())
@@ -157,13 +143,13 @@ pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty<Ident>, Extra<'src>> +
                     extra.span(),
                 )
             })
-            .or(primitive);
+            .or(ident);
 
         func
     })
 }
 
-pub fn item<'src>() -> impl Parser<'src, CalInput<'src>, Item<Ident>, Extra<'src>> + Clone + 'src {
+pub fn item<'src>() -> impl Parser<'src, CalInput<'src>, Item, Extra<'src>> + Clone + 'src {
     let mut stmt = Recursive::declare();
     let mut expr = Recursive::declare();
     let mut item = Recursive::declare();
@@ -267,7 +253,7 @@ pub fn item<'src>() -> impl Parser<'src, CalInput<'src>, Item<Ident>, Extra<'src
                 just(Token::Nl).repeated().at_least(1).ignored(),
             )))
             .allow_trailing()
-            .collect::<Vec<Expr<Ident>>>()
+            .collect::<Vec<Expr>>()
             .map(im::Vector::from);
 
         let primary = choice((

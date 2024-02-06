@@ -1,14 +1,11 @@
 use pretty::{DocAllocator, RcAllocator, RcDoc};
 
-use crate::{
-    ast::{BinOpKind, Expr, ExprKind, Item, ItemKind, Numeral, Primitive, Ty, TyKind},
-    symbol::Ident,
-};
+use crate::ast::{BinOpKind, Expr, ExprKind, Item, ItemKind, Numeral, Ty, TyKind};
 
 use super::Printer;
 
 impl<'gcx> Printer<'gcx> {
-    pub fn print_expr(&self, expr: Expr<Ident>) -> RcDoc {
+    pub fn print_expr(&self, expr: Expr) -> RcDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.expr(expr).kind {
             ExprKind::Let {
@@ -119,12 +116,10 @@ impl<'gcx> Printer<'gcx> {
         }
     }
 
-    pub fn print_ty(&self, ty: Ty<Ident>) -> RcDoc {
+    pub fn print_ty(&self, ty: Ty) -> RcDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.ty(ty).kind {
-            TyKind::Primitive(Primitive::Bool) => RcDoc::text("Bool"),
-            TyKind::Primitive(Primitive::UInt) => RcDoc::text("UInt"),
-            TyKind::Primitive(Primitive::Int) => RcDoc::text("Int"),
+            TyKind::Ident(ident) => RcDoc::text(ident.as_str()),
             TyKind::Function(args, ret) => {
                 let args = args.iter().map(|arg| self.print_ty(*arg));
                 let ret = ret.map(|ret| {
@@ -144,7 +139,7 @@ impl<'gcx> Printer<'gcx> {
         }
     }
 
-    pub fn print_item(&self, item: Item<Ident>) -> RcDoc {
+    pub fn print_item(&self, item: Item) -> RcDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.item(item).kind {
             ItemKind::Function {

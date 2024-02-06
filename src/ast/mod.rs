@@ -2,7 +2,6 @@ use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
     fmt::{self, Display},
-    marker::PhantomData,
 };
 
 use crate::{
@@ -36,11 +35,11 @@ impl Display for AstId {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct Item<Id: Copy + Clone>(usize, PhantomData<Id>);
+pub struct Item(usize);
 
-impl<Id: Copy + Clone> IdLike for Item<Id> {
+impl IdLike for Item {
     fn from_raw(index: usize) -> Self {
-        Self(index, PhantomData)
+        Self(index)
     }
 
     fn into_raw(self) -> usize {
@@ -49,24 +48,24 @@ impl<Id: Copy + Clone> IdLike for Item<Id> {
 }
 
 #[derive(Clone, Debug)]
-pub struct ItemData<Id: Copy + Clone> {
+pub struct ItemData {
     pub id: AstId,
-    pub kind: ItemKind<Id>,
+    pub kind: ItemKind,
     pub span: Span,
 }
 
 #[derive(Clone, Debug)]
-pub enum ItemKind<Id: Copy + Clone> {
+pub enum ItemKind {
     Function {
-        name: Id,
-        args: im::Vector<(Id, Ty<Id>)>,
-        ret_ty: Option<Ty<Id>>,
-        body: Expr<Id>,
+        name: Ident,
+        args: im::Vector<(Ident, Ty)>,
+        ret_ty: Option<Ty>,
+        body: Expr,
     },
 }
 
-impl Item<Ident> {
-    pub fn new(gcx: &GlobalCtxt, kind: ItemKind<Ident>, span: Span) -> Item<Ident> {
+impl Item {
+    pub fn new(gcx: &GlobalCtxt, kind: ItemKind, span: Span) -> Item {
         let id = gcx.arenas.ast.next_ast_id();
         let item = gcx
             .arenas
@@ -81,11 +80,11 @@ impl Item<Ident> {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct Expr<Id: Copy + Clone>(usize, PhantomData<Id>);
+pub struct Expr(usize);
 
-impl<Id: Copy + Clone> IdLike for Expr<Id> {
+impl IdLike for Expr {
     fn from_raw(index: usize) -> Self {
-        Self(index, PhantomData)
+        Self(index)
     }
 
     fn into_raw(self) -> usize {
@@ -94,14 +93,14 @@ impl<Id: Copy + Clone> IdLike for Expr<Id> {
 }
 
 #[derive(Clone, Debug)]
-pub struct ExprData<Id: Copy + Clone> {
+pub struct ExprData {
     pub id: AstId,
-    pub kind: ExprKind<Id>,
+    pub kind: ExprKind,
     pub span: Span,
 }
 
-impl Expr<Ident> {
-    pub fn new(gcx: &GlobalCtxt, kind: ExprKind<Ident>, span: Span) -> Expr<Ident> {
+impl Expr {
+    pub fn new(gcx: &GlobalCtxt, kind: ExprKind, span: Span) -> Expr {
         let id = gcx.arenas.ast.next_ast_id();
         let expr = gcx
             .arenas
@@ -115,36 +114,36 @@ impl Expr<Ident> {
 }
 
 #[derive(Clone, Debug)]
-pub enum ExprKind<Id: Copy + Clone> {
+pub enum ExprKind {
     Let {
         is_mut: bool,
-        name: Id,
-        ty: Option<Ty<Id>>,
-        val: Expr<Id>,
+        name: Ident,
+        ty: Option<Ty>,
+        val: Expr,
     },
     BinaryOp {
-        left: Expr<Id>,
+        left: Expr,
         kind: BinOpKind,
-        right: Expr<Id>,
+        right: Expr,
     },
-    UnaryMinus(Expr<Id>),
-    UnaryNot(Expr<Id>),
+    UnaryMinus(Expr),
+    UnaryNot(Expr),
     Do {
-        exprs: im::Vector<Expr<Id>>,
+        exprs: im::Vector<Expr>,
     },
     Numeral(Numeral),
-    Ident(Id),
+    Ident(Ident),
     Bool(bool),
     Error,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct Ty<Id: Copy + Clone>(usize, PhantomData<Id>);
+pub struct Ty(usize);
 
-impl<Id: Copy + Clone> IdLike for Ty<Id> {
+impl IdLike for Ty {
     fn from_raw(index: usize) -> Self {
-        Self(index, PhantomData)
+        Self(index)
     }
 
     fn into_raw(self) -> usize {
@@ -153,14 +152,14 @@ impl<Id: Copy + Clone> IdLike for Ty<Id> {
 }
 
 #[derive(Clone, Debug)]
-pub struct TyData<Id: Copy + Clone> {
+pub struct TyData {
     pub id: AstId,
-    pub kind: TyKind<Id>,
+    pub kind: TyKind,
     pub span: Span,
 }
 
-impl Ty<Ident> {
-    pub fn new(gcx: &GlobalCtxt, kind: TyKind<Ident>, span: Span) -> Ty<Ident> {
+impl Ty {
+    pub fn new(gcx: &GlobalCtxt, kind: TyKind, span: Span) -> Ty {
         let id = gcx.arenas.ast.next_ast_id();
         let ty = gcx
             .arenas
@@ -174,13 +173,13 @@ impl Ty<Ident> {
 }
 
 #[derive(Clone, Debug)]
-pub enum TyKind<Id: Copy + Clone> {
-    Primitive(Primitive),
-    Function(im::Vector<Ty<Id>>, Option<Ty<Id>>),
+pub enum TyKind {
+    Function(im::Vector<Ty>, Option<Ty>),
+    Ident(Ident),
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum Primitive {
+pub enum PrimTy {
     Bool,
     UInt,
     Int,
@@ -216,12 +215,12 @@ pub struct Parentage {
 
 #[derive(Debug)]
 pub struct AstArenas {
-    pub expr: RefCell<Arena<Expr<Ident>, ExprData<Ident>>>,
-    pub ty: RefCell<Arena<Ty<Ident>, TyData<Ident>>>,
-    pub item: RefCell<Arena<Item<Ident>, ItemData<Ident>>>,
+    pub expr: RefCell<Arena<Expr, ExprData>>,
+    pub ty: RefCell<Arena<Ty, TyData>>,
+    pub item: RefCell<Arena<Item, ItemData>>,
     pub parentage: RefCell<Parentage>,
     next_ast_id: Cell<u32>,
-    ast_id_to_node: RefCell<HashMap<AstId, Node<Ident>>>,
+    ast_id_to_node: RefCell<HashMap<AstId, Node>>,
 }
 
 impl AstArenas {
@@ -231,15 +230,15 @@ impl AstArenas {
         self.parentage.borrow_mut().map.clear();
     }
 
-    pub fn expr(&self, id: Expr<Ident>) -> ExprData<Ident> {
+    pub fn expr(&self, id: Expr) -> ExprData {
         self.expr.borrow()[id].clone()
     }
 
-    pub fn ty(&self, id: Ty<Ident>) -> TyData<Ident> {
+    pub fn ty(&self, id: Ty) -> TyData {
         self.ty.borrow()[id].clone()
     }
 
-    pub fn item(&self, id: Item<Ident>) -> ItemData<Ident> {
+    pub fn item(&self, id: Item) -> ItemData {
         self.item.borrow()[id].clone()
     }
 
@@ -250,16 +249,16 @@ impl AstArenas {
         AstId::from_raw(id)
     }
 
-    pub fn get_node_by_id(&self, id: AstId) -> Option<Node<Ident>> {
+    pub fn get_node_by_id(&self, id: AstId) -> Option<Node> {
         self.ast_id_to_node.borrow().get(&id).copied()
     }
 
-    pub fn into_iter_nodes(&self) -> impl Iterator<Item = Node<Ident>> {
+    pub fn into_iter_nodes(&self) -> impl Iterator<Item = Node> {
         let v = self.ast_id_to_node.borrow();
         v.values().copied().collect::<Vec<_>>().into_iter()
     }
 
-    fn insert_node(&self, id: AstId, node: Node<Ident>) {
+    fn insert_node(&self, id: AstId, node: Node) {
         self.ast_id_to_node.borrow_mut().insert(id, node);
     }
 }
@@ -278,10 +277,10 @@ impl Default for AstArenas {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum Node<Id: Copy + Clone> {
-    Expr(Expr<Id>),
-    Ty(Ty<Id>),
-    Item(Item<Id>),
+pub enum Node {
+    Expr(Expr),
+    Ty(Ty),
+    Item(Item),
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
