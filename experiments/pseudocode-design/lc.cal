@@ -1,4 +1,4 @@
-enum Expr =
+data Expr =
     | Lambda(String, Expr)
     | App(Expr, Expr)
     | Var(String)

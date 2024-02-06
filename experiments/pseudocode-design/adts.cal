@@ -1,33 +1,29 @@
 // C-style struct
-struct Point =
-    x: float,
-    y: float
+data Point(x: float, y: float)
 
 // Tuple struct
-struct PairOfInts = sint, sint
+data PairOfInts(sint, sint)
 
 // Generic structs
-struct GenericPair[T] = T, T
+data GenericPair[T](T, T)
 
-struct GenericPoint[T] =
-    x: T,
-    y: T
+data GenericPoint[T](x: T, y: T)
 
 // Enums, untagged (no values inside variants)
-enum Color =
+data Color =
     | Red
     | Green
     | Blue
 
 // Enums, tagged (values inside variants)
-enum Color2 =
+data Color2 =
     | Red
     | Green
     | Blue
     | RgbCombo(uint, uint, uint)
 
 // Enums, tagged, struct variants
-enum Color3 =
+data Color3 =
     | Red
     | Green
     | Blue
@@ -38,7 +34,7 @@ enum Color3 =
     )
 
 // Enums, generic
-enum Option[T] = Some(T) | None
+data Option[T] = Some(T) | None
 
 // Type alias
 type Foo = Bar
@@ -47,7 +43,10 @@ type Foo = Bar
 type FooResult[T] = Result[T, FooError]
 
 // Empty struct
-type Empty
+data Empty
+
+// Alternative empty struct
+data Empty2()
 
 // Void enum (cannot be initialized)
-enum Void
+data Void = |
