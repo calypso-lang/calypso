@@ -216,6 +216,7 @@ intern_static! {kw, "Keywords", Keyword => {
     Do; DO: "do"; "Do (`do`)",
     End; END: "end"; "End (`end`)",
     In; IN: "in"; "In (`in`)",
+    Fn; FN: "fn"; "Fn (`fn`)",
 }}
 
 impl kw::Keyword {
@@ -228,20 +229,23 @@ impl kw::Keyword {
             kw::Keyword::Do => "`do`",
             kw::Keyword::End => "`end`",
             kw::Keyword::In => "`in`",
+            kw::Keyword::Fn => "`fn`",
         }
     }
 }
 
 intern_static! {primitives, "Primitive types", Primitive => {
-    Uint; UINT: "uint"; "Uint (`uint`)",
-    Bool; BOOL: "bool"; "Bool (`bool`)",
+    UInt; UINT: "UInt"; "UInt (`UInt`)",
+    Int; INT: "Int"; "Int (`Int`)",
+    Bool; BOOL: "Bool"; "Bool (`Bool`)",
 }}
 
 impl primitives::Primitive {
     pub fn description(&self) -> &'static str {
         match self {
-            primitives::Primitive::Bool => "`bool`",
-            primitives::Primitive::Uint => "`uint`",
+            primitives::Primitive::Bool => "`Bool`",
+            primitives::Primitive::UInt => "`UInt`",
+            primitives::Primitive::Int => "`Int`",
         }
     }
 }

@@ -1,8 +1,9 @@
 #![allow(clippy::explicit_auto_deref)]
-use std::iter;
+use std::{borrow::Cow, iter};
 
+use ariadne::{Color, Fmt, Label, ReportBuilder};
 use chumsky::{
-    error::Error,
+    error::{Error, RichReason},
     extra::Full,
     input::{BoxedStream, MapExtra, SpannedInput},
     pratt::{infix, left, prefix, right},
@@ -11,14 +12,14 @@ use chumsky::{
 };
 
 use crate::{
-    ast::{self, BinOpKind, Expr, ExprKind, Numeral, Radix, Ty, TyKind},
+    ast::{self, BinOpKind, Expr, ExprKind, Item, ItemKind, Numeral, Radix, Ty, TyKind},
     ctxt::GlobalCtxt,
     symbol::{kw::Keyword, primitives::Primitive, special::EMPTY, Ident, Symbol},
 };
 
 use super::{
     lexer::{IdentLike, Token},
-    Span,
+    Span, SpanWithFile,
 };
 
 pub type SyntaxError<'src> = Rich<'src, Token, Span>;
@@ -56,7 +57,7 @@ fn maybe_nls<'src>() -> impl Parser<'src, CalInput<'src>, (), Extra<'src>> + Clo
     just(Token::Nl).ignored().repeated()
 }
 
-fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Clone + 'src {
+fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Expr<Ident>, Extra<'src>> + Clone + 'src {
     any().try_map_with(|tok, extra| {
         let span = extra.span();
         if let Token::Numeral(num) = tok {
@@ -75,7 +76,13 @@ fn numeral<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Clo
     })
 }
 
-fn binop(lhs: Expr, op: Token, rhs: Expr, span: Span, gcx: &GlobalCtxt) -> Expr {
+fn binop(
+    lhs: Expr<Ident>,
+    op: Token,
+    rhs: Expr<Ident>,
+    span: Span,
+    gcx: &GlobalCtxt,
+) -> Expr<Ident> {
     Expr::new(
         gcx,
         ExprKind::BinaryOp {
@@ -110,19 +117,103 @@ fn binop(lhs: Expr, op: Token, rhs: Expr, span: Span, gcx: &GlobalCtxt) -> Expr 
 
 // TODO: check for where recovery should be done
 
-pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty, Extra<'src>> + Clone + 'src {
-    select! {
-	Token::IdentLike(IdentLike::Primitive(Primitive::Uint)) => TyKind::Primitive(ast::Primitive::Uint),
-	Token::IdentLike(IdentLike::Primitive(Primitive::Bool)) => TyKind::Primitive(ast::Primitive::Bool),
+pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty<Ident>, Extra<'src>> + Clone + 'src {
+    recursive(|ty| {
+        // TODO: this is janky, why did I do it like this. This should
+        // be handled by resolve, that way errors about clashing type
+        // names are resolve errors, not syntactic errors
+        let primitive = select! {
+	Token::IdentLike(IdentLike::Primitive(Primitive::UInt)) => TyKind::Primitive(ast::Primitive::UInt),
+	    Token::IdentLike(IdentLike::Primitive(Primitive::Bool)) => TyKind::Primitive(ast::Primitive::Bool),
+	    Token::IdentLike(IdentLike::Primitive(Primitive::Int)) => TyKind::Primitive(ast::Primitive::Int),
     }.map_with(|kind, extra| {
 	let span = extra.span();
 	Ty::new(*extra.state(), kind, span)
+    });
+
+        let func = just(keyword(Keyword::Fn))
+            .then_ignore(maybe_nls())
+            .ignore_then(just(Token::LParen))
+            .then_ignore(maybe_nls())
+            .ignore_then(
+                ty.clone()
+                    .then_ignore(maybe_nls())
+                    .separated_by(just(Token::Comma).then_ignore(maybe_nls()))
+                    .allow_trailing()
+                    .collect::<Vec<_>>(),
+            )
+            .then_ignore(just(Token::RParen).then_ignore(maybe_nls()))
+            .then(
+                just(Token::Colon)
+                    .then_ignore(maybe_nls())
+                    .ignore_then(ty.clone())
+                    .then_ignore(maybe_nls())
+                    .or_not(),
+            )
+            .map_with(|(args, ret), extra| {
+                Ty::new(
+                    *extra.state(),
+                    TyKind::Function(args.into(), ret),
+                    extra.span(),
+                )
+            })
+            .or(primitive);
+
+        func
     })
 }
 
-pub fn stmt<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Clone + 'src {
+pub fn item<'src>() -> impl Parser<'src, CalInput<'src>, Item<Ident>, Extra<'src>> + Clone + 'src {
     let mut stmt = Recursive::declare();
     let mut expr = Recursive::declare();
+    let mut item = Recursive::declare();
+
+    item.define({
+        let name_ty = ident().or(under_ident()).then_ignore(maybe_nls()).then(
+            just(Token::Colon)
+                .then_ignore(maybe_nls())
+                .ignore_then(ty())
+                .then_ignore(maybe_nls())
+                .labelled("type annotation"),
+        );
+
+        just(keyword(Keyword::Fn))
+            .ignore_then(maybe_nls())
+            .ignore_then(ident())
+            .then_ignore(maybe_nls())
+            .then_ignore(just(Token::LParen))
+            .then_ignore(maybe_nls())
+            .then(
+                name_ty
+                    .separated_by(just(Token::Comma).then_ignore(maybe_nls()))
+                    .allow_trailing()
+                    .collect::<Vec<_>>(),
+            )
+            .then_ignore(just(Token::RParen))
+            .then_ignore(maybe_nls())
+            .then(
+                just(Token::Colon)
+                    .then_ignore(maybe_nls())
+                    .ignore_then(ty())
+                    .then_ignore(maybe_nls())
+                    .or_not(),
+            )
+            .then_ignore(maybe_nls())
+            .then_ignore(just(Token::Arrow))
+            .then(expr.clone())
+            .map_with(|(((name, args), ret_ty), body), extra| {
+                Item::new(
+                    *extra.state(),
+                    ItemKind::Function {
+                        name,
+                        args: args.into(),
+                        ret_ty,
+                        body,
+                    },
+                    extra.span(),
+                )
+            })
+    });
 
     stmt.define({
         let let_expr = just(keyword(Keyword::Let))
@@ -176,7 +267,7 @@ pub fn stmt<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
                 just(Token::Nl).repeated().at_least(1).ignored(),
             )))
             .allow_trailing()
-            .collect::<Vec<Expr>>()
+            .collect::<Vec<Expr<Ident>>>()
             .map(im::Vector::from);
 
         let primary = choice((
@@ -322,5 +413,59 @@ pub fn stmt<'src>() -> impl Parser<'src, CalInput<'src>, Expr, Extra<'src>> + Cl
         pratt
     });
 
-    stmt.then_ignore(maybe_nls())
+    item.then_ignore(maybe_nls())
+}
+
+pub fn render_diagnostic(
+    e: &RichReason<'_, Token>,
+    span: Span,
+    file: Symbol,
+    mut report: ReportBuilder<'static, SpanWithFile>,
+) -> ReportBuilder<'static, SpanWithFile> {
+    match e {
+        RichReason::Custom(msg) => report.with_message(msg).with_label(
+            Label::new(SpanWithFile(file, span))
+                .with_message(format!("{}", msg.fg(Color::Red)))
+                .with_color(Color::Red),
+        ),
+        RichReason::ExpectedFound { expected, found } => report
+            .with_message(format!(
+                "{}, expected: {}",
+                if let Some(found) = found {
+                    Cow::from(format!("Unexpected token {}", found.description()))
+                } else {
+                    Cow::from("Unexpected end of input")
+                },
+                if expected.is_empty() {
+                    Cow::from("end of input")
+                } else {
+                    Cow::from(
+                        expected
+                            .iter()
+                            .map(|x| match x {
+                                chumsky::error::RichPattern::Token(tok) => {
+                                    Cow::from(tok.description())
+                                }
+                                chumsky::error::RichPattern::Label(l) => Cow::from(*l),
+                                chumsky::error::RichPattern::EndOfInput => {
+                                    Cow::from("end of input")
+                                }
+                            })
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    )
+                },
+            ))
+            .with_label(
+                Label::new(SpanWithFile(file, span))
+                    .with_message("didn't expect this token".fg(Color::Red))
+                    .with_color(Color::Red),
+            ),
+        RichReason::Many(vec) => {
+            for reason in vec {
+                report = render_diagnostic(reason, span, file, report);
+            }
+            report
+        }
+    }
 }

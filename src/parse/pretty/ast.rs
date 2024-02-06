@@ -1,11 +1,14 @@
-use pretty::BoxDoc;
+use pretty::{DocAllocator, RcAllocator, RcDoc};
 
-use crate::ast::{BinOpKind, Expr, ExprKind, Numeral, Primitive, Ty, TyKind};
+use crate::{
+    ast::{BinOpKind, Expr, ExprKind, Item, ItemKind, Numeral, Primitive, Ty, TyKind},
+    symbol::Ident,
+};
 
 use super::Printer;
 
 impl<'gcx> Printer<'gcx> {
-    pub fn print_expr(&self, expr: Expr) -> BoxDoc {
+    pub fn print_expr(&self, expr: Expr<Ident>) -> RcDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.expr(expr).kind {
             ExprKind::Let {
@@ -16,79 +19,79 @@ impl<'gcx> Printer<'gcx> {
             } => {
                 // TODO
                 let varlist = vec![(is_mut, name, ty, val)];
-                BoxDoc::text("(")
+                RcDoc::text("(")
                     .append("let")
-                    .append(BoxDoc::space())
-                    .append(BoxDoc::text("["))
+                    .append(RcDoc::space())
+                    .append(RcDoc::text("["))
                     .append(
-                        BoxDoc::intersperse(
+                        RcDoc::intersperse(
                             varlist.into_iter().map(|(is_mut, var, ty, expr)| {
                                 if is_mut {
-                                    BoxDoc::text("(mut").append(BoxDoc::space())
+                                    RcDoc::text("(mut").append(RcDoc::space())
                                 } else {
-                                    BoxDoc::nil()
+                                    RcDoc::nil()
                                 }
-                                .append(BoxDoc::text(var.as_str()))
+                                .append(RcDoc::text(var.as_str()))
                                 .append(if is_mut {
-                                    BoxDoc::text(")")
+                                    RcDoc::text(")")
                                 } else {
-                                    BoxDoc::nil()
+                                    RcDoc::nil()
                                 })
                                 .append(if let Some(ty) = ty {
-                                    BoxDoc::space()
+                                    RcDoc::space()
                                         .append(self.print_ty(ty))
                                         .nest((var.as_str().len() + 1) as isize)
                                 } else {
-                                    BoxDoc::nil()
+                                    RcDoc::nil()
                                 })
                                 .append(
-                                    BoxDoc::space()
+                                    RcDoc::space()
                                         .append(self.print_expr(expr))
                                         .nest((var.as_str().len() + 1) as isize),
                                 )
                                 .group()
                             }),
-                            BoxDoc::line(),
+                            RcDoc::line(),
                         )
                         .nest(6),
                     )
-                    .append(BoxDoc::text("]"))
+                    .append(RcDoc::text("]"))
             }
             ExprKind::BinaryOp { left, kind, right } => {
-                BoxDoc::text(format!("({}", self.print_binopkind(kind)))
+                RcDoc::text(format!("({}", self.print_binopkind(kind)))
                     .append(
-                        BoxDoc::space()
+                        RcDoc::space()
                             .append(self.print_expr(left))
-                            .append(BoxDoc::line())
+                            .append(RcDoc::line())
                             .append(self.print_expr(right))
                             .group()
-                            .append(BoxDoc::text(")")),
+                            .append(RcDoc::text(")")),
                     )
                     .nest((self.print_binopkind(kind).len() + 2) as isize)
             }
-            ExprKind::UnaryMinus(expr) => BoxDoc::text("(neg")
-                .append(BoxDoc::space().append(self.print_expr(expr)).nest(5))
-                .append(BoxDoc::text(")")),
-            ExprKind::UnaryNot(expr) => BoxDoc::text("(not")
-                .append(BoxDoc::space().append(self.print_expr(expr)).nest(5))
-                .append(BoxDoc::text(")")),
-            ExprKind::Do { exprs } => BoxDoc::text("(do").append(
-                BoxDoc::line()
+            ExprKind::UnaryMinus(expr) => RcDoc::text("(neg")
+                .append(RcDoc::space().append(self.print_expr(expr)).nest(5))
+                .append(RcDoc::text(")")),
+            ExprKind::UnaryNot(expr) => RcDoc::text("(not")
+                .append(RcDoc::space().append(self.print_expr(expr)).nest(5))
+                .append(RcDoc::text(")")),
+            ExprKind::Do { exprs } => RcDoc::text("(do").append(
+                RcDoc::line()
                     .append(
-                        BoxDoc::intersperse(
+                        RcDoc::intersperse(
                             exprs.into_iter().map(|expr| self.print_expr(expr).group()),
-                            BoxDoc::line(),
+                            RcDoc::line(),
                         )
-                        .append(BoxDoc::text(")")),
+                        .append(RcDoc::text(")")),
                     )
                     .nest(4),
             ),
             ExprKind::Numeral(Numeral::Float { sym, .. } | Numeral::Integer { sym, .. }) => {
-                BoxDoc::text(sym.as_str())
+                RcDoc::text(sym.as_str())
             }
-            ExprKind::Ident(ident) => BoxDoc::text(ident.as_str()),
-            ExprKind::Bool(b) => BoxDoc::text(format!("{}", b)),
-            ExprKind::Error => BoxDoc::text("<error>"),
+            ExprKind::Ident(ident) => RcDoc::text(ident.as_str()),
+            ExprKind::Bool(b) => RcDoc::text(format!("{}", b)),
+            ExprKind::Error => RcDoc::text("<error>"),
         }
     }
 
@@ -116,11 +119,74 @@ impl<'gcx> Printer<'gcx> {
         }
     }
 
-    pub fn print_ty(&self, ty: Ty) -> BoxDoc {
+    pub fn print_ty(&self, ty: Ty<Ident>) -> RcDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.ty(ty).kind {
-            TyKind::Primitive(Primitive::Bool) => BoxDoc::text("bool"),
-            TyKind::Primitive(Primitive::Uint) => BoxDoc::text("uint"),
+            TyKind::Primitive(Primitive::Bool) => RcDoc::text("Bool"),
+            TyKind::Primitive(Primitive::UInt) => RcDoc::text("UInt"),
+            TyKind::Primitive(Primitive::Int) => RcDoc::text("Int"),
+            TyKind::Function(args, ret) => {
+                let args = args.iter().map(|arg| self.print_ty(*arg));
+                let ret = ret.map(|ret| {
+                    RcAllocator
+                        .text(":")
+                        .append(RcDoc::space())
+                        .append(self.print_ty(ret))
+                });
+
+                RcAllocator
+                    .text("fn(")
+                    .append(RcAllocator.intersperse(args, RcDoc::text(",").append(RcDoc::space())))
+                    .append(")")
+                    .append(ret)
+                    .into_doc()
+            }
+        }
+    }
+
+    pub fn print_item(&self, item: Item<Ident>) -> RcDoc {
+        let arena = &self.gcx.arenas.ast;
+        match arena.item(item).kind {
+            ItemKind::Function {
+                name,
+                args,
+                ret_ty,
+                body,
+            } => {
+                let args = args.iter().map(|(name, ty)| {
+                    RcAllocator
+                        .text(name.as_str())
+                        .append(":")
+                        .append(RcDoc::space())
+                        .append(self.print_ty(*ty))
+                });
+
+                let ret_ty = ret_ty.map(|ret_ty| {
+                    RcDoc::text(":")
+                        .append(RcDoc::space())
+                        .append(self.print_ty(ret_ty))
+                });
+
+                RcAllocator
+                    .text("fn")
+                    .append(RcDoc::space())
+                    .append(name.as_str())
+                    .append("(")
+                    .append(RcAllocator.intersperse(args, RcDoc::text(",").append(RcDoc::space())))
+                    .append(")")
+                    .append(ret_ty.unwrap_or(RcDoc::nil()))
+                    .append(RcDoc::space())
+                    .append("->")
+                    .append(RcDoc::softline())
+                    .append(
+                        RcAllocator
+                            .nil()
+                            .append(self.print_expr(body))
+                            .indent(4)
+                            .group(),
+                    )
+                    .into_doc()
+            }
         }
     }
 }

@@ -1,0 +1,21 @@
+enum Expr =
+    | Lambda(String, Expr)
+    | App(Expr, Expr)
+    | Var(String)
+
+impl Expr with
+    fn eval(self, ctx: Vec[(String, Expr)]): Self ->
+        match self with
+        | Var(name) ->
+            ctx.iter()
+               .rev()
+               .find(|(nm, _)| nm == name)
+               .expect("var not defined")
+               .1
+        | App(Lambda(name, body), x) ->
+            ctx.push((name, x))
+            body.eval(ctx)
+            ctx.pop()
+        | x -> x    
+        end
+end

@@ -2,6 +2,7 @@ use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
     fmt::{self, Display},
+    marker::PhantomData,
 };
 
 use crate::{
@@ -35,11 +36,11 @@ impl Display for AstId {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct Expr(usize);
+pub struct Item<Id: Copy + Clone>(usize, PhantomData<Id>);
 
-impl IdLike for Expr {
+impl<Id: Copy + Clone> IdLike for Item<Id> {
     fn from_raw(index: usize) -> Self {
-        Self(index)
+        Self(index, PhantomData)
     }
 
     fn into_raw(self) -> usize {
@@ -48,14 +49,59 @@ impl IdLike for Expr {
 }
 
 #[derive(Clone, Debug)]
-pub struct ExprData {
+pub struct ItemData<Id: Copy + Clone> {
     pub id: AstId,
-    pub kind: ExprKind,
+    pub kind: ItemKind<Id>,
     pub span: Span,
 }
 
-impl Expr {
-    pub fn new(gcx: &GlobalCtxt, kind: ExprKind, span: Span) -> Expr {
+#[derive(Clone, Debug)]
+pub enum ItemKind<Id: Copy + Clone> {
+    Function {
+        name: Id,
+        args: im::Vector<(Id, Ty<Id>)>,
+        ret_ty: Option<Ty<Id>>,
+        body: Expr<Id>,
+    },
+}
+
+impl Item<Ident> {
+    pub fn new(gcx: &GlobalCtxt, kind: ItemKind<Ident>, span: Span) -> Item<Ident> {
+        let id = gcx.arenas.ast.next_ast_id();
+        let item = gcx
+            .arenas
+            .ast
+            .item
+            .borrow_mut()
+            .push(ItemData { id, kind, span });
+        gcx.arenas.ast.insert_node(id, Node::Item(item));
+        item
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct Expr<Id: Copy + Clone>(usize, PhantomData<Id>);
+
+impl<Id: Copy + Clone> IdLike for Expr<Id> {
+    fn from_raw(index: usize) -> Self {
+        Self(index, PhantomData)
+    }
+
+    fn into_raw(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ExprData<Id: Copy + Clone> {
+    pub id: AstId,
+    pub kind: ExprKind<Id>,
+    pub span: Span,
+}
+
+impl Expr<Ident> {
+    pub fn new(gcx: &GlobalCtxt, kind: ExprKind<Ident>, span: Span) -> Expr<Ident> {
         let id = gcx.arenas.ast.next_ast_id();
         let expr = gcx
             .arenas
@@ -69,36 +115,36 @@ impl Expr {
 }
 
 #[derive(Clone, Debug)]
-pub enum ExprKind {
+pub enum ExprKind<Id: Copy + Clone> {
     Let {
         is_mut: bool,
-        name: Ident,
-        ty: Option<Ty>,
-        val: Expr,
+        name: Id,
+        ty: Option<Ty<Id>>,
+        val: Expr<Id>,
     },
     BinaryOp {
-        left: Expr,
+        left: Expr<Id>,
         kind: BinOpKind,
-        right: Expr,
+        right: Expr<Id>,
     },
-    UnaryMinus(Expr),
-    UnaryNot(Expr),
+    UnaryMinus(Expr<Id>),
+    UnaryNot(Expr<Id>),
     Do {
-        exprs: im::Vector<Expr>,
+        exprs: im::Vector<Expr<Id>>,
     },
     Numeral(Numeral),
-    Ident(Ident),
+    Ident(Id),
     Bool(bool),
     Error,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
-pub struct Ty(usize);
+pub struct Ty<Id: Copy + Clone>(usize, PhantomData<Id>);
 
-impl IdLike for Ty {
+impl<Id: Copy + Clone> IdLike for Ty<Id> {
     fn from_raw(index: usize) -> Self {
-        Self(index)
+        Self(index, PhantomData)
     }
 
     fn into_raw(self) -> usize {
@@ -107,14 +153,14 @@ impl IdLike for Ty {
 }
 
 #[derive(Clone, Debug)]
-pub struct TyData {
+pub struct TyData<Id: Copy + Clone> {
     pub id: AstId,
-    pub kind: TyKind,
+    pub kind: TyKind<Id>,
     pub span: Span,
 }
 
-impl Ty {
-    pub fn new(gcx: &GlobalCtxt, kind: TyKind, span: Span) -> Ty {
+impl Ty<Ident> {
+    pub fn new(gcx: &GlobalCtxt, kind: TyKind<Ident>, span: Span) -> Ty<Ident> {
         let id = gcx.arenas.ast.next_ast_id();
         let ty = gcx
             .arenas
@@ -128,14 +174,16 @@ impl Ty {
 }
 
 #[derive(Clone, Debug)]
-pub enum TyKind {
+pub enum TyKind<Id: Copy + Clone> {
     Primitive(Primitive),
+    Function(im::Vector<Ty<Id>>, Option<Ty<Id>>),
 }
 
 #[derive(Copy, Clone, Debug)]
 pub enum Primitive {
     Bool,
-    Uint,
+    UInt,
+    Int,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -168,11 +216,12 @@ pub struct Parentage {
 
 #[derive(Debug)]
 pub struct AstArenas {
-    pub expr: RefCell<Arena<Expr, ExprData>>,
-    pub ty: RefCell<Arena<Ty, TyData>>,
+    pub expr: RefCell<Arena<Expr<Ident>, ExprData<Ident>>>,
+    pub ty: RefCell<Arena<Ty<Ident>, TyData<Ident>>>,
+    pub item: RefCell<Arena<Item<Ident>, ItemData<Ident>>>,
     pub parentage: RefCell<Parentage>,
     next_ast_id: Cell<u32>,
-    ast_id_to_node: RefCell<HashMap<AstId, Node>>,
+    ast_id_to_node: RefCell<HashMap<AstId, Node<Ident>>>,
 }
 
 impl AstArenas {
@@ -182,12 +231,16 @@ impl AstArenas {
         self.parentage.borrow_mut().map.clear();
     }
 
-    pub fn expr(&self, id: Expr) -> ExprData {
+    pub fn expr(&self, id: Expr<Ident>) -> ExprData<Ident> {
         self.expr.borrow()[id].clone()
     }
 
-    pub fn ty(&self, id: Ty) -> TyData {
+    pub fn ty(&self, id: Ty<Ident>) -> TyData<Ident> {
         self.ty.borrow()[id].clone()
+    }
+
+    pub fn item(&self, id: Item<Ident>) -> ItemData<Ident> {
+        self.item.borrow()[id].clone()
     }
 
     pub fn next_ast_id(&self) -> AstId {
@@ -197,16 +250,16 @@ impl AstArenas {
         AstId::from_raw(id)
     }
 
-    pub fn get_node_by_id(&self, id: AstId) -> Option<Node> {
+    pub fn get_node_by_id(&self, id: AstId) -> Option<Node<Ident>> {
         self.ast_id_to_node.borrow().get(&id).copied()
     }
 
-    pub fn into_iter_nodes(&self) -> impl Iterator<Item = Node> {
+    pub fn into_iter_nodes(&self) -> impl Iterator<Item = Node<Ident>> {
         let v = self.ast_id_to_node.borrow();
         v.values().copied().collect::<Vec<_>>().into_iter()
     }
 
-    fn insert_node(&self, id: AstId, node: Node) {
+    fn insert_node(&self, id: AstId, node: Node<Ident>) {
         self.ast_id_to_node.borrow_mut().insert(id, node);
     }
 }
@@ -216,6 +269,7 @@ impl Default for AstArenas {
         Self {
             expr: Default::default(),
             ty: Default::default(),
+            item: Default::default(),
             parentage: Default::default(),
             next_ast_id: Cell::new(1),
             ast_id_to_node: Default::default(),
@@ -224,9 +278,10 @@ impl Default for AstArenas {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum Node {
-    Expr(Expr),
-    Ty(Ty),
+pub enum Node<Id: Copy + Clone> {
+    Expr(Expr<Id>),
+    Ty(Ty<Id>),
+    Item(Item<Id>),
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
