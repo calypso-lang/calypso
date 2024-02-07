@@ -8,7 +8,7 @@ use crate::{
     ast::{Numeral, Radix, Suffix},
     ctxt::GlobalCtxt,
     diagnostic::Diagnostic,
-    symbol::{kw::Keyword, primitives::Primitive, Symbol},
+    symbol::{kw::Keyword, Symbol},
 };
 
 use super::Spanned;

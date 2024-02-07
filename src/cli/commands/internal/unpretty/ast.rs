@@ -1,7 +1,6 @@
 use ariadne::{Report, ReportKind};
 use calypso::{
     ctxt::GlobalCtxt,
-    diagnostic::sourcemgr::SourceCache,
     error::CalResult,
     parse::{
         lexer::{self, Token},

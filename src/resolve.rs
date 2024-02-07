@@ -1,17 +1,14 @@
 use std::collections::HashMap;
 
 use ariadne::{Color, Config, Label, LabelAttach, ReportKind};
-use chumsky::container::Seq;
 
 use crate::{
-    ast::{
-        AstArenas, AstId, Expr, ExprKind, Item, ItemData, ItemKind, Node, Ty, TyKind, DUMMY_AST_ID,
-    },
+    ast::{AstArenas, AstId, Expr, ExprKind, Item, ItemData, ItemKind, Ty, TyKind, DUMMY_AST_ID},
     ctxt::GlobalCtxt,
     diagnostic::Diagnostic,
     error::CalResult,
     parse::{Span, SpanWithFile},
-    symbol::{Ident, Symbol},
+    symbol::{primitives::Primitive, Ident, Symbol},
 };
 
 /// Resolved name mappings generated during a resolution pass.
@@ -71,7 +68,7 @@ pub enum Res {
     ///
     /// **Belongs to the type namespace.**
     PrimTy(PrimTy),
-    /// A primitive function, e.g. `add`
+    /// A primitive function
     PrimFunc(PrimFunc),
     /// Corresponds to something defined in user code, with a unique
     /// [`AstId`].
@@ -147,18 +144,12 @@ pub fn resolve_code_unit(gcx: &GlobalCtxt, items: &[Item]) -> CalResult<()> {
         ty_scope_stack: vec![],
         value_scope_stack: vec![],
     };
-    rcx.global_type_ns.insert(
-        Symbol::intern_static("UInt"),
-        (DUMMY_AST_ID, DefnKind::Primitive),
-    );
-    rcx.global_type_ns.insert(
-        Symbol::intern_static("Int"),
-        (DUMMY_AST_ID, DefnKind::Primitive),
-    );
-    rcx.global_type_ns.insert(
-        Symbol::intern_static("Bool"),
-        (DUMMY_AST_ID, DefnKind::Primitive),
-    );
+    rcx.global_type_ns
+        .insert(Primitive::UInt.into(), (DUMMY_AST_ID, DefnKind::Primitive));
+    rcx.global_type_ns
+        .insert(Primitive::Int.into(), (DUMMY_AST_ID, DefnKind::Primitive));
+    rcx.global_type_ns
+        .insert(Primitive::Bool.into(), (DUMMY_AST_ID, DefnKind::Primitive));
     rcx.collect(items)?;
     for item in items {
         rcx.resolve_item(*item)?;
@@ -333,17 +324,13 @@ impl<'gcx> ResolutionCtxt<'gcx> {
     }
 
     fn find_expr_in_scope(&self, name: Symbol) -> Option<Res> {
-        let mut continue_next = true;
         for val in self.value_scope_stack.iter().rev() {
-            if !continue_next {
-                break;
-            }
-            if val.kind == ScopeKind::Item {
-                continue_next = false;
-            }
-
             if let Some(res) = val.bindings.get(&name) {
                 return Some(*res);
+            }
+
+            if val.kind == ScopeKind::Item {
+                break;
             }
         }
         None
