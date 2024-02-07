@@ -7,7 +7,8 @@ use std::{
 use crate::{
     arena::{Arena, IdLike},
     ctxt::GlobalCtxt,
-    parse::Span,
+    parse::{Span, SpanWithFile},
+    resolve::ResolutionData,
     symbol::{Ident, Symbol},
 };
 
@@ -51,7 +52,7 @@ impl IdLike for Item {
 pub struct ItemData {
     pub id: AstId,
     pub kind: ItemKind,
-    pub span: Span,
+    pub span: SpanWithFile,
 }
 
 #[derive(Clone, Debug)]
@@ -65,7 +66,7 @@ pub enum ItemKind {
 }
 
 impl Item {
-    pub fn new(gcx: &GlobalCtxt, kind: ItemKind, span: Span) -> Item {
+    pub fn new(gcx: &GlobalCtxt, kind: ItemKind, span: SpanWithFile) -> Item {
         let id = gcx.arenas.ast.next_ast_id();
         let item = gcx
             .arenas
@@ -179,13 +180,6 @@ pub enum TyKind {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum PrimTy {
-    Bool,
-    UInt,
-    Int,
-}
-
-#[derive(Copy, Clone, Debug)]
 pub enum BinOpKind {
     LogicalOr,
     LogicalAnd,
@@ -218,16 +212,16 @@ pub struct AstArenas {
     pub expr: RefCell<Arena<Expr, ExprData>>,
     pub ty: RefCell<Arena<Ty, TyData>>,
     pub item: RefCell<Arena<Item, ItemData>>,
-    pub parentage: RefCell<Parentage>,
     next_ast_id: Cell<u32>,
     ast_id_to_node: RefCell<HashMap<AstId, Node>>,
+    pub(crate) res_data: RefCell<ResolutionData>,
 }
 
 impl AstArenas {
     pub fn clear(&self) {
         self.next_ast_id.set(1);
         self.ast_id_to_node.borrow_mut().clear();
-        self.parentage.borrow_mut().map.clear();
+        self.res_data.borrow_mut().clear();
     }
 
     pub fn expr(&self, id: Expr) -> ExprData {
@@ -269,9 +263,9 @@ impl Default for AstArenas {
             expr: Default::default(),
             ty: Default::default(),
             item: Default::default(),
-            parentage: Default::default(),
             next_ast_id: Cell::new(1),
             ast_id_to_node: Default::default(),
+            res_data: Default::default(),
         }
     }
 }
@@ -281,6 +275,24 @@ pub enum Node {
     Expr(Expr),
     Ty(Ty),
     Item(Item),
+}
+
+impl Node {
+    pub fn ident(self, gcx: &GlobalCtxt) -> Option<Ident> {
+        match self {
+            Node::Expr(e) => match gcx.arenas.ast.expr(e).kind {
+                ExprKind::Let { name, .. } => Some(name),
+                _ => None,
+            },
+            Node::Ty(t) => match gcx.arenas.ast.ty(t).kind {
+                TyKind::Ident(id) => Some(id),
+                _ => None,
+            },
+            Node::Item(i) => match gcx.arenas.ast.item(i).kind {
+                ItemKind::Function { name, .. } => Some(name),
+            },
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]

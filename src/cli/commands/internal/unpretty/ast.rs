@@ -1,6 +1,7 @@
 use ariadne::{Report, ReportKind};
 use calypso::{
     ctxt::GlobalCtxt,
+    diagnostic::sourcemgr::SourceCache,
     error::CalResult,
     parse::{
         lexer::{self, Token},
@@ -8,13 +9,15 @@ use calypso::{
         pretty::Printer,
         Span,
     },
+    resolve,
     symbol::Symbol,
 };
-use chumsky::{input::Stream, prelude::Input, primitive::end, Parser};
+use chumsky::{input::Stream, prelude::Input, primitive::end, IterParser, Parser};
 
 #[allow(dead_code)]
 pub fn run_parser(mut gcx: &GlobalCtxt, file_name: Symbol, contents: &str) -> CalResult<()> {
     gcx.source_cache.borrow_mut().add(file_name, contents);
+    gcx.session.borrow_mut().current_file = Some(file_name);
 
     let tokens = lexer::tokens(contents, file_name, gcx)
         .filter_map(|x| {
@@ -53,7 +56,9 @@ pub fn run_parser(mut gcx: &GlobalCtxt, file_name: Symbol, contents: &str) -> Ca
     let srclen = contents.len().try_into().unwrap();
     let stream = Stream::from_iter(tokens).boxed();
     let stream = stream.spanned(Span::new(srclen, srclen));
-    let (item, parse_errs) = parser::item()
+    let (items, parse_errs) = parser::item(file_name)
+        .separated_by(parser::maybe_nls())
+        .collect::<Vec<_>>()
         .then_ignore(end())
         .parse_with_state(stream, &mut gcx)
         .into_output_errors();
@@ -67,11 +72,28 @@ pub fn run_parser(mut gcx: &GlobalCtxt, file_name: Symbol, contents: &str) -> Ca
         report.finish().eprint(&mut *source_cache).unwrap();
     }
 
-    if let Some(item) = item {
+    if let Some(items) = items {
         let printer = Printer::new(gcx);
-        let mut w = Vec::new();
-        printer.print_item(item).render(15, &mut w).unwrap();
-        println!("{}", String::from_utf8(w).unwrap());
+        for item in &items {
+            let mut w = Vec::new();
+
+            printer.print_item(*item).render(15, &mut w).unwrap();
+            println!("{}", String::from_utf8(w).unwrap());
+        }
+        resolve::resolve_code_unit(gcx, &items)?;
+    }
+    {
+        let mut drcx = gcx.diag.borrow_mut();
+        let mut source_cache = gcx.source_cache.borrow_mut();
+        for err in drcx.errors() {
+            err.eprint(&mut *source_cache)?;
+        }
+
+        if let Some(fatal) = drcx.fatal() {
+            fatal.eprint(&mut *source_cache)?;
+            drcx.clear();
+        }
+        drcx.clear();
     }
 
     Ok(())

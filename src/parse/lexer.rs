@@ -221,7 +221,6 @@ impl Token {
             Token::Dot => "`.`",
             Token::IdentLike(IdentLike::Ident(_)) => "ident",
             Token::IdentLike(IdentLike::Keyword(kw)) => kw.description(),
-            Token::IdentLike(IdentLike::Primitive(prim)) => prim.description(),
             Token::Comment(_) => "comment",
             Token::Nl => "newline",
             Token::String => "string literal",
@@ -236,7 +235,6 @@ impl Token {
 pub enum IdentLike {
     Ident(Symbol),
     Keyword(Keyword),
-    Primitive(Primitive),
 }
 
 pub fn ident(lex: &mut Lexer<Token>) -> IdentLike {
@@ -244,10 +242,6 @@ pub fn ident(lex: &mut Lexer<Token>) -> IdentLike {
 
     if let Ok(kw) = Keyword::try_from(sym) {
         return IdentLike::Keyword(kw);
-    }
-
-    if let Ok(prim) = Primitive::try_from(sym) {
-        return IdentLike::Primitive(prim);
     }
 
     IdentLike::Ident(sym)

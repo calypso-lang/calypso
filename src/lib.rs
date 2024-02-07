@@ -4,5 +4,6 @@ pub mod ctxt;
 pub mod diagnostic;
 pub mod error;
 pub mod parse;
+pub mod resolve;
 pub mod symbol;
 pub mod ui;

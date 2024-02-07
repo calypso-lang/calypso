@@ -4,6 +4,7 @@
 use std::cell::RefCell;
 use std::panic;
 
+use calypso::ctxt::Session;
 use calypso::error::CalResult;
 use calypso::{ctxt::GlobalArenas, diagnostic::DiagReportCtxt};
 use clap::StructOpt;
@@ -67,6 +68,7 @@ fn main() {
         diag: RefCell::new(DiagReportCtxt::new()),
         source_cache: RefCell::default(),
         arenas: GlobalArenas::default(),
+        session: Session::default().into(),
     };
 
     init_panic_hook(args.color);

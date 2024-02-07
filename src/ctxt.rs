@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use crate::{
     ast::AstArenas,
     diagnostic::{sourcemgr::SourceCache, DiagReportCtxt},
+    symbol::Symbol,
     ui::Emitters,
 };
 
@@ -18,6 +19,13 @@ pub struct GlobalCtxt {
     pub source_cache: RefCell<SourceCache>,
     /// Arenas
     pub arenas: GlobalArenas,
+    /// Session
+    pub session: RefCell<Session>,
+}
+
+#[derive(Default)]
+pub struct Session {
+    pub current_file: Option<Symbol>,
 }
 
 #[derive(Default)]

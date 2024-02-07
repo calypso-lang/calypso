@@ -53,7 +53,7 @@ fn under_ident<'src>() -> impl Parser<'src, CalInput<'src>, Ident, Extra<'src>> 
     })
 }
 
-fn maybe_nls<'src>() -> impl Parser<'src, CalInput<'src>, (), Extra<'src>> + Clone + 'src {
+pub fn maybe_nls<'src>() -> impl Parser<'src, CalInput<'src>, (), Extra<'src>> + Clone + 'src {
     just(Token::Nl).ignored().repeated()
 }
 
@@ -149,7 +149,9 @@ pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty, Extra<'src>> + Clone 
     })
 }
 
-pub fn item<'src>() -> impl Parser<'src, CalInput<'src>, Item, Extra<'src>> + Clone + 'src {
+pub fn item<'src>(
+    file: Symbol,
+) -> impl Parser<'src, CalInput<'src>, Item, Extra<'src>> + Clone + 'src {
     let mut stmt = Recursive::declare();
     let mut expr = Recursive::declare();
     let mut item = Recursive::declare();
@@ -187,7 +189,7 @@ pub fn item<'src>() -> impl Parser<'src, CalInput<'src>, Item, Extra<'src>> + Cl
             .then_ignore(maybe_nls())
             .then_ignore(just(Token::Arrow))
             .then(expr.clone())
-            .map_with(|(((name, args), ret_ty), body), extra| {
+            .map_with(move |(((name, args), ret_ty), body), extra| {
                 Item::new(
                     *extra.state(),
                     ItemKind::Function {
@@ -196,7 +198,7 @@ pub fn item<'src>() -> impl Parser<'src, CalInput<'src>, Item, Extra<'src>> + Cl
                         ret_ty,
                         body,
                     },
-                    extra.span(),
+                    (file, extra.span()).into(),
                 )
             })
     });
