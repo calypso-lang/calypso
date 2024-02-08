@@ -12,7 +12,7 @@ use chumsky::{
 };
 
 use crate::{
-    ast::{BinOpKind, Expr, ExprKind, Item, ItemKind, Numeral, Radix, Ty, TyKind},
+    ast::{BinOpKind, Expr, ExprKind, GenericParam, Item, ItemKind, Numeral, Radix, Ty, TyKind},
     ctxt::GlobalCtxt,
     symbol::{kw::Keyword, special::EMPTY, Ident, Symbol},
 };
@@ -169,6 +169,19 @@ pub fn item<'src>(
             .ignore_then(maybe_nls())
             .ignore_then(ident())
             .then_ignore(maybe_nls())
+            .then(
+                just(Token::LBracket)
+                    .ignore_then(
+                        ident()
+                            .map_with(|x, extra| GenericParam::new(*extra.state(), x))
+                            .separated_by(just(Token::Comma).then(maybe_nls()))
+                            .allow_trailing()
+                            .collect::<Vec<_>>()
+                            .map(im::Vector::from),
+                    )
+                    .then_ignore(just(Token::RBracket))
+                    .or_not(),
+            )
             .then_ignore(just(Token::LParen))
             .then_ignore(maybe_nls())
             .then(
@@ -189,11 +202,12 @@ pub fn item<'src>(
             .then_ignore(maybe_nls())
             .then_ignore(just(Token::Arrow))
             .then(expr.clone())
-            .map_with(move |(((name, args), ret_ty), body), extra| {
+            .map_with(move |((((name, generics), args), ret_ty), body), extra| {
                 Item::new(
                     *extra.state(),
                     ItemKind::Function {
                         name,
+                        generics: generics.unwrap_or_default(),
                         args: args.into(),
                         ret_ty,
                         body,
@@ -204,7 +218,19 @@ pub fn item<'src>(
     });
 
     stmt.define({
-        let let_expr = just(keyword(Keyword::Let))
+        let item = item
+            .clone()
+            .map_with(|item, extra| {
+                let gcx = *extra.state();
+                Expr::new(
+                    gcx,
+                    ExprKind::ItemStmt(item),
+                    gcx.arenas.ast.item(item).span.1,
+                )
+            })
+            .boxed();
+
+        let let_binding = just(keyword(Keyword::Let))
             .then_ignore(maybe_nls())
             .ignore_then(
                 just(keyword(Keyword::Mut))
@@ -238,9 +264,10 @@ pub fn item<'src>(
                     },
                     span,
                 )
-            });
+            })
+            .boxed();
 
-        let_expr.or(expr.clone().with_ctx(false))
+        item.or(let_binding).or(expr.clone().with_ctx(false))
     });
 
     expr.define({
@@ -293,7 +320,23 @@ pub fn item<'src>(
                 .labelled("block"),
         ));
 
-        let pratt = term
+        let call = term.foldl_with(
+            just(Token::LParen)
+                .then_ignore(maybe_nls())
+                .ignore_then(
+                    expr.clone()
+                        .separated_by(just(Token::Comma).then_ignore(maybe_nls()))
+                        .allow_trailing()
+                        .collect::<Vec<_>>()
+                        .map(im::Vector::from),
+                )
+                .then_ignore(just(Token::RParen))
+                .then_ignore(maybe_nls())
+                .repeated(),
+            |x, acc, extra| Expr::new(*extra.state(), ExprKind::Call(x, acc), extra.span()),
+        );
+
+        let pratt = call
             .pratt((
                 infix(
                     right(120),
@@ -398,7 +441,52 @@ pub fn item<'src>(
             .boxed()
             .labelled("expression");
 
-        pratt
+        let name_ty = ident().or(under_ident()).then_ignore(maybe_nls()).then(
+            just(Token::Colon)
+                .then_ignore(maybe_nls())
+                .ignore_then(ty())
+                .then_ignore(maybe_nls())
+                .labelled("type annotation")
+                .or_not(),
+        );
+
+        let func = just(keyword(Keyword::Fn))
+            .then_ignore(maybe_nls())
+            .then_ignore(just(Token::LParen))
+            .then_ignore(maybe_nls())
+            .ignore_then(
+                name_ty
+                    .separated_by(just(Token::Comma).then_ignore(maybe_nls()))
+                    .allow_trailing()
+                    .collect::<Vec<_>>(),
+            )
+            .then_ignore(just(Token::RParen))
+            .then_ignore(maybe_nls())
+            .then(
+                just(Token::Colon)
+                    .then_ignore(maybe_nls())
+                    .ignore_then(ty())
+                    .then_ignore(maybe_nls())
+                    .or_not(),
+            )
+            .then_ignore(maybe_nls())
+            .then_ignore(just(Token::Arrow))
+            .then(expr.clone())
+            .map_with(move |((args, ret_ty), body), extra| {
+                Expr::new(
+                    *extra.state(),
+                    ExprKind::Closure {
+                        args: args.into(),
+                        ret_ty,
+                        body,
+                    },
+                    extra.span(),
+                )
+            })
+            .boxed()
+            .or(pratt);
+
+        func
     });
 
     item.then_ignore(maybe_nls())

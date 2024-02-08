@@ -5,6 +5,7 @@ use std::cell::RefCell;
 use crate::{
     ast::AstArenas,
     diagnostic::{sourcemgr::SourceCache, DiagReportCtxt},
+    ir::IrArenas,
     symbol::Symbol,
     ui::Emitters,
 };
@@ -31,4 +32,5 @@ pub struct Session {
 #[derive(Default)]
 pub struct GlobalArenas {
     pub ast: AstArenas,
+    pub ir: IrArenas,
 }

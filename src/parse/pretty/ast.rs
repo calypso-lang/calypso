@@ -8,6 +8,54 @@ impl<'gcx> Printer<'gcx> {
     pub fn print_expr(&self, expr: Expr) -> RcDoc {
         let arena = &self.gcx.arenas.ast;
         match arena.expr(expr).kind {
+            ExprKind::ItemStmt(item) => self.print_item(item),
+            ExprKind::Call(f, xs) => {
+                let f = self.print_expr(f);
+                let xs = xs.iter().map(|x| self.print_expr(*x));
+                RcDoc::text("(")
+                    .append(f)
+                    .append(")")
+                    .append("(")
+                    .append(RcAllocator.intersperse(xs, RcDoc::text(",").append(RcDoc::space())))
+                    .append(")")
+            }
+            ExprKind::Closure { args, ret_ty, body } => {
+                let args = args.iter().map(|(name, ty)| {
+                    let ty = if let Some(ty) = ty {
+                        RcDoc::text(":")
+                            .append(RcDoc::space())
+                            .append(self.print_ty(*ty))
+                    } else {
+                        RcDoc::nil()
+                    };
+                    RcAllocator.text(name.as_str()).append(ty)
+                });
+
+                let ret_ty = ret_ty.map(|ret_ty| {
+                    RcDoc::text(":")
+                        .append(RcDoc::space())
+                        .append(self.print_ty(ret_ty))
+                });
+
+                RcAllocator
+                    .text("(fn")
+                    .append("(")
+                    .append(RcAllocator.intersperse(args, RcDoc::text(",").append(RcDoc::space())))
+                    .append(")")
+                    .append(ret_ty.unwrap_or(RcDoc::nil()))
+                    .append(RcDoc::space())
+                    .append("->")
+                    .append(RcDoc::space())
+                    .append(
+                        RcAllocator
+                            .nil()
+                            .append(self.print_expr(body))
+                            .nest(4)
+                            .group(),
+                    )
+                    .append(")")
+                    .into_doc()
+            }
             ExprKind::Let {
                 is_mut,
                 name,
@@ -72,17 +120,31 @@ impl<'gcx> Printer<'gcx> {
             ExprKind::UnaryNot(expr) => RcDoc::text("(not")
                 .append(RcDoc::space().append(self.print_expr(expr)).nest(5))
                 .append(RcDoc::text(")")),
-            ExprKind::Do { exprs } => RcDoc::text("(do").append(
-                RcDoc::line()
+            ExprKind::Do { exprs } => {
+                let exprs = exprs
+                    .into_iter()
+                    .map(|expr| self.print_expr(expr).group())
+                    .collect::<Vec<_>>();
+                let multiline = RcDoc::text("do")
+                    .append(RcDoc::hardline())
                     .append(
-                        RcDoc::intersperse(
-                            exprs.into_iter().map(|expr| self.print_expr(expr).group()),
-                            RcDoc::line(),
-                        )
-                        .append(RcDoc::text(")")),
+                        RcAllocator
+                            .intersperse(exprs.clone(), RcDoc::line())
+                            .indent(4),
                     )
-                    .nest(4),
-            ),
+                    .append(RcDoc::hardline())
+                    .append("end");
+                let singleline = RcDoc::text("do")
+                    .append(RcDoc::space())
+                    .append(RcDoc::intersperse(
+                        exprs,
+                        RcDoc::text(";").append(RcDoc::space()),
+                    ))
+                    .append(RcDoc::space())
+                    .append("end");
+
+                multiline.flat_alt(singleline)
+            }
             ExprKind::Numeral(Numeral::Float { sym, .. } | Numeral::Integer { sym, .. }) => {
                 RcDoc::text(sym.as_str())
             }
@@ -144,6 +206,7 @@ impl<'gcx> Printer<'gcx> {
         match arena.item(item).kind {
             ItemKind::Function {
                 name,
+                generics,
                 args,
                 ret_ty,
                 body,
@@ -162,24 +225,37 @@ impl<'gcx> Printer<'gcx> {
                         .append(self.print_ty(ret_ty))
                 });
 
+                let generics = if !generics.is_empty() {
+                    RcDoc::text("[")
+                        .append(
+                            RcAllocator
+                                .intersperse(
+                                    generics.iter().map(|param| param.ident.as_str()),
+                                    RcDoc::text(",").append(RcDoc::space()),
+                                )
+                                .into_doc(),
+                        )
+                        .append(RcDoc::text("]"))
+                } else {
+                    RcDoc::nil()
+                };
+
+                let expr = RcAllocator.nil().append(self.print_expr(body)).group();
+
                 RcAllocator
                     .text("fn")
                     .append(RcDoc::space())
                     .append(name.as_str())
+                    .append(generics)
                     .append("(")
                     .append(RcAllocator.intersperse(args, RcDoc::text(",").append(RcDoc::space())))
                     .append(")")
                     .append(ret_ty.unwrap_or(RcDoc::nil()))
                     .append(RcDoc::space())
                     .append("->")
-                    .append(RcDoc::softline())
-                    .append(
-                        RcAllocator
-                            .nil()
-                            .append(self.print_expr(body))
-                            .indent(4)
-                            .group(),
-                    )
+                    .append(RcAllocator.hardline())
+                    .append(expr.clone().indent(4))
+                    .group()
                     .into_doc()
             }
         }

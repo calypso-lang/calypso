@@ -1,3 +1,5 @@
+pub mod visitor;
+
 use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
@@ -59,6 +61,7 @@ pub struct ItemData {
 pub enum ItemKind {
     Function {
         name: Ident,
+        generics: im::Vector<GenericParam>,
         args: im::Vector<(Ident, Ty)>,
         ret_ty: Option<Ty>,
         body: Expr,
@@ -116,11 +119,17 @@ impl Expr {
 
 #[derive(Clone, Debug)]
 pub enum ExprKind {
+    ItemStmt(Item),
     Let {
         is_mut: bool,
         name: Ident,
         ty: Option<Ty>,
         val: Expr,
+    },
+    Closure {
+        args: im::Vector<(Ident, Option<Ty>)>,
+        ret_ty: Option<Ty>,
+        body: Expr,
     },
     BinaryOp {
         left: Expr,
@@ -132,6 +141,7 @@ pub enum ExprKind {
     Do {
         exprs: im::Vector<Expr>,
     },
+    Call(Expr, im::Vector<Expr>),
     Numeral(Numeral),
     Ident(Ident),
     Bool(bool),
@@ -179,6 +189,25 @@ pub enum TyKind {
     Ident(Ident),
 }
 
+#[derive(Clone, Debug)]
+pub struct GenericParam {
+    pub id: AstId,
+    pub ident: Ident,
+}
+
+impl GenericParam {
+    pub fn new(gcx: &GlobalCtxt, ident: Ident) -> GenericParam {
+        let id = gcx.arenas.ast.next_ast_id();
+        let param = GenericParam { id, ident };
+        gcx.arenas
+            .ast
+            .ast_id_to_node
+            .borrow_mut()
+            .insert(id, Node::GenericParam(param.clone()));
+        param
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum BinOpKind {
     LogicalOr,
@@ -200,11 +229,6 @@ pub enum BinOpKind {
     Divide,
     Modulo,
     Power,
-}
-
-#[derive(Debug, Default)]
-pub struct Parentage {
-    pub map: HashMap<AstId, AstId>,
 }
 
 #[derive(Debug)]
@@ -244,12 +268,12 @@ impl AstArenas {
     }
 
     pub fn get_node_by_id(&self, id: AstId) -> Option<Node> {
-        self.ast_id_to_node.borrow().get(&id).copied()
+        self.ast_id_to_node.borrow().get(&id).cloned()
     }
 
     pub fn into_iter_nodes(&self) -> impl Iterator<Item = Node> {
         let v = self.ast_id_to_node.borrow();
-        v.values().copied().collect::<Vec<_>>().into_iter()
+        v.values().cloned().collect::<Vec<_>>().into_iter()
     }
 
     fn insert_node(&self, id: AstId, node: Node) {
@@ -270,11 +294,12 @@ impl Default for AstArenas {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum Node {
     Expr(Expr),
     Ty(Ty),
     Item(Item),
+    GenericParam(GenericParam),
 }
 
 impl Node {
@@ -291,6 +316,7 @@ impl Node {
             Node::Item(i) => match gcx.arenas.ast.item(i).kind {
                 ItemKind::Function { name, .. } => Some(name),
             },
+            Node::GenericParam(param) => Some(param.ident),
         }
     }
 }

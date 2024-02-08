@@ -76,7 +76,7 @@ pub fn run_parser(mut gcx: &GlobalCtxt, file_name: Symbol, contents: &str) -> Ca
         for item in &items {
             let mut w = Vec::new();
 
-            printer.print_item(*item).render(15, &mut w).unwrap();
+            printer.print_item(*item).render(30, &mut w).unwrap();
             println!("{}", String::from_utf8(w).unwrap());
         }
         resolve::resolve_code_unit(gcx, &items)?;

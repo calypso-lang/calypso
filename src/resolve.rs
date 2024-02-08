@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use ariadne::{Color, Config, Label, LabelAttach, ReportKind};
 
 use crate::{
-    ast::{AstArenas, AstId, Expr, ExprKind, Item, ItemData, ItemKind, Ty, TyKind, DUMMY_AST_ID},
+    ast::{
+        visitor::AstVisitor, AstArenas, AstId, Expr, ExprKind, Item, ItemData, ItemKind, Ty,
+        TyKind, DUMMY_AST_ID,
+    },
     ctxt::GlobalCtxt,
     diagnostic::Diagnostic,
     error::CalResult,
@@ -75,10 +78,14 @@ pub enum Res {
     ///
     /// **Does not belong to a specific namespace.**
     Defn(DefnKind, AstId),
-    /// A local variable or function parameter.
+    /// A local variable.
     ///
     /// **Belongs to the value namespace.**
     Local(AstId),
+    /// A function parameter.
+    ///
+    /// **Belongs to the value namespace.**
+    FnParam(AstId, usize),
     /// A dummy [`Res`] variant representing a resolution error, so
     /// compilation can continue to gather further errors before
     /// crashing.
@@ -91,7 +98,7 @@ impl Res {
     pub fn id(self) -> Option<AstId> {
         match self {
             Res::PrimTy(_) | Res::Err | Res::PrimFunc(_) => None,
-            Res::Defn(_, id) | Res::Local(id) => Some(id),
+            Res::Defn(_, id) | Res::Local(id) | Res::FnParam(id, _) => Some(id),
         }
     }
 }
@@ -119,6 +126,7 @@ pub enum DefnKind {
     /// constructor.
     Struct,
     Primitive,
+    TyParam,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -150,9 +158,9 @@ pub fn resolve_code_unit(gcx: &GlobalCtxt, items: &[Item]) -> CalResult<()> {
         .insert(Primitive::Int.into(), (DUMMY_AST_ID, DefnKind::Primitive));
     rcx.global_type_ns
         .insert(Primitive::Bool.into(), (DUMMY_AST_ID, DefnKind::Primitive));
-    rcx.collect(items)?;
+    rcx.collect(items);
     for item in items {
-        rcx.resolve_item(*item)?;
+        rcx.resolve_item(*item);
     }
     Ok(())
 }
@@ -265,7 +273,7 @@ impl<'gcx> ResolutionCtxt<'gcx> {
     }
 
     /// Collect all item names.
-    fn collect(&mut self, items: &[Item]) -> CalResult<()> {
+    fn collect(&mut self, items: &[Item]) {
         for item in items {
             let item = self.arena.item(*item);
             match item.kind {
@@ -286,32 +294,57 @@ impl<'gcx> ResolutionCtxt<'gcx> {
                 }
             }
         }
-        Ok(())
     }
 
-    fn resolve_item(&mut self, item: Item) -> CalResult<()> {
+    fn resolve_item(&mut self, item: Item) {
         let item = self.arena.item(item);
         match item.kind {
             ItemKind::Function {
-                name: _,
+                name,
                 args,
+                generics,
                 ret_ty,
                 body,
             } => {
-                let mut scope = Scope::new(ScopeKind::Item);
-                for (arg, ty) in args {
-                    self.resolve_ty(ty)?;
-                    scope.bindings.insert(arg.symbol, Res::Local(item.id));
+                // TODO: this isn't quite valid, this should be scoped
+                // to the start of the block
+                let mut func_val_scope = Scope::new(ScopeKind::Normal);
+                func_val_scope
+                    .bindings
+                    .insert(name.symbol, Res::Defn(DefnKind::Fn, item.id));
+
+                // N.B. this is block-scoped to our parent block
+                self.value_scope_stack.push(func_val_scope);
+
+                let mut ty_scope = Scope::new(ScopeKind::Item);
+                for param in generics {
+                    ty_scope
+                        .bindings
+                        .insert(param.ident.symbol, Res::Defn(DefnKind::TyParam, param.id));
                 }
-                self.value_scope_stack.push(scope);
+
+                let mut val_scope = Scope::new(ScopeKind::Item);
+
+                let ty_scope_len = self.ty_scope_stack.len();
+                self.ty_scope_stack.push(ty_scope);
+                for (ix, (arg, ty)) in args.iter().enumerate() {
+                    self.resolve_ty(*ty);
+                    val_scope
+                        .bindings
+                        .insert(arg.symbol, Res::FnParam(item.id, ix));
+                }
+
                 if let Some(ret_ty) = ret_ty {
-                    self.resolve_ty(ret_ty)?;
+                    self.resolve_ty(ret_ty);
                 }
-                self.resolve_expr(body)?;
-                self.value_scope_stack.pop();
+
+                let val_scope_len = self.value_scope_stack.len();
+                self.value_scope_stack.push(val_scope);
+                self.resolve_expr(body);
+                self.value_scope_stack.truncate(val_scope_len);
+                self.ty_scope_stack.truncate(ty_scope_len);
             }
         }
-        Ok(())
     }
 
     fn find_ty_in_scope(&self, name: Symbol) -> Option<Res> {
@@ -336,15 +369,15 @@ impl<'gcx> ResolutionCtxt<'gcx> {
         None
     }
 
-    fn resolve_ty(&mut self, ty: Ty) -> CalResult<()> {
+    fn resolve_ty(&mut self, ty: Ty) {
         let ty = self.arena.ty(ty);
         match ty.kind {
             TyKind::Function(args, ret_ty) => {
                 for ty in args {
-                    self.resolve_ty(ty)?;
+                    self.resolve_ty(ty);
                 }
                 if let Some(ret_ty) = ret_ty {
-                    self.resolve_ty(ret_ty)?;
+                    self.resolve_ty(ret_ty);
                 }
             }
             TyKind::Ident(name) => {
@@ -376,32 +409,56 @@ impl<'gcx> ResolutionCtxt<'gcx> {
                 self.arena.res_data.borrow_mut().insert(ty.id, res);
             }
         }
-        Ok(())
     }
 
-    fn resolve_expr(&mut self, expr: Expr) -> CalResult<()> {
+    fn resolve_expr(&mut self, expr: Expr) {
         let expr = self.arena.expr(expr);
         match expr.kind {
+            ExprKind::ItemStmt(item) => {
+                self.resolve_item(item);
+            }
+            ExprKind::Call(f, xs) => {
+                self.resolve_expr(f);
+                for x in xs {
+                    self.resolve_expr(x);
+                }
+            }
+            ExprKind::Closure { args, ret_ty, body } => {
+                let mut scope = Scope::new(ScopeKind::Normal);
+                for (ix, (arg, ty)) in args.iter().enumerate() {
+                    scope.bindings.insert(arg.symbol, Res::FnParam(expr.id, ix));
+                    if let Some(ty) = ty {
+                        self.resolve_ty(*ty);
+                    }
+                }
+                if let Some(ret_ty) = ret_ty {
+                    self.resolve_ty(ret_ty);
+                }
+                let scope_len = self.value_scope_stack.len();
+                self.value_scope_stack.push(scope);
+                self.resolve_expr(body);
+                self.value_scope_stack.truncate(scope_len);
+            }
             ExprKind::Let { name, ty, val, .. } => {
                 let mut scope = Scope::new(ScopeKind::Normal);
                 scope.bindings.insert(*name, Res::Local(expr.id));
                 self.value_scope_stack.push(scope);
                 if let Some(ty) = ty {
-                    self.resolve_ty(ty)?;
+                    self.resolve_ty(ty);
                 }
-                self.resolve_expr(val)?;
+                self.resolve_expr(val);
             }
             ExprKind::BinaryOp { left, right, .. } => {
-                self.resolve_expr(left)?;
-                self.resolve_expr(right)?;
+                self.resolve_expr(left);
+                self.resolve_expr(right);
             }
             ExprKind::UnaryMinus(expr) | ExprKind::UnaryNot(expr) => {
-                self.resolve_expr(expr)?;
+                self.resolve_expr(expr);
             }
             ExprKind::Do { exprs } => {
                 let scope_len = self.value_scope_stack.len();
                 for expr in exprs {
-                    self.resolve_expr(expr)?;
+                    self.resolve_expr(expr);
                 }
                 self.value_scope_stack.truncate(scope_len);
             }
@@ -435,6 +492,5 @@ impl<'gcx> ResolutionCtxt<'gcx> {
             }
             ExprKind::Bool(_) | ExprKind::Numeral(_) | ExprKind::Error => {}
         }
-        Ok(())
     }
 }
