@@ -248,7 +248,6 @@ pub fn item<'src>(
                     )
                     .then_ignore(just(Token::Eq))
                     .then_ignore(maybe_nls())
-                    // TODO: should this be `pratt`?
                     .then(expr.clone().with_ctx(false))
                     .map(|(((is_mut, ident), ty), expr)| (is_mut, ident, ty, expr)),
             )
@@ -325,31 +324,30 @@ pub fn item<'src>(
                 .then_ignore(maybe_nls())
                 .ignore_then(
                     expr.clone()
+                        .with_ctx(true)
                         .separated_by(just(Token::Comma).then_ignore(maybe_nls()))
                         .allow_trailing()
                         .collect::<Vec<_>>()
                         .map(im::Vector::from),
                 )
                 .then_ignore(just(Token::RParen))
-                .then_ignore(maybe_nls())
                 .repeated(),
             |x, acc, extra| Expr::new(*extra.state(), ExprKind::Call(x, acc), extra.span()),
         );
 
         let pratt = call
+            .then_ignore(nls_with_context)
             .pratt((
                 infix(
                     right(120),
-                    just(Token::StarStar).delimited_by(nls_with_context, maybe_nls()),
+                    just(Token::StarStar).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 prefix(
                     110,
-                    nls_with_context
-                        .ignore_then(one_of([Token::Minus, Token::Bang]))
-                        .then_ignore(maybe_nls()),
+                    one_of([Token::Minus, Token::Bang]).then_ignore(maybe_nls()),
                     |op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         let span = extra.span();
                         Expr::new(
@@ -365,45 +363,42 @@ pub fn item<'src>(
                 ),
                 infix(
                     left(100),
-                    one_of([Token::Star, Token::Slash, Token::Percent])
-                        .delimited_by(nls_with_context, maybe_nls()),
+                    one_of([Token::Star, Token::Slash, Token::Percent]).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(90),
-                    nls_with_context
-                        .ignore_then(one_of([Token::Plus, Token::Minus]))
-                        .then_ignore(maybe_nls()),
+                    one_of([Token::Plus, Token::Minus]).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(80),
-                    one_of([Token::LtLt, Token::GtGt]).delimited_by(nls_with_context, maybe_nls()),
+                    one_of([Token::LtLt, Token::GtGt]).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(70),
-                    just(Token::And).delimited_by(nls_with_context, maybe_nls()),
+                    just(Token::And).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(60),
-                    just(Token::Caret).delimited_by(nls_with_context, maybe_nls()),
+                    just(Token::Caret).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(50),
-                    just(Token::Pipe).delimited_by(nls_with_context, maybe_nls()),
+                    just(Token::Pipe).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
@@ -418,21 +413,21 @@ pub fn item<'src>(
                         Token::Gt,
                         Token::GtEq,
                     ])
-                    .delimited_by(nls_with_context, maybe_nls()),
+                    .then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(30),
-                    just(Token::AndAnd).delimited_by(nls_with_context, maybe_nls()),
+                    just(Token::AndAnd).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
                 ),
                 infix(
                     left(20),
-                    just(Token::PipePipe).delimited_by(nls_with_context, maybe_nls()),
+                    just(Token::PipePipe).then_ignore(maybe_nls()),
                     |lhs, op, rhs, extra: &mut MapExtra<'src, '_, _, _>| {
                         binop(lhs, op, rhs, extra.span(), *extra.state())
                     },
