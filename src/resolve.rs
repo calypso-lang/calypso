@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use ariadne::{Color, Config, Label, LabelAttach, ReportKind};
 
 use crate::{
-    ast::{
-        visitor::AstVisitor, AstArenas, AstId, Expr, ExprKind, Item, ItemData, ItemKind, Ty,
-        TyKind, DUMMY_AST_ID,
-    },
+    ast::{AstArenas, AstId, Expr, ExprKind, Item, ItemData, ItemKind, Ty, TyKind, DUMMY_AST_ID},
     ctxt::GlobalCtxt,
     diagnostic::Diagnostic,
     error::CalResult,
@@ -272,7 +269,7 @@ impl<'gcx> ResolutionCtxt<'gcx> {
         drcx.report_syncd(report);
     }
 
-    /// Collect all item names.
+    /// Collect all global item names.
     fn collect(&mut self, items: &[Item]) {
         for item in items {
             let item = self.arena.item(*item);
@@ -456,7 +453,35 @@ impl<'gcx> ResolutionCtxt<'gcx> {
                 self.resolve_expr(expr);
             }
             ExprKind::Do { exprs } => {
+                // First, collect all item names in this block.
+                let mut item_scope = Scope::new(ScopeKind::Normal);
+                for expr in exprs.clone() {
+                    if let ExprKind::ItemStmt(item) = self.arena.expr(expr).kind {
+                        let item = self.arena.item(item);
+                        match item.kind {
+                            ItemKind::Function { name, .. } => {
+                                if let Some(&(defn_id, defn_kind)) = self.global_value_ns.get(&name)
+                                {
+                                    self.report_duplicate_name(
+                                        item.clone(),
+                                        name,
+                                        DefnKind::Fn,
+                                        defn_id,
+                                        defn_kind,
+                                    );
+                                } else {
+                                    item_scope
+                                        .bindings
+                                        .insert(name.symbol, Res::Defn(DefnKind::Fn, item.id));
+                                }
+                                self.defn_id_to_span.insert(item.id, item.span);
+                            }
+                        }
+                    }
+                }
+
                 let scope_len = self.value_scope_stack.len();
+                self.value_scope_stack.push(item_scope);
                 for expr in exprs {
                     self.resolve_expr(expr);
                 }
