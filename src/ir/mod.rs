@@ -196,6 +196,47 @@ impl Ty {
         );
         ty
     }
+
+    pub fn kind(self, gcx: &GlobalCtxt) -> Kind {
+        match gcx.arenas.ir.ty(self).kind {
+            TyKind::Function(ins, out) => {
+                #[cfg(debug_assertions)]
+                {
+                    for ty in ins {
+                        assert_eq!(ty.kind(gcx), Kind::Monotype);
+                    }
+                    if let Some(out) = out {
+                        assert_eq!(out.kind(gcx), Kind::Monotype);
+                    }
+                }
+                Kind::Monotype
+            }
+            TyKind::PolyFunction(_, ins, out) => {
+                #[cfg(debug_assertions)]
+                {
+                    for ty in ins {
+                        assert_eq!(ty.kind(gcx), Kind::Monotype);
+                    }
+                    if let Some(out) = out {
+                        assert_eq!(out.kind(gcx), Kind::Monotype);
+                    }
+                }
+                Kind::Polytype
+            }
+            TyKind::Meta(_, spine) => {
+                #[cfg(debug_assertions)]
+                {
+                    for ty in spine {
+                        assert_eq!(ty.kind(gcx), Kind::Monotype);
+                    }
+                }
+                Kind::Monotype
+            }
+            TyKind::InsertedMeta(_) => Kind::Monotype,
+            TyKind::Free(_) => Kind::Monotype,
+            TyKind::Var(_) => Kind::Monotype,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
