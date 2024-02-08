@@ -201,11 +201,28 @@ impl Ty {
 #[derive(Clone, Debug)]
 pub enum TyKind {
     Function(im::Vector<Ty>, Option<Ty>),
-    PolyFunction(Ident, im::Vector<Ty>, Option<Ty>),
+    PolyFunction(im::Vector<GenericParam>, im::Vector<Ty>, Option<Ty>),
     Meta(MetaVar, im::Vector<Ty>),
     InsertedMeta(MetaVar),
     Free(IrId),
     Var(IrId),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GenericParam {
+    pub id: IrId,
+    pub ident: Ident,
+}
+
+impl GenericParam {
+    pub fn new(gcx: &GlobalCtxt, id: IrId, ident: Ident) -> Self {
+        gcx.arenas
+            .ir
+            .ir_id_to_node
+            .borrow_mut()
+            .insert(id, Node::GenericParam(GenericParam { id, ident }));
+        GenericParam { id, ident }
+    }
 }
 
 #[derive(Debug)]
@@ -256,15 +273,16 @@ impl IrArenas {
     }
 
     pub fn get_node_by_id(&self, id: IrId) -> Option<Node> {
-        self.ir_id_to_node.borrow().get(&id).copied()
+        self.ir_id_to_node.borrow().get(&id).cloned()
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Node {
     Expr(Expr),
     Ty(Ty),
     Item(Item),
+    GenericParam(GenericParam),
 }
 
 impl Default for IrArenas {
