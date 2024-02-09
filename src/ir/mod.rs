@@ -10,6 +10,7 @@ use crate::{
     ast::{AstId, BinOpKind, Numeral},
     ctxt::GlobalCtxt,
     parse::{Span, SpanWithFile},
+    resolve::PrimTy,
     symbol::{Ident, Symbol},
 };
 
@@ -200,6 +201,7 @@ impl Ty {
 
     pub fn kind(self, gcx: &GlobalCtxt) -> Kind {
         match gcx.arenas.ir.ty(self).kind {
+            TyKind::Primitive(_) => Kind::Monotype,
             TyKind::Function(ins, out) => {
                 #[cfg(debug_assertions)]
                 {
@@ -323,6 +325,7 @@ pub enum TyKind {
     Meta(MetaVar, im::Vector<Ty>),
     Free(IrId),
     Var(IrId),
+    Primitive(PrimTy),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
