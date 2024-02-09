@@ -1,4 +1,4 @@
-mod unify;
+pub mod unify;
 
 #[derive(Clone, Debug)]
 pub struct TypeckCtxt {}
