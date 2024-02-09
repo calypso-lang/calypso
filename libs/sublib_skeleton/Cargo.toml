@@ -8,6 +8,6 @@ readme = "README.md"
 homepage = "https://github.com/calypso-lang/calypso/tree/main/libs/sublib_skeleton"
 repository = "https://github.com/calypso-lang/calypso/"
 license = "MIT OR Apache-2.0"
-rust-version = "1.66.1"
+rust-version = "1.70.0"
 
 [dependencies]
