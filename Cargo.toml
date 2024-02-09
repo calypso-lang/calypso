@@ -27,10 +27,10 @@ atty = "0.2.14"
 thiserror = "1.0.24"
 eyre = "0.6.7"
 ariadne = "0.3.0"
-lasso = { version = "0.6.0", features = ["multi-threaded"] }
+lasso = { version = "0.7.2", features = ["multi-threaded"] }
 logos = "0.12.1"
 itertools = "0.10.5"
-chumsky = { git = "https://github.com/zesterer/chumsky.git", features = ["pratt", "label"] }
+chumsky = { git = "https://github.com/zesterer/chumsky.git", features = ["pratt", "label"], rev = "b6afd8c738799060be8b43e2e618247d360a45eb" }
 im = "15.1.0"
 pretty = "0.12.3"
 
