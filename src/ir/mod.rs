@@ -80,6 +80,7 @@ pub struct ItemData {
 pub enum ItemKind {
     Function {
         name: Ident,
+        generics: im::Vector<GenericParam>,
         args: im::Vector<(Ident, Ty)>,
         ret_ty: Option<Ty>,
         body: Expr,
@@ -232,10 +233,86 @@ impl Ty {
                 }
                 Kind::Monotype
             }
-            TyKind::InsertedMeta(_) => Kind::Monotype,
             TyKind::Free(_) => Kind::Monotype,
             TyKind::Var(_) => Kind::Monotype,
         }
+    }
+
+    pub fn force(self, gcx: &GlobalCtxt) -> Ty {
+        match gcx.arenas.ir.ty(self).kind {
+            TyKind::Meta(mv, spine) => match mv.clone().0.borrow().0 {
+                MetaEntry::Solved(t) => {
+                    // TODO: is this valid?
+                    t.instantiate(gcx, &spine.into_iter().collect::<Vec<_>>())
+                        .force(gcx)
+                }
+                MetaEntry::Unsolved => self,
+            },
+            _ => self,
+        }
+    }
+
+    pub fn instantiate(self, gcx: &GlobalCtxt, env: &[Ty]) -> Ty {
+        fn inner(this: Ty, gcx: &GlobalCtxt, env: &HashMap<IrId, Ty>) -> Ty {
+            match gcx.arenas.ir.ty(this).kind {
+                TyKind::Function(args, ret_ty) => {
+                    let args = args.into_iter().map(|arg| inner(arg, gcx, env)).collect();
+                    let ret_ty = ret_ty.map(|ret_ty| inner(ret_ty, gcx, env));
+                    Ty::new(
+                        gcx,
+                        gcx.arenas.ir.next_id(),
+                        TyKind::Function(args, ret_ty),
+                        gcx.arenas.ir.ty(this).span,
+                    )
+                }
+                TyKind::PolyFunction(params, args, ret_ty) => {
+                    let args = args.into_iter().map(|arg| inner(arg, gcx, env)).collect();
+                    let ret_ty = ret_ty.map(|ret_ty| inner(ret_ty, gcx, env));
+                    Ty::new(
+                        gcx,
+                        gcx.arenas.ir.next_id(),
+                        TyKind::PolyFunction(params, args, ret_ty),
+                        gcx.arenas.ir.ty(this).span,
+                    )
+                }
+                TyKind::Meta(mv, spine) => {
+                    let spine = spine.into_iter().map(|ty| inner(ty, gcx, env)).collect();
+                    Ty::new(
+                        gcx,
+                        gcx.arenas.ir.next_id(),
+                        TyKind::Meta(mv, spine),
+                        gcx.arenas.ir.ty(this).span,
+                    )
+                }
+                TyKind::Var(id) => {
+                    if let Some(ty) = env.get(&id) {
+                        *ty
+                    } else {
+                        this
+                    }
+                }
+                _ => this,
+            }
+        }
+
+        let TyKind::PolyFunction(params, args, ret_ty) = gcx.arenas.ir.ty(self).kind else {
+            return self;
+        };
+
+        let env = env
+            .iter()
+            .zip(params)
+            .map(|(ty, param)| (param.id, *ty))
+            .collect();
+
+        let args = args.into_iter().map(|arg| inner(arg, gcx, &env)).collect();
+        let ret_ty = ret_ty.map(|ret_ty| inner(ret_ty, gcx, &env));
+        Ty::new(
+            gcx,
+            gcx.arenas.ir.next_id(),
+            TyKind::Function(args, ret_ty),
+            gcx.arenas.ir.ty(self).span,
+        )
     }
 }
 
@@ -244,7 +321,6 @@ pub enum TyKind {
     Function(im::Vector<Ty>, Option<Ty>),
     PolyFunction(im::Vector<GenericParam>, im::Vector<Ty>, Option<Ty>),
     Meta(MetaVar, im::Vector<Ty>),
-    InsertedMeta(MetaVar),
     Free(IrId),
     Var(IrId),
 }
