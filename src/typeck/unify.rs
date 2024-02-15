@@ -5,10 +5,10 @@ use crate::{
     ir::{GenericParam, IrId, MetaEntry, MetaVar, Node, Ty, TyKind},
 };
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum UnifyError {
     Occurs,
-    Scope(IrId),
+    Scope(GenericParam),
     SpineMismatch,
     RigidMismatch,
 }
@@ -57,7 +57,15 @@ fn rename(
             tdat.span,
         ),
         Var(id) => match env.iter().find(|x| x.id == id) {
-            None => return Err(UnifyError::Scope(id)),
+            None => {
+                return Err(UnifyError::Scope({
+                    let Node::GenericParam(param) = gcx.arenas.ir.get_node_by_id(id).unwrap()
+                    else {
+                        unreachable!()
+                    };
+                    param
+                }))
+            }
             Some(_) => t,
         },
         Function(args, ret_ty) => {
