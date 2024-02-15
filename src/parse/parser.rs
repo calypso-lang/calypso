@@ -208,6 +208,7 @@ pub fn item<'src>(
             )
             .then_ignore(maybe_nls())
             .then_ignore(just(Token::Arrow))
+            .then_ignore(maybe_nls())
             .then(expr.clone())
             .map_with(move |((((name, generics), args), ret_ty), body), extra| {
                 Item::new(
