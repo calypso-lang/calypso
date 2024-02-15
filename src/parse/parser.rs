@@ -117,6 +117,13 @@ pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty, Extra<'src>> + Clone 
             .or(under_ident())
             .map_with(|ident, extra| Ty::new(*extra.state(), TyKind::Ident(ident), extra.span()));
 
+        let unit = just(Token::LParen)
+            .then_ignore(maybe_nls())
+            .then(just(Token::RParen))
+            .map_with(|_, extra| Ty::new(*extra.state(), TyKind::Unit, extra.span()));
+
+        let primary = choice((ident, unit));
+
         let func = just(keyword(Keyword::Fn))
             .then_ignore(maybe_nls())
             .ignore_then(just(Token::LParen))
@@ -143,7 +150,7 @@ pub fn ty<'src>() -> impl Parser<'src, CalInput<'src>, Ty, Extra<'src>> + Clone 
                     extra.span(),
                 )
             })
-            .or(ident);
+            .or(primary);
 
         func
     })
@@ -284,12 +291,18 @@ pub fn item<'src>(
             .collect::<Vec<Expr>>()
             .map(im::Vector::from);
 
+        let unit = just(Token::LParen)
+            .then_ignore(maybe_nls())
+            .then(just(Token::RParen))
+            .map_with(|_, extra| Expr::new(*extra.state(), ExprKind::Unit, extra.span()));
+
         let primary = choice((
             numeral(),
             ident().map_with(|ident, extra| {
                 let span = extra.span();
                 Expr::new(extra.state(), ExprKind::Ident(ident), span)
             }),
+            unit,
             one_of([keyword(Keyword::True), keyword(Keyword::False)]).map_with(|val, extra| {
                 let span = extra.span();
                 Expr::new(

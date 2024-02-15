@@ -405,6 +405,7 @@ impl<'gcx> ResolutionCtxt<'gcx> {
                 };
                 self.arena.res_data.borrow_mut().insert(ty.id, res);
             }
+            TyKind::Unit => {}
         }
     }
 
@@ -515,6 +516,7 @@ impl<'gcx> ResolutionCtxt<'gcx> {
                 };
                 self.arena.res_data.borrow_mut().insert(expr.id, res);
             }
+            ExprKind::Unit => {}
             ExprKind::Bool(_) | ExprKind::Numeral(_) | ExprKind::Error => {}
         }
     }

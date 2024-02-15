@@ -156,6 +156,7 @@ pub enum ExprKind {
     Numeral(Numeral),
     Ident(Ident),
     Bool(bool),
+    Unit,
     Error,
 }
 
@@ -201,7 +202,7 @@ impl Ty {
 
     pub fn kind(self, gcx: &GlobalCtxt) -> Kind {
         match gcx.arenas.ir.ty(self).kind {
-            TyKind::Primitive(_) => Kind::Monotype,
+            TyKind::Primitive(_) | TyKind::Unit => Kind::Monotype,
             TyKind::Function(ins, out) => {
                 #[cfg(debug_assertions)]
                 {
@@ -326,6 +327,7 @@ pub enum TyKind {
     Free(IrId),
     Var(IrId),
     Primitive(PrimTy),
+    Unit,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

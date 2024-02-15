@@ -145,6 +145,7 @@ pub enum ExprKind {
     Numeral(Numeral),
     Ident(Ident),
     Bool(bool),
+    Unit,
     Error,
 }
 
@@ -187,6 +188,7 @@ impl Ty {
 pub enum TyKind {
     Function(im::Vector<Ty>, Option<Ty>),
     Ident(Ident),
+    Unit,
 }
 
 #[derive(Clone, Debug)]

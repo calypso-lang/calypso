@@ -48,6 +48,7 @@ fn rename(
     let t = t.force(gcx);
     let tdat = gcx.arenas.ir.ty(t);
     Ok(match tdat.kind {
+        Unit => t,
         Meta(m1, _) if Rc::ptr_eq(&m1.0, &m.0) => return Err(UnifyError::Occurs),
         Meta(m1, sp) => Ty::new(
             gcx,
@@ -136,6 +137,7 @@ pub fn unify(gcx: &GlobalCtxt, t: Ty, u: Ty) -> Result<(), UnifyError> {
         }
         (Free(n1), Free(n2)) if n1 == n2 => {}
         (Primitive(p1), Primitive(p2)) if p1 == p2 => {}
+        (Unit, Unit) => {}
         _ => return Err(UnifyError::RigidMismatch),
     }
 

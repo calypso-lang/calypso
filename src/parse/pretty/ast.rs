@@ -150,6 +150,7 @@ impl<'gcx> Printer<'gcx> {
             }
             ExprKind::Ident(ident) => RcDoc::text(ident.as_str()),
             ExprKind::Bool(b) => RcDoc::text(format!("{}", b)),
+            ExprKind::Unit => RcDoc::text("()"),
             ExprKind::Error => RcDoc::text("<error>"),
         }
     }
@@ -198,6 +199,7 @@ impl<'gcx> Printer<'gcx> {
                     .append(ret)
                     .into_doc()
             }
+            TyKind::Unit => RcDoc::text("()"),
         }
     }
 

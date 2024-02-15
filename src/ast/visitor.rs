@@ -77,6 +77,7 @@ pub fn walk_expr<V: AstVisitor>(visitor: &mut V, expr: Expr) {
         ExprKind::Ident(ident) => {
             visitor.visit_ident(ident);
         }
+        ExprKind::Unit => {}
     }
 }
 
@@ -91,6 +92,7 @@ pub fn walk_ty<V: AstVisitor>(visitor: &mut V, ty: Ty) {
             }
         }
         TyKind::Ident(ident) => visitor.visit_ident(ident),
+        TyKind::Unit => {}
     }
 }
 
