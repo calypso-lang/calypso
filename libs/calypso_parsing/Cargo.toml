@@ -22,4 +22,4 @@ logos = "0.12.1"
 itertools = "0.10.5"
 
 [build-dependencies]
-lalrpop = "0.19.8"
+lalrpop = "0.20.0"
