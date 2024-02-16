@@ -170,7 +170,7 @@ dependencies = [
  "calypso_diagnostic",
  "itertools",
  "lalrpop",
- "lalrpop-util",
+ "lalrpop-util 0.20.0",
  "lazy_static",
  "logos",
 ]
@@ -711,7 +711,7 @@ dependencies = [
  "diff",
  "ena",
  "itertools",
- "lalrpop-util",
+ "lalrpop-util 0.19.12",
  "petgraph",
  "pico-args",
  "regex",
@@ -724,12 +724,18 @@ dependencies = [
 
 [[package]]
 name = "lalrpop-util"
-version = "0.19.8"
+version = "0.19.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcf796c978e9b4d983414f4caedc9273aa33ee214c5b887bd55fde84c85d2dc4"
+checksum = "d3c48237b9604c5a4702de6b824e02006c3214327564636aef27c1028a8fa0ed"
 dependencies = [
  "regex",
 ]
+
+[[package]]
+name = "lalrpop-util"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f35c735096c0293d313e8f2a641627472b83d01b937177fe76e5e2708d31e0d"
 
 [[package]]
 name = "lasso"
