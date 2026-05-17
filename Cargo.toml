@@ -1,0 +1,13 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+default-members = ["crates/cli"]
+
+[workspace.dependencies]
+eyre = "0.6.12"
+color-eyre = "0.6.5"
+
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+calypso = { path = "crates/compiler" }
