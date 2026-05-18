@@ -3,7 +3,7 @@
 
 use std::{io::Read, path::PathBuf};
 
-use compiler::{symbol::Symbol};
+use compiler::{symbol::Symbol, syntax::lexer};
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::{self, eyre};
 use tracing_subscriber::EnvFilter;
