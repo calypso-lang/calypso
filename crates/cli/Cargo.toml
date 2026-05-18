@@ -1,5 +1,5 @@
 [package]
-name = "calypso_cli"
+name = "cli"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,4 +8,4 @@ clap = { version = "4.6.1", features = ["derive"] }
 color-eyre.workspace = true
 tracing-subscriber.workspace = true
 
-calypso.workspace = true
+compiler.workspace = true

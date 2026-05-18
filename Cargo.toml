@@ -10,4 +10,6 @@ color-eyre = "0.6.5"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
-calypso = { path = "crates/compiler" }
+compiler = { path = "crates/compiler" }
+
+pretty_assertions = "1.4.1"
