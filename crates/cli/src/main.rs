@@ -85,7 +85,12 @@ fn main() -> eyre::Result<()> {
 fn debug(command: DebugCommand) -> eyre::Result<()> {
     match command {
         DebugCommand::Lex { file } => {
-            todo!();
+            let source = file.read_to_string()?;
+            let tokens = lexer::tokens(&source, Symbol::intern(file.name().unwrap_or("<stdin>")));
+            for res in tokens {
+                let (span, tok) = res.map_err(|e| eyre!("{:#?}", e))?;
+                println!("{}..{}: {:?}", span.lo(), span.hi(), tok);
+            }
         }
     }
 
