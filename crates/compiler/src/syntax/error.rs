@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 
-use ariadne::{Color, Config, Label, Report, ReportKind};
+use ariadne::{Color, Label, Report, ReportKind};
 
 use crate::ctxt::GlobalCtxt;
 
-use super::{span::Span, token::Token};
+use super::span::Span;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct LexicalError {
@@ -19,20 +19,28 @@ pub enum LexicalErrorKind {
     InvalidNumeralRadixCharacter,
     InvalidNumeralWidth,
     ZeroPrefixedNumeral,
+    UnclosedString,
 }
 
 impl LexicalError {
     fn message(self) -> &'static str {
         match self.kind {
-            LexicalErrorKind::UnexpectedToken => "unexpected token",
-            LexicalErrorKind::InvalidNumeralRadixSpecifier => "invalid number base specifier",
-            LexicalErrorKind::InvalidNumeralRadixCharacter => "invalid digit in number",
-            LexicalErrorKind::InvalidNumeralWidth => "invalid width for integer",
-            LexicalErrorKind::ZeroPrefixedNumeral => "zero-prefixed numerals are not allowed",
+            LexicalErrorKind::UnexpectedToken => "syntax error: unexpected token",
+            LexicalErrorKind::InvalidNumeralRadixSpecifier => {
+                "syntax error: invalid number base specifier"
+            }
+            LexicalErrorKind::InvalidNumeralRadixCharacter => {
+                "syntax error: invalid digit in number"
+            }
+            LexicalErrorKind::InvalidNumeralWidth => "syntax error: invalid width for integer",
+            LexicalErrorKind::ZeroPrefixedNumeral => {
+                "syntax error: zero-prefixed numerals are not allowed"
+            }
+            LexicalErrorKind::UnclosedString => "syntax error: unclosed string",
         }
     }
 
-    pub fn into_report(self, gcx: &GlobalCtxt) -> Report<'static, Span> {
+    pub fn into_report(self, _gcx: &GlobalCtxt) -> Report<Span> {
         let mut b = Report::build(ReportKind::Error, self.location);
         b.set_message(self.message());
         b.add_label(Label::new(self.location).with_color(Color::Red));
@@ -60,26 +68,46 @@ pub struct SyntaxError {
 impl SyntaxError {
     fn message(self) -> Cow<'static, str> {
         match self.kind {
-            SyntaxErrorKind::UnexpectedEof => "syntax error: unexpected end-of-file".into(),
-            SyntaxErrorKind::UnexpectedToken { expected, found } => {
-                format!("syntax error: expected {expected}, found {found}").into()
+            SyntaxErrorKind::Unexpected { expected, found } => {
+                format!("syntax error: expected {expected}, found {found}.").into()
+            }
+            SyntaxErrorKind::ExpectedMatching {
+                expected,
+                to_match,
+                found,
+                ..
+            } => {
+                format!("syntax error: expected matching {expected} for {to_match}, found {found}.")
+                    .into()
             }
         }
     }
 
-    pub fn into_report(self, _gcx: &GlobalCtxt) -> Report<'static, Span> {
+    pub fn into_report(self, _gcx: &GlobalCtxt) -> Report<Span> {
         let mut b = Report::build(ReportKind::Error, self.location);
         b.set_message(self.message());
         b.add_label(Label::new(self.location).with_color(Color::Red));
+        if let SyntaxErrorKind::ExpectedMatching { at, .. } = self.kind {
+            b.add_label(
+                Label::new(at)
+                    .with_message("unclosed delimiter")
+                    .with_color(Color::Blue),
+            );
+        }
         b.finish()
     }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum SyntaxErrorKind {
-    UnexpectedEof,
-    UnexpectedToken {
+    Unexpected {
         expected: &'static str,
+        found: &'static str,
+    },
+    ExpectedMatching {
+        expected: &'static str,
+        to_match: &'static str,
+        at: Span,
         found: &'static str,
     },
 }

@@ -6,7 +6,7 @@ use rustc_hash::FxHashMap;
 
 use crate::{ctxt::GlobalCtxt, symbol::Symbol, syntax::span::Span};
 
-pub type Diagnostic = ariadne::Report<'static, Span>;
+pub type Diagnostic = ariadne::Report<Span>;
 
 /// The global reporting context for diagnostics.
 #[derive(Default)]
@@ -87,19 +87,16 @@ impl DiagReportCtxt {
     }
 
     /// Get the list of nonfatal errors.
-    #[must_use]
     pub fn nonfatals(&self) -> &[Diagnostic] {
         &self.nonfatals
     }
 
     /// Get the current fatal error, if any.
-    #[must_use]
     pub fn fatal(&self) -> Option<&Diagnostic> {
         self.fatal.as_ref()
     }
 
     /// Get the list of synchronizable errors.
-    #[must_use]
     pub fn errors(&self) -> &[Diagnostic] {
         &self.errors
     }
@@ -121,7 +118,6 @@ impl Default for SourceCache {
 
 impl fmt::Debug for SourceCache {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO: make this better
         f.debug_struct("SourceCache").finish_non_exhaustive()
     }
 }

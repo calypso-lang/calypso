@@ -154,6 +154,16 @@ macro_rules! intern_static {
                     unreachable!()
                 }
             }
+	    impl $name {
+		pub fn description(self) -> &'static str {
+		    $(
+			if self == $name::$enum_ident {
+			    return concat!("`", $str, "`");
+			}
+		    )*
+		    unreachable!()
+		}
+	    }
 
             /// Check if the given symbol is one of the statically interned
             /// members in this module.
@@ -180,6 +190,12 @@ intern_static! {kw, "Keywords", Keyword => {
     Then; THEN: "then",
     Else; ELSE: "else",
     Pub; PUB: "pub",
+    Ref; REF: "ref",
+    Mut; MUT: "mut",
+    Shared; SHARED: "shared",
+    Imm; IMM: "imm",
+    Unique; UNIQUE: "unique",
+    Type; TYPE: "type",
 }}
 
 intern_static! {prim_ty, "Simple primitive types (no generics)", PrimitiveTy => {
@@ -201,6 +217,7 @@ intern_static! {prim_ty, "Simple primitive types (no generics)", PrimitiveTy => 
 
 intern_static! {misc_ty, "Miscellaneous types", MiscTy => {
     Array; ARRAY: "Array",
+    Option; OPTION: "Option",
 }}
 
 intern_static! {special, "Special strings", Special => {

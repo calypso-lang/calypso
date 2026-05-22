@@ -6,6 +6,8 @@
 // TODO: try to synchronize from some lexical errors? numerals would
 // be easy to sync from.
 
+use itertools::Itertools;
+
 use crate::{
     ctxt::GlobalCtxt,
     symbol::{Symbol, kw::Keyword},
@@ -24,6 +26,7 @@ pub struct Lexer<'gcx, T: Iterator<Item = (u32, char)>> {
     chars: T,
     pending: Vec<SpanTok>,
     eof: bool,
+    error: bool,
     chr0: Option<char>,
     chr1: Option<char>,
     loc0: u32,
@@ -38,20 +41,29 @@ pub fn tokens<'gcx, 'src: 'gcx>(
     file: Symbol,
 ) -> impl Iterator<Item = SpanTok> + 'gcx {
     let chars = source.char_indices().map(|(i, c)| (i as u32, c));
-    Lexer::new(gcx, chars, file)
+
+    let lex = Lexer::new(gcx, chars, file);
+    lex.coalesce(|(a_span, a), (b_span, b)| {
+        if a == Token::Nl && b == Token::Nl {
+            Ok((a_span.to(b_span), Token::Nl))
+        } else {
+            Err(((a_span, a), (b_span, b)))
+        }
+    })
 }
 
 impl<'gcx, T> Lexer<'gcx, T>
 where
     T: Iterator<Item = (u32, char)>,
 {
-    pub fn new(gcx: &'gcx GlobalCtxt, input: T, file: Symbol) -> Self {
+    fn new(gcx: &'gcx GlobalCtxt, input: T, file: Symbol) -> Self {
         let mut lex = Lexer {
             gcx,
             file,
             chars: input,
             pending: vec![],
             eof: false,
+            error: false,
             chr0: None,
             chr1: None,
             loc0: 0,
@@ -71,7 +83,9 @@ where
     fn consume_normal(&mut self) {
         if let Some(c) = self.chr0 {
             let mut check_for_minus = false;
-            if Self::is_identifier_start(c) {
+            if c == '"' {
+                self.consume_string();
+            } else if Self::is_identifier_start(c) {
                 self.consume_identifier_or_kw();
             } else if Self::is_numeral_start(c, self.chr1) {
                 check_for_minus = true;
@@ -201,7 +215,7 @@ where
                     self.emit(tok_start, tok_end, Token::BoolOr);
                 } else {
                     let tok_end = self.pos();
-                    self.emit(tok_start, tok_end, Token::Or);
+                    self.emit(tok_start, tok_end, Token::Pipe);
                 }
             }
             '!' => {
@@ -243,8 +257,12 @@ where
             '\n' | '\r' | ' ' | '\t' | '\x0C' => {
                 let tok_start = self.pos();
                 let _ = self.advance();
-                let tok_end = self.pos();
-                if c == '\n' {
+                // TODO: I might need more robust \r\n handling. TBD.
+                if c == '\n' || c == '\r' {
+                    while matches!(self.chr0, Some('\n' | '\r')) {
+                        let _ = self.advance();
+                    }
+                    let tok_end = self.pos();
                     self.emit(tok_start, tok_end, Token::Nl);
                 }
             }
@@ -256,6 +274,7 @@ where
                     kind: LexicalErrorKind::UnexpectedToken,
                     location: Span::new(start_pos, end_pos, self.file),
                 });
+                self.error = true;
                 self.emit(start_pos, end_pos, Token::Error);
             }
         }
@@ -264,7 +283,7 @@ where
     fn report_error(&self, e: LexicalError) {
         let report = e.into_report(self.gcx);
         let mut drcx = self.gcx.diag.borrow_mut();
-        drcx.report_syncd(report);
+        drcx.report_fatal(report);
     }
 
     fn consume_identifier_or_kw(&mut self) {
@@ -291,10 +310,12 @@ where
         let start_pos = self.pos();
         let mut radix = Radix::None;
         let mut suffix = Suffix::None;
+        let mut digits = String::new();
         let mut had_error = false;
         'end: {
             if self.chr0 == Some('-') {
                 let _ = self.advance();
+                digits.push('-');
             }
 
             debug_assert!(self.chr0.is_some());
@@ -341,12 +362,15 @@ where
 
             loop {
                 match (radix, self.chr0) {
-                    (_, Some('_'))
-                    | (Radix::Decimal | Radix::None, Some('0'..='9'))
-                    | (Radix::Hexadecimal, Some('0'..='9' | 'a'..='f' | 'A'..='F'))
-                    | (Radix::Octal, Some('0'..='7'))
-                    | (Radix::Binary, Some('0' | '1')) => {
+                    (_, Some('_')) => {
                         let _ = self.advance();
+                    }
+                    (Radix::Decimal | Radix::None, Some(ch @ ('0'..='9')))
+                    | (Radix::Hexadecimal, Some(ch @ ('0'..='9' | 'a'..='f' | 'A'..='F')))
+                    | (Radix::Octal, Some(ch @ ('0'..='7')))
+                    | (Radix::Binary, Some(ch @ ('0' | '1'))) => {
+                        let _ = self.advance();
+                        digits.push(ch);
                     }
                     (_, Some('i' | 'u')) => {
                         if let Some(s) = self.parse_suffix() {
@@ -373,12 +397,44 @@ where
 
         if had_error {
             self.emit(start_pos, end_pos, Token::Error);
+            self.error = true;
         } else {
             self.emit(
                 start_pos,
                 end_pos,
-                Token::Numeral(Numeral::Integer { radix, suffix }),
+                Token::Numeral(
+                    i128::from_str_radix(&digits, u32::from(radix.radix()))
+                        .expect("TODO: numeral too large error"),
+                    Numeral::Integer { radix, suffix },
+                ),
             );
+        }
+    }
+
+    // TODO: escapes
+    fn consume_string(&mut self) {
+        let tok_start = self.pos();
+        let _ = self.advance();
+        let mut s = String::new();
+        while let Some(ch) = self.chr0
+            && ch != '"'
+        {
+            let _ = self.advance();
+            s.push(ch);
+        }
+        if self.chr0.is_none() {
+            let tok_end = self.pos();
+            self.report_error(LexicalError {
+                kind: LexicalErrorKind::UnclosedString,
+                location: Span::new(tok_start, tok_end, self.file),
+            });
+            self.error = true;
+            self.emit(tok_start, tok_end, Token::Error);
+        } else {
+            // `while let` and check above ensures we are a quote
+            let _ = self.advance();
+            let tok_end = self.pos();
+            self.emit(tok_start, tok_end, Token::String(Symbol::intern(&s)));
         }
     }
 
@@ -483,12 +539,13 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         // Keep processing until there's a pending char.
-        while !self.eof && self.pending.is_empty() {
+        while !self.eof && !self.error && self.pending.is_empty() {
             self.consume_normal();
         }
 
         if self.pending.is_empty() {
-            None
+            let pos = self.pos();
+            Some((Span::new(pos, pos, self.file), Token::Eof))
         } else {
             Some(self.pending.remove(0))
         }
@@ -528,7 +585,9 @@ mod tests {
         gcx.source_cache.borrow_mut().add(file, source.clone());
 
         assert_eq!(
-            super::tokens(&gcx, &source, file).collect::<Vec<_>>(),
+            super::tokens(&gcx, &source, file)
+                .take_while(|(_, tok)| !matches!(tok, Token::Eof))
+                .collect::<Vec<_>>(),
             expected
         );
     }
@@ -538,8 +597,8 @@ mod tests {
     //     assert_eq!(tokens(&source).next().unwrap().unwrap_err().kind, error);
     // }
 
-    fn intnum(radix: Radix, suffix: Suffix) -> Token {
-        Token::Numeral(Numeral::Integer { radix, suffix })
+    fn intnum(x: i128, radix: Radix, suffix: Suffix) -> Token {
+        Token::Numeral(x, Numeral::Integer { radix, suffix })
     }
 
     fn suffix(signed: bool, width: IntegerWidth) -> Suffix {
@@ -581,57 +640,66 @@ mod tests {
     #[test]
     fn numerals() {
         let test_source = [
-            ("-1", intnum(Radix::None, Suffix::None)),
-            ("1", intnum(Radix::None, Suffix::None)),
-            ("1u8", intnum(Radix::None, suffix(false, IntegerWidth::I8))),
+            ("-1", intnum(-1, Radix::None, Suffix::None)),
+            ("1", intnum(1, Radix::None, Suffix::None)),
+            (
+                "1u8",
+                intnum(1, Radix::None, suffix(false, IntegerWidth::I8)),
+            ),
             (
                 "1u16",
-                intnum(Radix::None, suffix(false, IntegerWidth::I16)),
+                intnum(1, Radix::None, suffix(false, IntegerWidth::I16)),
             ),
             (
                 "1u32",
-                intnum(Radix::None, suffix(false, IntegerWidth::I32)),
+                intnum(1, Radix::None, suffix(false, IntegerWidth::I32)),
             ),
             (
                 "1u64",
-                intnum(Radix::None, suffix(false, IntegerWidth::I64)),
+                intnum(1, Radix::None, suffix(false, IntegerWidth::I64)),
             ),
             (
                 "1uptr",
-                intnum(Radix::None, suffix(false, IntegerWidth::Ptr)),
+                intnum(1, Radix::None, suffix(false, IntegerWidth::Ptr)),
             ),
-            ("-1i8", intnum(Radix::None, suffix(true, IntegerWidth::I8))),
+            (
+                "-1i8",
+                intnum(-1, Radix::None, suffix(true, IntegerWidth::I8)),
+            ),
             (
                 "-1i16",
-                intnum(Radix::None, suffix(true, IntegerWidth::I16)),
+                intnum(-1, Radix::None, suffix(true, IntegerWidth::I16)),
             ),
             (
                 "-1i32",
-                intnum(Radix::None, suffix(true, IntegerWidth::I32)),
+                intnum(-1, Radix::None, suffix(true, IntegerWidth::I32)),
             ),
             (
                 "-1i64",
-                intnum(Radix::None, suffix(true, IntegerWidth::I64)),
+                intnum(-1, Radix::None, suffix(true, IntegerWidth::I64)),
             ),
             (
                 "-1iptr",
-                intnum(Radix::None, suffix(true, IntegerWidth::Ptr)),
+                intnum(-1, Radix::None, suffix(true, IntegerWidth::Ptr)),
             ),
-            ("1234567890", intnum(Radix::None, Suffix::None)),
+            ("1234567890", intnum(1234567890, Radix::None, Suffix::None)),
             (
-                "0x0123456789ABCDEFabcdef",
-                intnum(Radix::Hexadecimal, Suffix::None),
+                "0x0123456789_ABCDEF_abcdef",
+                intnum(0x0123456789_ABCDEF_abcdef, Radix::Hexadecimal, Suffix::None),
             ),
-            ("0b01", intnum(Radix::Binary, Suffix::None)),
-            ("0d0123456789", intnum(Radix::Decimal, Suffix::None)),
-            ("0o01234567", intnum(Radix::Octal, Suffix::None)),
+            ("0b01", intnum(0b01, Radix::Binary, Suffix::None)),
+            (
+                "0d0123456789",
+                intnum(123456789, Radix::Decimal, Suffix::None),
+            ),
+            ("0o01234567", intnum(0o01234567, Radix::Octal, Suffix::None)),
             (
                 "0d15i32",
-                intnum(Radix::Decimal, Suffix::Signed(IntegerWidth::I32)),
+                intnum(15, Radix::Decimal, Suffix::Signed(IntegerWidth::I32)),
             ),
             (
                 "-0d1i32",
-                intnum(Radix::Decimal, Suffix::Signed(IntegerWidth::I32)),
+                intnum(-1, Radix::Decimal, Suffix::Signed(IntegerWidth::I32)),
             ),
         ];
 
@@ -698,7 +766,7 @@ mod tests {
                 (">>", Shr),
                 ("<<", Shl),
                 ("&", And),
-                ("|", Or),
+                ("|", Pipe),
                 ("^", Xor),
                 ("==", EqEq),
                 ("!=", NotEq),
@@ -715,9 +783,7 @@ mod tests {
                 (":", Colon),
                 (";", Semi),
                 ("->", Arrow),
-                ("\n", Nl),
-                ("// Hello, world!\n", Nl),
-                ("// Hello, world!", Nl),
+                ("\n// Hello, world!\n//Hello, world!", Nl),
             ]
         };
 

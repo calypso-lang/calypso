@@ -4,12 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-ariadne = "0.6.0"
+ariadne = { git = "https://codeberg.org/zesterer/ariadne.git" }
 eyre.workspace = true
+im = "15.1.0"
 lasso = { version = "0.7.3", features = ["multi-threaded"] }
 rustc-hash = "2.1.2"
 tracing.workspace = true
 unicode-ident = "1.0.24"
+itertools.workspace = true
 
 [dev-dependencies]
 pretty_assertions.workspace = true

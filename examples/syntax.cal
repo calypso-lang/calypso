@@ -1,0 +1,62 @@
+type Vec2i = {
+  x: UInt,
+  y: UInt
+}
+
+type BinaryTree =
+  | Leaf { x: Int }
+  | Branch { lhs: Option[BinaryTree], x: Int, rhs: Option[BinaryTree] }
+
+// fn preorder(tree: BinaryTree) do
+//   match tree with
+//   // printing/conversions will be significantly more Fancy(tm) later
+//   | Leaf { x } -> print(int_to_string(x))
+//   | Branch { lhs, x, rhs } ->
+//     print(uint_to_string(x))
+//     // no match nesting or `if let`/`with` atm
+//     match lhs with
+//     | Some(lhs) -> preorder(lhs)
+//     | None -> ()
+//     end
+//     match rhs with
+//     | Some(rhs) -> preorder(rhs)
+//     | None -> ()
+//     end
+//   end
+// end
+
+// braces are unambiguously records, so we can omit the type name! yippee!!
+// when we can't infer the type, the type name can be provided like in Rust
+fn make_point() -> Vec2i = { x: 5, y: 2 }
+
+fn point_within_inclusive(point: Vec2i, bound1: Vec2i, bound2: Vec2i) -> Bool =
+  (point.x >= bound1.x && point.x <= bound2.x &&
+   point.y >= bound1.y && point.y <= bound2.y)
+
+fn integer_quadratic(a: Int, b: Int, c: Int, x: Int) -> Int =
+  a * x**2 + b * x + c
+
+fn hello(to_whom: String) do
+  // TODO: concat will probably be a member function later
+  // Additionally I'll eventually have string interpolation
+  print(concat("Hello, ", to_whom))
+end
+
+// fn binary_search_exact(foo: Array[UInt], x: UInt) -> Option[UInt] do
+//   let mut lo = 0
+//   // array_len will be a member function later
+//   let mut hi = array_len(foo) - 1
+//   while a <= b do
+//     let mid = (a + b) / 2
+//     // I'm not set on indexing syntax yet (conflict with polymorphic fn's?),
+//     // so this is a function for now
+//     if array_get(foo, mid) == x then
+//       return Some(mid)
+//     else if array_get(foo, mid) > x then
+//       hi = mid - 1
+//     else // array_get(foo, mid) < x
+//       lo = mid + 1
+//     end
+//   end
+//   None
+// end

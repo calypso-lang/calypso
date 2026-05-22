@@ -95,7 +95,7 @@ macro_rules! new_ast_ty {
 
 	#[derive(Clone, Debug, PartialEq, Eq)]
 	pub struct $data {
-	    $($param: $paramty),+
+	    $(pub $param: $paramty),+
 	}
 
 	impl $ty {

@@ -22,7 +22,7 @@ pub enum Token {
     Shr, // >>
     Shl, // <<
     And, // &
-    Or,  // |
+    Pipe,  // |
     Xor, // ^
     // Comparison operations
     EqEq,  // ==
@@ -48,9 +48,9 @@ pub enum Token {
     // Keywords
     Keyword(Keyword),
     // Numerals
-    Numeral(Numeral),
+    Numeral(i128, Numeral),
     // Strings
-    String,
+    String(Symbol),
     // End-of-file
     Eof,
     // Error
@@ -75,7 +75,7 @@ impl Token {
             Token::Shr => "`>>`",
             Token::Shl => "`<<`",
             Token::And => "`&`",
-            Token::Or => "`|`",
+            Token::Pipe => "`|`",
             Token::Xor => "`^`",
             Token::EqEq => "`==`",
             Token::NotEq => "`!=`",
@@ -94,11 +94,11 @@ impl Token {
             Token::Arrow => "`->`",
             Token::Nl => "newline",
             Token::Ident(_) => "identifier",
-            Token::Keyword(keyword) => Symbol::from(*keyword).as_str(),
-            Token::Numeral(_) => "number",
-            Token::String => "string",
+            Token::Keyword(keyword) => keyword.description(),
+            Token::Numeral(..) => "number",
+            Token::String(..) => "string",
             Token::Eof => "end-of-file",
-            Token::Error => unreachable!(),
+            Token::Error => "invalid token",
         }
     }
 }
@@ -153,6 +153,16 @@ pub enum Suffix {
     Unsigned(IntegerWidth),
 }
 
+impl fmt::Display for Suffix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Suffix::None => Ok(()),
+            Suffix::Signed(width) => write!(f, "s{width}"),
+            Suffix::Unsigned(width) => write!(f, "u{width}"),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum IntegerWidth {
     I8,
@@ -160,4 +170,16 @@ pub enum IntegerWidth {
     I32,
     I64,
     Ptr,
+}
+
+impl fmt::Display for IntegerWidth {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IntegerWidth::I8 => write!(f, "8"),
+            IntegerWidth::I16 => write!(f, "16"),
+            IntegerWidth::I32 => write!(f, "32"),
+            IntegerWidth::I64 => write!(f, "64"),
+            IntegerWidth::Ptr => write!(f, "ptr"),
+        }
+    }
 }

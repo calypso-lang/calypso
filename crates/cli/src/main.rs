@@ -4,7 +4,7 @@
 use std::{io::Read, path::PathBuf};
 
 use clap::{Parser, Subcommand};
-use color_eyre::eyre::{self, eyre};
+use color_eyre::eyre::{self};
 use compiler::{
     ctxt::GlobalCtxt,
     symbol::Symbol,
@@ -102,8 +102,8 @@ fn debug(command: DebugCommand) -> eyre::Result<()> {
 
             gcx.source_cache.borrow_mut().add(file, source.clone());
 
-            print!("\n\n");
-            let tokens = lexer::tokens(&gcx, &source, file);
+            let tokens = lexer::tokens(&gcx, &source, file)
+                .take_while(|(_, tok)| !matches!(*tok, Token::Eof | Token::Error));
             for (span, tok) in tokens {
                 println!("{}..{}: {:?}", span.lo(), span.hi(), tok);
             }
@@ -120,13 +120,16 @@ fn debug(command: DebugCommand) -> eyre::Result<()> {
 
             let tokens = lexer::tokens(&gcx, &source, file);
 
-            if !gcx.flush_diag()? {
-                return Ok(());
-            }
-
             let mut parser = syntax::parser::Parser::new(&gcx, file, tokens);
 
-            println!("\n\n{:#?}", parser.parse_ty_top().debug(&gcx));
+            println!(
+                "{:#?}",
+                parser
+                    .parse_top()
+                    .into_iter()
+                    .map(|x| x.debug(&gcx))
+                    .collect::<Vec<_>>()
+            );
 
             if !gcx.flush_diag()? {
                 return Ok(());
