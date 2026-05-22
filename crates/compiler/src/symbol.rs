@@ -103,17 +103,18 @@ static GLOBAL_INTERNER: OnceLock<ThreadedRodeo> = OnceLock::new();
 /// Get the global interner.
 pub fn get_interner() -> &'static ThreadedRodeo {
     let int = GLOBAL_INTERNER.get_or_init(ThreadedRodeo::new);
+    kw::init();
+    prim_ty::init();
     special::init();
     int
 }
 
 macro_rules! intern_static {
-    ($mod:ident, $mod_doc:expr, $name:ident => {$($enum_ident:ident; $static_ident:ident: $str:expr; $doc:expr),*$(,)?}) => {
+    ($mod:ident, $mod_doc:expr, $name:ident => {$($enum_ident:ident; $static_ident:ident: $str:expr),*$(,)?}) => {
         #[doc = $mod_doc]
         #[allow(dead_code)]
         pub mod $mod {
             $(
-                #[doc = $doc]
                 pub static $static_ident: ::std::sync::LazyLock<$crate::symbol::Symbol>
                     = ::std::sync::LazyLock::new(|| $crate::symbol::Symbol::_intern_static_inner($str));
             )*
@@ -127,7 +128,6 @@ macro_rules! intern_static {
             #[derive(Copy, Clone, Debug, PartialEq, Eq)]
             pub enum $name {
                 $(
-                    #[doc = $doc]
                     $enum_ident,
                 )*
             }
@@ -169,19 +169,40 @@ macro_rules! intern_static {
 }
 
 intern_static! {kw, "Keywords", Keyword => {
-    True; TRUE: "true"; "True (`true`)",
-    False; FALSE: "false"; "False (`false`)",
-    Let; LET: "let"; "Let (`let`)",
-    Do; DO: "do"; "Do (`do`)",
-    End; END: "end"; "End (`end`)",
-    In; IN: "in"; "In (`in`)",
-    Fn; FN: "fn"; "Fn (`fn`)",
-    If; IF: "if"; "If (`if`)",
-    Then; THEN: "then"; "Then (`then`)",
-    Else; ELSE: "else"; "Else (`else`)",
-    Pub; PUB: "pub"; "Pub (`pub`)",
+    True; TRUE: "true",
+    False; FALSE: "false",
+    Let; LET: "let",
+    Do; DO: "do",
+    End; END: "end",
+    In; IN: "in",
+    Fn; FN: "fn",
+    If; IF: "if",
+    Then; THEN: "then",
+    Else; ELSE: "else",
+    Pub; PUB: "pub",
+}}
+
+intern_static! {prim_ty, "Simple primitive types (no generics)", PrimitiveTy => {
+    UInt; UINT: "UInt",
+    UInt8; UINT8: "UInt8",
+    UInt16; UINT16: "UInt16",
+    UInt32; UINT32: "UInt32",
+    UInt64; UINT64: "UInt64",
+    UIntPtr; UINTPTR: "UIntPtr",
+    Int; INT: "Int",
+    Int8; INT8: "Int8",
+    Int16; INT16: "Int16",
+    Int32; INT32: "Int32",
+    Int64; INT64: "Int64",
+    IntPtr; INTPTR: "IntPtr",
+    String; STRING: "String",
+    Bool; BOOL: "Bool",
+}}
+
+intern_static! {misc_ty, "Miscellaneous types", MiscTy => {
+    Array; ARRAY: "Array",
 }}
 
 intern_static! {special, "Special strings", Special => {
-    Empty; EMPTY: ""; "Empty string",
+    Empty; EMPTY: "",
 }}

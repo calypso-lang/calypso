@@ -53,6 +53,54 @@ pub enum Token {
     String,
     // End-of-file
     Eof,
+    // Error
+    Error,
+}
+
+impl Token {
+    pub fn description(&self) -> &'static str {
+        match self {
+            Token::LeftParen => "`(`",
+            Token::RightParen => "`)`",
+            Token::LeftSquare => "`[`",
+            Token::RightSquare => "`]`",
+            Token::LeftCurly => "`{`",
+            Token::RightCurly => "`}`",
+            Token::Plus => "`+`",
+            Token::Minus => "`-`",
+            Token::Star => "`*`",
+            Token::Slash => "`/`",
+            Token::Percent => "`%`",
+            Token::StarStar => "`**`",
+            Token::Shr => "`>>`",
+            Token::Shl => "`<<`",
+            Token::And => "`&`",
+            Token::Or => "`|`",
+            Token::Xor => "`^`",
+            Token::EqEq => "`==`",
+            Token::NotEq => "`!=`",
+            Token::Gt => "`>`",
+            Token::GtEq => "`>=`",
+            Token::Lt => "`<`",
+            Token::LtEq => "`<=`",
+            Token::BoolAnd => "`&&`",
+            Token::BoolOr => "`||`",
+            Token::Not => "`!`",
+            Token::Eq => "`=`",
+            Token::Comma => "`,`",
+            Token::Dot => "`.`",
+            Token::Colon => "`:`",
+            Token::Semi => "`;`",
+            Token::Arrow => "`->`",
+            Token::Nl => "newline",
+            Token::Ident(_) => "identifier",
+            Token::Keyword(keyword) => Symbol::from(*keyword).as_str(),
+            Token::Numeral(_) => "number",
+            Token::String => "string",
+            Token::Eof => "end-of-file",
+            Token::Error => unreachable!(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

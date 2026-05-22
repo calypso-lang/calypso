@@ -55,6 +55,11 @@ impl<Id: IdLike + Hash + Copy + Eq + PartialOrd, T> Arena<Id, T> {
     pub fn retain(&mut self, mut f: impl FnMut(Id, &T) -> bool) {
         self.inner.retain(|k, v| f(*k, v));
     }
+
+    pub fn clear(&mut self) {
+        self.inner.clear();
+        self.next_id = Id::from_raw(0);
+    }
 }
 
 impl<Id: IdLike + Hash + Copy + Eq + PartialOrd, T> Default for Arena<Id, T> {
@@ -80,4 +85,36 @@ impl<Id: IdLike + Hash + Copy + Eq + PartialOrd, T> IndexMut<Id> for Arena<Id, T
 pub trait IdLike {
     fn from_raw(index: usize) -> Self;
     fn into_raw(self) -> usize;
+}
+
+#[macro_export]
+macro_rules! new_ast_ty {
+    ($ty:ident, $data:ident, $arena:ident, $subarena:ident, $($param:ident: $paramty:ty),+) => {
+        #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        pub struct $ty(u32);
+
+	#[derive(Clone, Debug, PartialEq, Eq)]
+	pub struct $data {
+	    $($param: $paramty),+
+	}
+
+	impl $ty {
+	    pub fn new(gcx: &GlobalCtxt, $($param: $paramty),+) -> Self {
+		gcx.arenas.$arena.$subarena.borrow_mut().push($data { $($param),+ })
+	    }
+
+	    pub fn get(self, gcx: &GlobalCtxt) -> $data {
+		gcx.arenas.$arena.$subarena.borrow()[self].clone()
+	    }
+	}
+
+        impl IdLike for $ty {
+            fn from_raw(index: usize) -> Self {
+                Self(index as u32)
+            }
+            fn into_raw(self) -> usize {
+                self.0 as usize
+            }
+        }
+    };
 }

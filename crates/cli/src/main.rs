@@ -3,9 +3,13 @@
 
 use std::{io::Read, path::PathBuf};
 
-use compiler::{symbol::Symbol, syntax::lexer};
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::{self, eyre};
+use compiler::{
+    ctxt::GlobalCtxt,
+    symbol::Symbol,
+    syntax::{self, lexer, token::Token},
+};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Parser)]
@@ -29,6 +33,12 @@ enum DebugCommand {
     /// Run the lexer on a file or stdin.
     Lex {
         /// The file to run the lexer on, or `-` for stdin.
+        #[clap(value_parser = FileInput::parse)]
+        file: FileInput,
+    },
+    /// Run the parser on a file or stdin.
+    Parse {
+        /// The file to run the parser on, or `-` for stdin.
         #[clap(value_parser = FileInput::parse)]
         file: FileInput,
     },
@@ -85,11 +95,41 @@ fn main() -> eyre::Result<()> {
 fn debug(command: DebugCommand) -> eyre::Result<()> {
     match command {
         DebugCommand::Lex { file } => {
+            let gcx = GlobalCtxt::default();
+
             let source = file.read_to_string()?;
-            let tokens = lexer::tokens(&source, Symbol::intern(file.name().unwrap_or("<stdin>")));
-            for res in tokens {
-                let (span, tok) = res.map_err(|e| eyre!("{:#?}", e))?;
+            let file = Symbol::intern(file.name().unwrap_or("<stdin>"));
+
+            gcx.source_cache.borrow_mut().add(file, source.clone());
+
+            print!("\n\n");
+            let tokens = lexer::tokens(&gcx, &source, file);
+            for (span, tok) in tokens {
                 println!("{}..{}: {:?}", span.lo(), span.hi(), tok);
+            }
+
+            gcx.flush_diag()?;
+        }
+        DebugCommand::Parse { file } => {
+            let gcx = GlobalCtxt::default();
+
+            let source = file.read_to_string()?;
+            let file = Symbol::intern(file.name().unwrap_or("<stdin>"));
+
+            gcx.source_cache.borrow_mut().add(file, source.clone());
+
+            let tokens = lexer::tokens(&gcx, &source, file);
+
+            if !gcx.flush_diag()? {
+                return Ok(());
+            }
+
+            let mut parser = syntax::parser::Parser::new(&gcx, file, tokens);
+
+            println!("\n\n{:#?}", parser.parse_ty_top().debug(&gcx));
+
+            if !gcx.flush_diag()? {
+                return Ok(());
             }
         }
     }
