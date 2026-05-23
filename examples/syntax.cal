@@ -7,23 +7,23 @@ type BinaryTree =
   | Leaf { x: Int }
   | Branch { lhs: Option[BinaryTree], x: Int, rhs: Option[BinaryTree] }
 
-// fn preorder(tree: BinaryTree) do
-//   match tree with
-//   // printing/conversions will be significantly more Fancy(tm) later
-//   | Leaf { x } -> print(int_to_string(x))
-//   | Branch { lhs, x, rhs } ->
-//     print(uint_to_string(x))
-//     // no match nesting or `if let`/`with` atm
-//     match lhs with
-//     | Some(lhs) -> preorder(lhs)
-//     | None -> ()
-//     end
-//     match rhs with
-//     | Some(rhs) -> preorder(rhs)
-//     | None -> ()
-//     end
-//   end
-// end
+fn preorder(tree: BinaryTree) do
+  match tree with
+  // printing/conversions will be significantly more Fancy(tm) later
+  | Leaf { x } -> print(int_to_string(x))
+  | Branch { lhs, x, rhs } ->
+    print(uint_to_string(x))
+    // no match nesting or `if let`/`with` atm
+    match lhs with
+    | Some(lhs) -> preorder(lhs)
+    | None -> ()
+    end
+    match rhs with
+    | Some(rhs) -> preorder(rhs)
+    | None -> ()
+    end
+  end
+end
 
 // braces are unambiguously records, so we can omit the type name! yippee!!
 // when we can't infer the type, the type name can be provided like in Rust

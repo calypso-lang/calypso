@@ -1,13 +1,13 @@
-use std::fmt;
-
 use crate::{
     ctxt::GlobalCtxt,
-    symbol::{self, Ident, Symbol, kw::Keyword, prim_ty::PrimitiveTy},
+    symbol::{self, Ident, kw::Keyword, prim_ty::PrimitiveTy},
     syntax::ast::{TyKind, TypeDefnKind, VariantKind},
 };
 
 use super::{
-    ast::{BinOpKind, Expr, ExprKind, Item, ItemKind, Modality, Ty, UnOpKind},
+    ast::{
+        BinOpKind, Expr, ExprKind, Item, ItemKind, Modality, Pattern, PatternKind, Ty, UnOpKind,
+    },
     error::{SyntaxError, SyntaxErrorKind},
     lexer::SpanTok,
     span::Span,
@@ -17,28 +17,16 @@ use super::{
 pub struct Parser<'gcx, I: Iterator<Item = SpanTok>> {
     tokens: I,
     gcx: &'gcx GlobalCtxt,
-    file: Symbol,
     peek0: SpanTok,
     peek1: Option<SpanTok>,
     suppress_error: bool,
 }
 
-impl<I: Iterator<Item = SpanTok>> fmt::Debug for Parser<'_, I> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Parser")
-            .field("file", &self.file)
-            .field("peek0", &self.peek0)
-            .field("peek1", &self.peek1)
-            .finish_non_exhaustive()
-    }
-}
-
 impl<'gcx, I: Iterator<Item = SpanTok>> Parser<'gcx, I> {
-    pub fn new(gcx: &'gcx GlobalCtxt, file: Symbol, tokens: I) -> Self {
+    pub fn new(gcx: &'gcx GlobalCtxt, tokens: I) -> Self {
         let mut this = Self {
             tokens,
             gcx,
-            file,
             peek0: (Span::new_dummy(), Token::Eof),
             peek1: None,
             suppress_error: false,
@@ -385,7 +373,7 @@ impl<'gcx, I: Iterator<Item = SpanTok>> Parser<'gcx, I> {
     /// safely expect (without checking) that the closing delimiter
     /// exists.
     ///
-    /// `expected_separator` should be of the form "`,` or <delimiter>"
+    /// `expected_separator` should be of the form "<separator> or <delimiter>"
     ///
     /// `expected_delimiter` should be of the form "<delimiter>"
     #[allow(clippy::too_many_arguments)]
@@ -450,7 +438,7 @@ impl<'gcx, I: Iterator<Item = SpanTok>> Parser<'gcx, I> {
     /// safely expect (without checking) that the closing delimiter
     /// exists.
     ///
-    /// `expected_separator` should be of the form "`,` or <delimiter>"
+    /// `expected_separator` should be of the form "<separator> or <delimiter>"
     ///
     /// `expected_delimiter` should be of the form "<delimiter>"
     #[allow(clippy::too_many_arguments)]
@@ -608,6 +596,10 @@ impl<'gcx, I: Iterator<Item = SpanTok>> Parser<'gcx, I> {
                 let (end, _) = self.advance();
                 Ok(Expr::new(self.gcx, ExprKind::Do { stmts }, start.to(end)))
             }
+            (start, Token::Keyword(Keyword::Match)) => {
+                let _ = self.advance();
+                self.parse_match(start)
+            }
             (span, found) => {
                 self.error_expected_found(span, "expression", found.description());
                 Err(span)
@@ -717,6 +709,156 @@ impl<'gcx, I: Iterator<Item = SpanTok>> Parser<'gcx, I> {
         Ok(self.parse_pratt(allow_nl, 0))
     }
 
+    #[allow(clippy::unnecessary_wraps)]
+    fn parse_pattern(&mut self) -> Result<Pattern, Span> {
+        match self.peek() {
+            (span, Token::Ident(sym)) if sym == *symbol::special::UNDERSCORE => {
+                let _ = self.advance();
+                Ok(Pattern::new(self.gcx, PatternKind::Wildcard, span))
+            }
+            (start, Token::Ident(symbol)) => {
+                let _ = self.advance();
+                if let Some(lparen) = self.try_consume(Token::LeftParen) {
+                    let (_, fields) = self.parse_delimited(
+                        |this| this.parse_pattern().or_pattern_error(this),
+                        |tok| matches!(tok, Token::RightParen),
+                        |tok| matches!(tok, Token::Comma),
+                        |this, val| val.get(this.gcx).span,
+                        |this, span| Pattern::new(this.gcx, PatternKind::Error, span),
+                        Token::Comma.description(),
+                        Token::RightParen.description(),
+                        Some((Token::LeftParen.description(), lparen)),
+                        true,
+                    );
+                    let (end, _) = self.advance();
+                    Ok(Pattern::new(
+                        self.gcx,
+                        PatternKind::TupleLike {
+                            ident: Ident {
+                                symbol,
+                                span: start,
+                            },
+                            fields,
+                            rest: false,
+                        },
+                        start.to(end),
+                    ))
+                } else if let Some(lcurly) = self.try_consume(Token::LeftCurly) {
+                    let (end, fields) = self.parse_struct_like_pattern(lcurly);
+                    // TODO: rest
+                    Ok(Pattern::new(
+                        self.gcx,
+                        PatternKind::StructLike {
+                            ident: Ident {
+                                symbol,
+                                span: start,
+                            },
+                            fields,
+                            rest: false,
+                        },
+                        start.to(end),
+                    ))
+                } else {
+                    Ok(Pattern::new(
+                        self.gcx,
+                        PatternKind::Ident(Ident {
+                            symbol,
+                            span: start,
+                        }),
+                        start,
+                    ))
+                }
+            }
+            (span, Token::Keyword(b @ (Keyword::False | Keyword::True))) => {
+                let _ = self.advance();
+                Ok(Pattern::new(
+                    self.gcx,
+                    PatternKind::Bool(b == Keyword::True),
+                    span,
+                ))
+            }
+            (span, Token::String(s)) => {
+                let _ = self.advance();
+                Ok(Pattern::new(self.gcx, PatternKind::String(s), span))
+            }
+            (span, Token::Numeral(num, meta)) => {
+                let _ = self.advance();
+                Ok(Pattern::new(
+                    self.gcx,
+                    PatternKind::Numeral(num, meta),
+                    span,
+                ))
+            }
+            (start, Token::LeftParen) => {
+                let _ = self.advance();
+                self.skip_nls();
+                if let Some(end) = self.try_consume(Token::RightParen) {
+                    Ok(Pattern::new(self.gcx, PatternKind::Unit, start.to(end)))
+                } else {
+                    let expr = self.parse_pattern()?;
+                    let end = self.expect_matching(Token::RightParen, Token::LeftParen, start)?;
+                    Ok(Pattern::new(
+                        self.gcx,
+                        expr.get(self.gcx).kind,
+                        start.to(end),
+                    ))
+                }
+            }
+            (span, found) => {
+                self.error_expected_found(span, "pattern", found.description());
+                Ok(Pattern::new(self.gcx, PatternKind::Error, span))
+            }
+        }
+    }
+
+    /// Assumes `match` already consumed
+    fn parse_match(&mut self, start: Span) -> Result<Expr, Span> {
+        let scrutinee = self.parse_expr(false).or_expr_error(self);
+        self.skip_nls();
+        let with = self
+            .expect(Token::Keyword(Keyword::With))
+            .map_err(|sp| start.to(sp))?;
+        self.skip_nls();
+        let _ = self.try_consume(Token::Pipe);
+        let (_, patterns) = self.parse_delimited(
+            |this| {
+                let pattern = this.parse_pattern().or_pattern_error(this);
+                let arrow = this.expect(Token::Arrow).ok()?;
+                let (end, stmts) = this.parse_stmts_block(
+                    |tok| matches!(tok, Token::Keyword(Keyword::End) | Token::Pipe),
+                    "`;`, newline, `|`, or `end`",
+                    "`|` or `end`",
+                    Token::Arrow.description(),
+                    arrow,
+                );
+                // We don't advance as we want the outer parse_delimited to eat the token.
+                let expr = Expr::new(this.gcx, ExprKind::Do { stmts }, arrow.to(end));
+                this.skip_nls();
+                Some((pattern, expr))
+            },
+            |tok| matches!(tok, Token::Keyword(Keyword::End)),
+            |tok| matches!(tok, Token::Pipe),
+            |this, val| {
+                val.map_or(Span::new_dummy(), |(pat, exp)| {
+                    pat.get(this.gcx).span.to(exp.get(this.gcx).span)
+                })
+            },
+            |_, _| None,
+            "`|`",
+            Token::Keyword(Keyword::End).description(),
+            Some((Token::Keyword(Keyword::With).description(), with)),
+            true,
+        );
+        let patterns = patterns.into_iter().flatten().collect();
+        let (end, _) = self.advance();
+
+        Ok(Expr::new(
+            self.gcx,
+            ExprKind::Match(scrutinee, patterns),
+            start.to(end),
+        ))
+    }
+
     fn parse_ident_ty(&mut self) -> Option<(Ident, Ty)> {
         self.skip_nls();
         let id = self.expect_ident().ok()?;
@@ -748,6 +890,48 @@ impl<'gcx, I: Iterator<Item = SpanTok>> Parser<'gcx, I> {
             |this, x| {
                 x.map_or(Span::new_dummy(), |(id, ty)| {
                     id.span.to(ty.get(this.gcx).span)
+                })
+            },
+            |_, _| None,
+            Token::Comma.description(),
+            Token::RightCurly.description(),
+            Some((Token::LeftCurly.description(), lcurly_span)),
+            true,
+        );
+        // rcurly
+        let (end, _) = self.advance();
+
+        (end, args.into_iter().flatten().collect())
+    }
+
+    fn parse_ident_pattern(&mut self) -> Option<(Ident, Option<Pattern>)> {
+        self.skip_nls();
+        let id = self.expect_ident().ok()?;
+        self.skip_nls();
+        let pat = if self.try_consume(Token::Colon).is_some() {
+            self.expect(Token::Colon).ok()?;
+            self.skip_nls();
+            let pat = self.parse_pattern().or_pattern_error(self);
+            self.skip_nls();
+            Some(pat)
+        } else {
+            None
+        };
+        Some((id, pat))
+    }
+
+    /// expects `{` to be consumed already. `Span` is the rcurly
+    fn parse_struct_like_pattern(
+        &mut self,
+        lcurly_span: Span,
+    ) -> (Span, im::Vector<(Ident, Option<Pattern>)>) {
+        let (_, args) = self.parse_delimited(
+            Parser::parse_ident_pattern,
+            |tok| matches!(tok, Token::RightCurly),
+            |tok| matches!(tok, Token::Comma),
+            |this, x| {
+                x.map_or(Span::new_dummy(), |(id, pat)| {
+                    pat.map_or(id.span, |pat| id.span.to(pat.get(this.gcx).span))
                 })
             },
             |_, _| None,
@@ -858,7 +1042,9 @@ impl<'gcx, I: Iterator<Item = SpanTok>> Parser<'gcx, I> {
                             start.to(end),
                         ))
                     }
-                    // TODO: make this more robust? (ident -> newline(s) -> pipe, for example)
+                    // TODO: rewrite to properly do `Ident, _` -> sum
+                    // type with the new design (type aliases no
+                    // longer coincidental with type defs
                     ((_, first @ Token::Pipe), _)
                     | ((_, first @ Token::Ident(_)), Some((_, Token::LeftCurly | Token::Pipe))) => {
                         if matches!(first, Token::Pipe) {
@@ -971,7 +1157,8 @@ impl Token {
             Token::Shl => BinOpKind::BitShiftLeft,
             Token::Shr => BinOpKind::BitShiftRight,
             Token::And => BinOpKind::BitAnd,
-            Token::Pipe => BinOpKind::BitOr,
+            // TODO: consider alternate syntax
+            // Token::Pipe => BinOpKind::BitOr,
             Token::Xor => BinOpKind::BitXor,
             Token::EqEq => BinOpKind::Equal,
             Token::NotEq => BinOpKind::NotEqual,
@@ -1046,6 +1233,16 @@ trait ParserItemResultExt<'gcx, I: Iterator<Item = SpanTok>> {
 impl<'gcx, I: Iterator<Item = SpanTok>> ParserItemResultExt<'gcx, I> for Result<Item, Span> {
     fn or_item_error(self, parser: &Parser<'gcx, I>) -> Item {
         self.unwrap_or_else(|span| Item::new(parser.gcx, ItemKind::Error, span))
+    }
+}
+
+trait ParsePatternResultExt<'gcx, I: Iterator<Item = SpanTok>> {
+    fn or_pattern_error(self, parser: &Parser<'gcx, I>) -> Pattern;
+}
+
+impl<'gcx, I: Iterator<Item = SpanTok>> ParsePatternResultExt<'gcx, I> for Result<Pattern, Span> {
+    fn or_pattern_error(self, parser: &Parser<'gcx, I>) -> Pattern {
+        self.unwrap_or_else(|span| Pattern::new(parser.gcx, PatternKind::Error, span))
     }
 }
 

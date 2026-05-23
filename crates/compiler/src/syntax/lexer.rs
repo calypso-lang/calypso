@@ -321,6 +321,7 @@ where
             debug_assert!(self.chr0.is_some());
             if self.chr0 == Some('0') {
                 let narrow_pos = self.pos();
+                digits.push('0');
                 let _ = self.advance();
                 match self.chr0 {
                     Some('0'..='9' | '_') => {
@@ -347,7 +348,7 @@ where
                         radix = Radix::Binary;
                         let _ = self.advance();
                     }
-                    Some(_) => {
+                    Some('a'..='z' | 'A'..='Z') => {
                         let _ = self.advance();
                         let end_pos = self.pos();
                         self.report_error(LexicalError {
@@ -356,7 +357,7 @@ where
                         });
                         had_error = true;
                     }
-                    None => break 'end,
+                    Some(_) | None => break 'end,
                 }
             }
 
@@ -701,6 +702,7 @@ mod tests {
                 "-0d1i32",
                 intnum(-1, Radix::Decimal, Suffix::Signed(IntegerWidth::I32)),
             ),
+            ("0", intnum(0, Radix::None, Suffix::None)),
         ];
 
         assert_source(&test_source);

@@ -14,6 +14,7 @@ pub struct AstArenas {
     pub ty: RefCell<Arena<Ty, TyData>>,
     pub expr: RefCell<Arena<Expr, ExprData>>,
     pub item: RefCell<Arena<Item, ItemData>>,
+    pub pattern: RefCell<Arena<Pattern, PatternData>>,
 }
 
 impl AstArenas {
@@ -21,6 +22,7 @@ impl AstArenas {
         self.ty.borrow_mut().clear();
         self.expr.borrow_mut().clear();
         self.item.borrow_mut().clear();
+        self.pattern.borrow_mut().clear();
     }
 }
 
@@ -103,6 +105,7 @@ pub enum ExprKind {
     FieldAccess(Expr, Ident),
     // TODO: refactor this
     If(Expr, Expr, Expr),
+    Match(Expr, im::Vector<(Pattern, Expr)>),
     Call(Expr, im::Vector<Expr>),
     Numeral(i128, Numeral),
     Ident(Ident),
@@ -217,8 +220,27 @@ impl fmt::Debug for DebugExpr<'_> {
             ExprKind::String(sym) => {
                 write!(f, "{:?}", sym.as_str())
             }
+            ExprKind::Match(scrutinee, patterns) => f
+                .debug_tuple("Match")
+                .field(&DebugExpr(scrutinee, self.1))
+                .field(&DebugCases(patterns, self.1))
+                .finish(),
             kind => todo!("{kind:#?}"),
         }
+    }
+}
+
+struct DebugCases<'gcx>(im::Vector<(Pattern, Expr)>, &'gcx GlobalCtxt);
+
+impl fmt::Debug for DebugCases<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_map()
+            .entries(
+                self.0
+                    .iter()
+                    .map(|(p, e)| (DebugPattern(*p, self.1), DebugExpr(*e, self.1))),
+            )
+            .finish()
     }
 }
 
@@ -348,6 +370,89 @@ impl fmt::Debug for DebugVariantKind<'_> {
                 b.finish()
             }
             VariantKind::Unit => write!(f, "Unit"),
+        }
+    }
+}
+
+new_ast_ty!(Pattern, PatternData, ast, pattern, kind: PatternKind, span: Span);
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PatternKind {
+    StructLike {
+        ident: Ident,
+        fields: im::Vector<(Ident, Option<Pattern>)>,
+        rest: bool,
+    },
+    TupleLike {
+        ident: Ident,
+        fields: im::Vector<Pattern>,
+        rest: bool,
+    },
+    Ident(Ident),
+    Numeral(i128, Numeral),
+    Bool(bool),
+    String(Symbol),
+    Unit,
+    Wildcard,
+    Error,
+}
+
+struct DebugPattern<'gcx>(Pattern, &'gcx GlobalCtxt);
+
+impl Pattern {
+    pub fn debug(self, gcx: &'_ GlobalCtxt) -> impl fmt::Debug + '_ {
+        DebugPattern(self, gcx)
+    }
+}
+
+impl fmt::Debug for DebugPattern<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0.get(self.1).kind {
+            PatternKind::StructLike {
+                ident,
+                fields,
+                rest,
+            } => {
+                let mut b = f.debug_struct("StructLike");
+                b.field("ident", &ident.symbol);
+                for (ident, pat) in fields {
+                    b.field(ident.as_str(), &pat.map(|pat| DebugPattern(pat, self.1)));
+                }
+                if rest {
+                    b.finish_non_exhaustive()
+                } else {
+                    b.finish()
+                }
+            }
+            PatternKind::TupleLike {
+                ident,
+                fields,
+                rest,
+            } => {
+                let mut b = f.debug_tuple("TupleLike");
+                b.field(&ident.symbol);
+                for pat in fields {
+                    b.field(&DebugPattern(pat, self.1));
+                }
+                if rest {
+                    b.finish_non_exhaustive()
+                } else {
+                    b.finish()
+                }
+            }
+            PatternKind::Ident(ident) => write!(f, "{}", ident.symbol),
+            PatternKind::String(sym) => {
+                write!(f, "{:?}", sym.as_str())
+            }
+            PatternKind::Numeral(num, Numeral::Integer { radix, suffix }) => {
+                let neg = if num.is_negative() { "-" } else { "" };
+                let num_abs = num.abs();
+                write!(f, "{neg}{radix}{num_abs}{suffix}")
+            }
+            PatternKind::Unit => write!(f, "Unit"),
+            PatternKind::Bool(b) => write!(f, "{b:?}"),
+            PatternKind::Wildcard => write!(f, "_"),
+            PatternKind::Error => write!(f, "Error"),
         }
     }
 }

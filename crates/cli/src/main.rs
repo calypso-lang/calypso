@@ -120,7 +120,7 @@ fn debug(command: DebugCommand) -> eyre::Result<()> {
 
             let tokens = lexer::tokens(&gcx, &source, file);
 
-            let mut parser = syntax::parser::Parser::new(&gcx, file, tokens);
+            let mut parser = syntax::parser::Parser::new(&gcx, tokens);
 
             println!(
                 "{:#?}",

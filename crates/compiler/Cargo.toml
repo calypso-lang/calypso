@@ -12,6 +12,7 @@ rustc-hash = "2.1.2"
 tracing.workspace = true
 unicode-ident = "1.0.24"
 itertools.workspace = true
+pretty = "0.12.5"
 
 [dev-dependencies]
 pretty_assertions.workspace = true

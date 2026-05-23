@@ -196,6 +196,8 @@ intern_static! {kw, "Keywords", Keyword => {
     Imm; IMM: "imm",
     Unique; UNIQUE: "unique",
     Type; TYPE: "type",
+    With; WITH: "with",
+    Match; MATCH: "match",
 }}
 
 intern_static! {prim_ty, "Simple primitive types (no generics)", PrimitiveTy => {
@@ -222,4 +224,5 @@ intern_static! {misc_ty, "Miscellaneous types", MiscTy => {
 
 intern_static! {special, "Special strings", Special => {
     Empty; EMPTY: "",
+    Underscore; UNDERSCORE: "_"
 }}
